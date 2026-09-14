@@ -119,7 +119,7 @@ export default function CreateJobPage() {
       <div className="flex items-center justify-between">
         <button
           onClick={() => router.back()}
-          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Jobs</span>
@@ -128,13 +128,13 @@ export default function CreateJobPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Form Column (7 cols) */}
-        <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-card space-y-6">
           <div>
             <div className="flex items-center gap-2">
-              <Briefcase className="w-5 h-5 text-emerald-400" />
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white">Post a New Job</h1>
+              <Briefcase className="w-5 h-5 text-emerald-600" />
+              <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900">Post a New Job</h1>
             </div>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               Define role parameters and required verified skills for automatic candidate matching.
             </p>
           </div>
@@ -143,26 +143,26 @@ export default function CreateJobPage() {
             {/* Title & Department */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1.5">Job Title</label>
+                <label className="block text-slate-700 font-semibold mb-1.5">Job Title</label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   required
                   placeholder="e.g. AI/ML Engineer"
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-emerald-500 shadow-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1.5">Department</label>
+                <label className="block text-slate-700 font-semibold mb-1.5">Department</label>
                 <input
                   type="text"
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
                   required
                   placeholder="e.g. Artificial Intelligence"
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-emerald-500 shadow-xs"
                 />
               </div>
             </div>
@@ -170,11 +170,11 @@ export default function CreateJobPage() {
             {/* Type, Mode, Location */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1.5">Job Type</label>
+                <label className="block text-slate-700 font-semibold mb-1.5">Job Type</label>
                 <select
                   value={jobType}
                   onChange={(e) => setJobType(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-emerald-500 shadow-xs"
                 >
                   <option value="Full Time">Full Time</option>
                   <option value="Part Time">Part Time</option>
@@ -183,11 +183,11 @@ export default function CreateJobPage() {
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1.5">Work Mode</label>
+                <label className="block text-slate-700 font-semibold mb-1.5">Work Mode</label>
                 <select
                   value={workMode}
                   onChange={(e) => setWorkMode(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-emerald-500 shadow-xs"
                 >
                   <option value="Hybrid">Hybrid</option>
                   <option value="Remote">Remote</option>
@@ -196,13 +196,13 @@ export default function CreateJobPage() {
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1.5">Location</label>
+                <label className="block text-slate-700 font-semibold mb-1.5">Location</label>
                 <input
                   type="text"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-emerald-500 shadow-xs"
                 />
               </div>
             </div>
@@ -210,46 +210,46 @@ export default function CreateJobPage() {
             {/* Salary, Experience, Openings */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1.5">Salary Range</label>
+                <label className="block text-slate-700 font-semibold mb-1.5">Salary Range</label>
                 <input
                   type="text"
                   value={salaryRange}
                   onChange={(e) => setSalaryRange(e.target.value)}
                   placeholder="e.g. ₹8–14 LPA"
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-emerald-500 shadow-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1.5">Experience</label>
+                <label className="block text-slate-700 font-semibold mb-1.5">Experience</label>
                 <input
                   type="text"
                   value={experienceRequired}
                   onChange={(e) => setExperienceRequired(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-emerald-500 shadow-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1.5">Openings</label>
+                <label className="block text-slate-700 font-semibold mb-1.5">Openings</label>
                 <input
                   type="number"
                   min={1}
                   value={openings}
                   onChange={(e) => setOpenings(Number(e.target.value))}
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-emerald-500 shadow-xs"
                 />
               </div>
             </div>
 
             {/* CRITICAL FEATURE: REQUIRED SKILLS BUILDER */}
-            <div className="bg-slate-950 p-5 rounded-2xl border border-emerald-500/40 space-y-4 shadow-inner">
+            <div className="bg-slate-50 p-5 rounded-2xl border border-emerald-200 space-y-4 shadow-xs">
               <div>
-                <h3 className="font-bold text-white text-xs flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-emerald-400" />
+                <h3 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-emerald-600" />
                   Required Skills Builder
                 </h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">
+                <p className="text-[11px] text-slate-500 mt-0.5">
                   Specify skills, proficiency level, and priority. These drive the 100-point candidate match engine.
                 </p>
               </div>
@@ -257,22 +257,22 @@ export default function CreateJobPage() {
               {/* Add Skill Inputs */}
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
                 <div className="sm:col-span-5">
-                  <label className="block text-[11px] text-slate-400 mb-1">Skill Name</label>
+                  <label className="block text-[11px] text-slate-700 font-medium mb-1">Skill Name</label>
                   <input
                     type="text"
                     value={newSkillName}
                     onChange={(e) => setNewSkillName(e.target.value)}
                     placeholder="e.g. Docker, React, PyTorch"
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-emerald-500 shadow-xs"
                   />
                 </div>
 
                 <div className="sm:col-span-3">
-                  <label className="block text-[11px] text-slate-400 mb-1">Level</label>
+                  <label className="block text-[11px] text-slate-700 font-medium mb-1">Level</label>
                   <select
                     value={newSkillLevel}
                     onChange={(e) => setNewSkillLevel(e.target.value as SkillLevel)}
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-emerald-500 shadow-xs"
                   >
                     <option value="Basic">Basic</option>
                     <option value="Intermediate">Intermediate</option>
@@ -281,11 +281,11 @@ export default function CreateJobPage() {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block text-[11px] text-slate-400 mb-1">Importance</label>
+                  <label className="block text-[11px] text-slate-700 font-medium mb-1">Importance</label>
                   <select
                     value={newSkillImportance}
                     onChange={(e) => setNewSkillImportance(e.target.value as SkillImportance)}
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-emerald-500 shadow-xs"
                   >
                     <option value="Required">Required</option>
                     <option value="Preferred">Preferred</option>
@@ -296,7 +296,7 @@ export default function CreateJobPage() {
                   <button
                     type="button"
                     onClick={handleAddSkill}
-                    className="w-full py-2 px-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1"
+                    className="w-full py-2 px-3 bg-gradient-to-r from-brand-emerald to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1 shadow-xs"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Add</span>
@@ -306,7 +306,7 @@ export default function CreateJobPage() {
 
               {/* Skill Chips Display with 'x' */}
               <div className="space-y-1.5 pt-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   Configured Skill Requirements ({requiredSkills.length})
                 </span>
                 <div className="flex flex-wrap gap-2">
@@ -315,19 +315,19 @@ export default function CreateJobPage() {
                       key={idx}
                       className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold ${
                         s.importance === 'Required'
-                          ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-                          : 'bg-slate-900 border-slate-700 text-slate-300'
+                          ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                          : 'bg-white border-slate-200 text-slate-700 shadow-xs'
                       }`}
                     >
                       <span>{s.name}</span>
                       <span className="text-[10px] font-normal opacity-80">({s.level})</span>
-                      <span className="text-[9px] uppercase font-bold px-1.5 py-0.2 rounded bg-slate-950/60">
+                      <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
                         {s.importance}
                       </span>
                       <button
                         type="button"
                         onClick={() => handleRemoveSkill(s.name)}
-                        className="text-slate-400 hover:text-white p-0.5"
+                        className="text-slate-400 hover:text-slate-700 p-0.5"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -339,28 +339,28 @@ export default function CreateJobPage() {
 
             {/* Job Description */}
             <div>
-              <label className="block text-slate-300 font-semibold mb-1.5">Job Description</label>
+              <label className="block text-slate-700 font-semibold mb-1.5">Job Description</label>
               <textarea
                 rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 required
-                className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-emerald-500 shadow-xs"
               />
             </div>
 
             {/* Action Buttons */}
-            <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="px-4 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold shadow-lg shadow-emerald-950/50 flex items-center gap-2 transition-all"
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-brand-emerald to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold shadow-md flex items-center gap-2 transition-all"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Publish Job Listing</span>
@@ -372,66 +372,66 @@ export default function CreateJobPage() {
         {/* Live Preview Column (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
           <div className="sticky top-20 space-y-4">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-700">
               <Eye className="w-4 h-4" />
               <span>Live Recruiter &amp; Student Preview</span>
             </div>
 
             {/* Preview Card */}
-            <div className="bg-slate-900 border border-emerald-500/40 rounded-3xl p-6 shadow-2xl space-y-5">
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-card space-y-5 text-slate-900">
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
                     Actively Hiring
                   </span>
-                  <span className="font-mono text-emerald-300 text-xs font-bold">{salaryRange}</span>
+                  <span className="font-mono text-emerald-700 text-xs font-bold">{salaryRange}</span>
                 </div>
-                <h3 className="text-xl font-bold text-white pt-1">{title || 'Role Title'}</h3>
-                <p className="text-xs text-slate-400 flex items-center gap-1.5">
-                  <span className="text-emerald-400 font-semibold">{company.name}</span> &bull;{' '}
-                  <MapPin className="w-3 h-3 text-slate-500" /> {location} ({workMode})
+                <h3 className="text-xl font-bold text-slate-900 pt-1">{title || 'Role Title'}</h3>
+                <p className="text-xs text-slate-500 flex items-center gap-1.5">
+                  <span className="text-emerald-700 font-semibold">{company.name}</span> &bull;{' '}
+                  <MapPin className="w-3 h-3 text-slate-400" /> {location} ({workMode})
                 </p>
               </div>
 
-              <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-xs space-y-1">
-                <div className="flex justify-between text-slate-400">
+              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs space-y-1">
+                <div className="flex justify-between text-slate-500">
                   <span>Job Type:</span>
-                  <span className="text-white font-semibold">{jobType}</span>
+                  <span className="text-slate-900 font-semibold">{jobType}</span>
                 </div>
-                <div className="flex justify-between text-slate-400">
+                <div className="flex justify-between text-slate-500">
                   <span>Experience:</span>
-                  <span className="text-white font-semibold">{experienceRequired}</span>
+                  <span className="text-slate-900 font-semibold">{experienceRequired}</span>
                 </div>
-                <div className="flex justify-between text-slate-400">
+                <div className="flex justify-between text-slate-500">
                   <span>Openings:</span>
-                  <span className="text-white font-semibold">{openings} seats</span>
+                  <span className="text-slate-900 font-semibold">{openings} seats</span>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   Required Verified Skills
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {requiredSkills.map((req, i) => (
                     <span
                       key={i}
-                      className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs flex items-center gap-1"
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-800 text-xs flex items-center gap-1 font-medium"
                     >
                       <span>{req.name}</span>
-                      <span className="text-[10px] text-emerald-400">({req.level})</span>
+                      <span className="text-[10px] text-emerald-700">({req.level})</span>
                     </span>
                   ))}
                 </div>
               </div>
 
-              <p className="text-xs text-slate-400 line-clamp-3 leading-relaxed border-t border-slate-800 pt-3">
+              <p className="text-xs text-slate-500 line-clamp-3 leading-relaxed border-t border-slate-100 pt-3">
                 {description}
               </p>
 
               <div className="pt-2 text-[11px] text-slate-500 flex items-center justify-between">
                 <span>Application Deadline: {deadline}</span>
-                <span className="text-emerald-400 font-semibold">Instant AI Matching</span>
+                <span className="text-emerald-700 font-semibold">Instant AI Matching</span>
               </div>
             </div>
           </div>

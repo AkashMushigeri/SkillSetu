@@ -60,22 +60,22 @@ export const CollegeSidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOp
   };
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-slate-900 border-r border-slate-800 text-slate-200 select-none">
+    <div className="flex flex-col h-full bg-white border-r border-slate-200 text-slate-700 select-none">
       {/* Header / Brand */}
-      <div className="p-4 flex items-center justify-between border-b border-slate-800/80">
+      <div className="p-4 flex items-center justify-between border-b border-slate-100">
         <Link
           href="/college/dashboard"
           className={`flex items-center gap-3 transition-all ${collapsed ? 'justify-center' : ''}`}
         >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-teal to-brand-emerald flex items-center justify-center shadow-lg shadow-brand-teal/30 shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-teal to-brand-emerald flex items-center justify-center shadow-md shadow-brand-teal/20 shrink-0">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           {!collapsed && (
             <div>
-              <div className="font-extrabold text-lg text-white leading-tight flex items-center gap-1">
-                Skill<span className="text-emerald-400">Setu</span>
+              <div className="font-extrabold text-lg text-slate-900 leading-tight flex items-center gap-1">
+                Skill<span className="text-brand-teal">Setu</span>
               </div>
-              <div className="text-[9px] font-bold tracking-widest text-emerald-400 uppercase bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 inline-block">
+              <div className="text-[9px] font-bold tracking-widest text-emerald-700 uppercase bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 inline-block">
                 COLLEGE PORTAL
               </div>
             </div>
@@ -86,7 +86,7 @@ export const CollegeSidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOp
         {setMobileOpen && (
           <button
             onClick={() => setMobileOpen(false)}
-            className="lg:hidden p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+            className="lg:hidden p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700"
           >
             <X className="w-5 h-5" />
           </button>
@@ -95,7 +95,7 @@ export const CollegeSidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOp
         {/* Desktop collapse toggle */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="hidden lg:flex p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+          className="hidden lg:flex p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
           title={collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
         >
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
@@ -104,15 +104,15 @@ export const CollegeSidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOp
 
       {/* College Info Mini Badge */}
       {!collapsed && (
-        <div className="mx-3 my-3 p-2.5 rounded-xl bg-slate-800/60 border border-slate-800/80 flex items-center gap-2.5">
+        <div className="mx-3 my-3 p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2.5">
           <img
             src={profile.logoUrl}
             alt={profile.institutionName}
-            className="w-8 h-8 rounded-lg object-cover bg-slate-700 shrink-0"
+            className="w-8 h-8 rounded-lg object-cover bg-slate-200 shrink-0"
           />
           <div className="overflow-hidden text-xs">
-            <p className="font-bold text-white truncate">{profile.institutionName}</p>
-            <p className="text-[10px] text-slate-400 truncate">{profile.location}</p>
+            <p className="font-bold text-slate-900 truncate">{profile.institutionName}</p>
+            <p className="text-[10px] text-slate-500 truncate">{profile.location}</p>
           </div>
         </div>
       )}
@@ -130,12 +130,12 @@ export const CollegeSidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOp
               onClick={() => setMobileOpen && setMobileOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-xs transition-all ${
                 isActive
-                  ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/10 text-emerald-300 border border-emerald-500/30 font-semibold shadow-sm'
-                  : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/50'
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               } ${collapsed ? 'justify-center px-0' : ''}`}
               title={collapsed ? item.label : undefined}
             >
-              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-emerald-400' : 'text-slate-400'}`} />
+              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-emerald-600' : 'text-slate-400'}`} />
               {!collapsed && <span className="truncate">{item.label}</span>}
             </Link>
           );
@@ -143,10 +143,10 @@ export const CollegeSidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOp
       </div>
 
       {/* Footer / Logout */}
-      <div className="p-3 border-t border-slate-800/80 bg-slate-900/60">
+      <div className="p-3 border-t border-slate-200 bg-slate-50/80">
         <button
           onClick={handleLogout}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all ${
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all ${
             collapsed ? 'justify-center px-0' : ''
           }`}
           title={collapsed ? 'Logout' : undefined}
@@ -176,7 +176,7 @@ export const CollegeSidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOp
           onClick={() => setMobileOpen && setMobileOpen(false)}
         >
           <div
-            className="w-72 h-full bg-slate-900 shadow-2xl"
+            className="w-72 h-full bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {sidebarContent}

@@ -41,14 +41,14 @@ export default function IndustryJobsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Manage Job Postings
             </h1>
-            <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono">
+            <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-700 border border-emerald-500/40 font-mono">
               {jobs.filter((j) => j.status === 'Active').length} Active
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-600 mt-1">
             Create, monitor, and configure skill requirements for full-time engineering and analyst roles.
           </p>
         </div>
@@ -63,7 +63,7 @@ export default function IndustryJobsPage() {
       </div>
 
       {/* Tabs & Search */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900 border border-slate-800 p-2.5 rounded-2xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-slate-200 p-2.5 rounded-2xl shadow-card">
         <div className="flex items-center gap-1">
           {(['All', 'Active', 'Draft', 'Closed'] as const).map((tab) => {
             const count = tab === 'All' ? jobs.length : jobs.filter((j) => j.status === tab).length;
@@ -74,8 +74,8 @@ export default function IndustryJobsPage() {
                 onClick={() => setActiveTab(tab)}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
                   isSelected
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <span>{tab}</span>
@@ -86,21 +86,21 @@ export default function IndustryJobsPage() {
         </div>
 
         <div className="relative w-full sm:w-64">
-          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search jobs or skills..."
-            className="w-full pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
+            className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-brand-teal"
           />
         </div>
       </div>
 
       {/* Job Cards Grid */}
       {filteredJobs.length === 0 ? (
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-12 text-center text-slate-400 space-y-2">
-          <p className="font-semibold text-white text-sm">No job postings found</p>
+        <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center text-slate-500 space-y-2 shadow-card">
+          <p className="font-semibold text-slate-900 text-sm">No job postings found</p>
           <p className="text-xs">Create a new job posting with verified skill requirements.</p>
         </div>
       ) : (

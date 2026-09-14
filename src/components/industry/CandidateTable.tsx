@@ -28,19 +28,19 @@ export const CandidateTable: React.FC<CandidateTableProps> = ({
 
   if (candidates.length === 0) {
     return (
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-400 space-y-2">
-        <p className="text-base font-semibold text-white">No matching candidates found.</p>
+      <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center text-slate-500 space-y-2 shadow-card">
+        <p className="text-base font-semibold text-slate-900">No matching candidates found.</p>
         <p className="text-xs">Try adjusting your skill filters or increasing the search radius.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+    <div className="bg-white border border-slate-200 rounded-2xl shadow-card overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs border-collapse">
           <thead>
-            <tr className="bg-slate-950/80 border-b border-slate-800 text-slate-400 uppercase tracking-wider font-semibold text-[10px]">
+            <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 uppercase tracking-wider font-semibold text-[10px]">
               <th className="p-4">Candidate</th>
               <th className="p-4">Institution &amp; Year</th>
               <th className="p-4">Match %</th>
@@ -49,7 +49,7 @@ export const CandidateTable: React.FC<CandidateTableProps> = ({
               <th className="p-4 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800/80">
+          <tbody className="divide-y divide-slate-100">
             {candidates.map((cand) => {
               const match = cand.matchScore || 85;
               const isSaved = cand.savedToTalentPool;
@@ -57,7 +57,7 @@ export const CandidateTable: React.FC<CandidateTableProps> = ({
               return (
                 <tr
                   key={cand.id}
-                  className="hover:bg-slate-850/50 transition-colors group"
+                  className="hover:bg-slate-50 transition-colors group"
                 >
                   {/* Candidate info */}
                   <td className="p-4">
@@ -65,31 +65,31 @@ export const CandidateTable: React.FC<CandidateTableProps> = ({
                       <img
                         src={cand.avatar}
                         alt={cand.name}
-                        className="w-10 h-10 rounded-xl object-cover border border-slate-700 shadow-sm"
+                        className="w-10 h-10 rounded-xl object-cover border border-slate-200 shadow-sm"
                       />
                       <div>
                         <Link
                           href={`/industry/candidates/${cand.id}`}
-                          className="font-bold text-white text-xs hover:text-emerald-400 transition-colors block"
+                          className="font-bold text-slate-900 text-xs hover:text-brand-teal transition-colors block"
                         >
                           {cand.name}
                         </Link>
-                        <span className="text-[11px] text-emerald-400">{cand.role}</span>
-                        <span className="text-[10px] text-slate-500 block">{cand.location}</span>
+                        <span className="text-[11px] text-brand-teal font-semibold">{cand.role}</span>
+                        <span className="text-[10px] text-slate-400 block">{cand.location}</span>
                       </div>
                     </div>
                   </td>
 
                   {/* College */}
-                  <td className="p-4 text-slate-300">
-                    <p className="font-semibold text-white truncate max-w-[180px]">{cand.college}</p>
-                    <p className="text-[10px] text-slate-400">{cand.education.currentYear} &bull; CGPA {cand.education.cgpa}</p>
+                  <td className="p-4 text-slate-600">
+                    <p className="font-semibold text-slate-900 truncate max-w-[180px]">{cand.college}</p>
+                    <p className="text-[10px] text-slate-500">{cand.education.currentYear} &bull; CGPA {cand.education.cgpa}</p>
                   </td>
 
                   {/* Match Score */}
                   <td className="p-4">
-                    <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-950 border border-slate-800 font-mono font-extrabold text-xs text-emerald-400">
-                      <Sparkles className="w-3 h-3 text-emerald-400" />
+                    <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-50 border border-emerald-200 font-mono font-extrabold text-xs text-emerald-800">
+                      <Sparkles className="w-3 h-3 text-emerald-600" />
                       <span>{match}%</span>
                     </div>
                   </td>
@@ -98,7 +98,7 @@ export const CandidateTable: React.FC<CandidateTableProps> = ({
                   <td className="p-4">
                     <div className="flex flex-wrap gap-1 max-w-xs">
                       {cand.skills.slice(0, 3).map((s, idx) => (
-                        <SkillBadge key={idx} skill={s} size="sm" />
+                        <SkillBadge key={idx} skill={s} size="sm" showDetails={false} />
                       ))}
                       {cand.skills.length > 3 && (
                         <span className="text-[10px] text-slate-500 self-center">
@@ -110,40 +110,32 @@ export const CandidateTable: React.FC<CandidateTableProps> = ({
 
                   {/* Availability */}
                   <td className="p-4">
-                    <span className="inline-flex items-center gap-1 text-[11px] text-slate-300">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span className="inline-flex items-center gap-1.5 text-[11px] text-slate-600">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                       {cand.availability}
                     </span>
                   </td>
 
                   {/* Actions */}
                   <td className="p-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => toggleSaveCandidate(cand.id)}
-                        className={`p-1.5 rounded-lg border text-xs transition-colors ${
-                          isSaved
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                            : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
-                        }`}
-                        title={isSaved ? 'Saved in Talent Pool' : 'Save to Talent Pool'}
-                      >
-                        {isSaved ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
-                      </button>
-
+                    <div className="inline-flex items-center gap-1.5">
                       <button
                         onClick={() => {
-                          if (onOpenShortlistModal) onOpenShortlistModal(cand);
-                          else shortlistCandidateForJob(cand.id, jobs[0].id, jobs[0].title);
+                          if (onOpenShortlistModal) {
+                            onOpenShortlistModal(cand);
+                          } else {
+                            const targetJob = jobs[0];
+                            shortlistCandidateForJob(cand.id, targetJob.id, targetJob.title, 'Job');
+                          }
                         }}
-                        className="px-2.5 py-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 font-semibold rounded-lg text-[11px] transition-all"
+                        className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 font-bold rounded-lg text-[11px] transition-colors"
                       >
                         Shortlist
                       </button>
 
                       <Link
                         href={`/industry/candidates/${cand.id}`}
-                        className="p-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 hover:text-white transition-colors"
+                        className="p-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg text-slate-600 hover:text-slate-900 transition-colors"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                       </Link>

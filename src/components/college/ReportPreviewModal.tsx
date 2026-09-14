@@ -41,22 +41,22 @@ export const ReportPreviewModal: React.FC<ReportModalProps> = ({ isOpen, onClose
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in">
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
       <div
-        className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+        className="bg-white border border-slate-200 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] text-slate-900"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-5 bg-slate-800/80 border-b border-slate-800 flex items-center justify-between">
+        <div className="p-5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-teal-500/20 border border-teal-500/30 flex items-center justify-center text-teal-400">
+            <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-700">
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="font-bold text-white text-base">Generate Institutional Report</h2>
-              <p className="text-xs text-slate-400">{profile.institutionName} &bull; AY {profile.academicYear}</p>
+              <h2 className="font-bold text-slate-900 text-base">Generate Institutional Report</h2>
+              <p className="text-xs text-slate-500">{profile.institutionName} &bull; AY {profile.academicYear}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 text-slate-400 hover:text-white rounded-lg">
+          <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-700 rounded-lg">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -65,14 +65,14 @@ export const ReportPreviewModal: React.FC<ReportModalProps> = ({ isOpen, onClose
           {/* Selectors */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Select Report Category</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Select Report Category</label>
               <select
                 value={reportType}
                 onChange={(e) => {
                   setReportType(e.target.value);
                   setGenerated(false);
                 }}
-                className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:ring-2 focus:ring-brand-teal focus:outline-none"
               >
                 <option value="Student Skill Report">Student Skill Report</option>
                 <option value="Department Report">Department Performance Report</option>
@@ -84,7 +84,7 @@ export const ReportPreviewModal: React.FC<ReportModalProps> = ({ isOpen, onClose
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Export Format</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Export Format</label>
               <div className="grid grid-cols-3 gap-2">
                 {[
                   { id: 'pdf', label: 'PDF Document' },
@@ -97,8 +97,8 @@ export const ReportPreviewModal: React.FC<ReportModalProps> = ({ isOpen, onClose
                     onClick={() => setFormat(f.id as any)}
                     className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all ${
                       format === f.id
-                        ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
-                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
+                        ? 'bg-emerald-50 border-emerald-400 text-emerald-800'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     {f.label}
@@ -109,25 +109,25 @@ export const ReportPreviewModal: React.FC<ReportModalProps> = ({ isOpen, onClose
           </div>
 
           {/* Report Preview Document Card */}
-          <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4 font-mono text-xs">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3 text-slate-300 font-sans">
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4 font-mono text-xs">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3 text-slate-600 font-sans">
               <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-emerald-400" />
-                <span className="font-bold text-white text-sm">{reportType}</span>
+                <FileText className="w-4 h-4 text-emerald-600" />
+                <span className="font-bold text-slate-900 text-sm">{reportType}</span>
               </div>
-              <span className="text-[11px] bg-slate-800 px-2 py-0.5 rounded text-slate-400">
+              <span className="text-[11px] bg-slate-200 px-2 py-0.5 rounded text-slate-700 font-medium">
                 Official Document Preview
               </span>
             </div>
 
-            <div className="space-y-1.5 text-slate-300 text-[11px] leading-relaxed">
+            <div className="space-y-1.5 text-slate-700 text-[11px] leading-relaxed">
               <p>INSTITUTION: {profile.institutionName.toUpperCase()}</p>
               <p>LOCATION: {profile.location} | NAAC: {profile.naacGrade}</p>
               <p>ACADEMIC YEAR: {profile.academicYear} | DATE: {new Date().toLocaleDateString()}</p>
-              <p className="text-emerald-400 pt-1">
+              <p className="text-emerald-700 pt-1">
                 ------------------------------------------------------------
               </p>
-              <p>KEY EXECUTIVE SUMMARY FINDINGS:</p>
+              <p className="font-bold text-slate-900">KEY EXECUTIVE SUMMARY FINDINGS:</p>
               {reportType === 'Skill Gap Report' && (
                 <>
                   <p>1. Cloud Computing (AWS/Azure) exhibits highest deficit (-818 students vs demand).</p>
@@ -153,14 +153,14 @@ export const ReportPreviewModal: React.FC<ReportModalProps> = ({ isOpen, onClose
           </div>
         </div>
 
-        <div className="p-4 bg-slate-900 border-t border-slate-800 flex items-center justify-between">
-          <span className="text-xs text-slate-400 hidden sm:inline">
+        <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+          <span className="text-xs text-slate-500 hidden sm:inline">
             Verified digitally by Placement &amp; Training Cell
           </span>
           <div className="flex items-center gap-3 ml-auto">
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold"
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold"
             >
               Close
             </button>
@@ -168,7 +168,7 @@ export const ReportPreviewModal: React.FC<ReportModalProps> = ({ isOpen, onClose
               <button
                 onClick={handleGenerate}
                 disabled={isGenerating}
-                className="px-5 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-emerald-900/30"
+                className="px-5 py-2 bg-gradient-to-r from-brand-emerald to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-md"
               >
                 {isGenerating ? (
                   <span>Generating Report...</span>
@@ -182,7 +182,7 @@ export const ReportPreviewModal: React.FC<ReportModalProps> = ({ isOpen, onClose
             ) : (
               <button
                 onClick={handleDownload}
-                className="px-5 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-blue-900/30"
+                className="px-5 py-2 bg-gradient-to-r from-brand-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-md"
               >
                 <Download className="w-4 h-4" />
                 <span>Download Report ({format.toUpperCase()})</span>

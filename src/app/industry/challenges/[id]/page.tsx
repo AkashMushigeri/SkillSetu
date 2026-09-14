@@ -69,7 +69,7 @@ export default function ChallengeDetailPage() {
       <div>
         <Link
           href="/industry/challenges"
-          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors mb-3"
+          className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors mb-3 font-semibold"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to All Challenges</span>
@@ -78,17 +78,17 @@ export default function ChallengeDetailPage() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                 {challenge.title}
               </h1>
-              <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+              <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-50 text-amber-800 border border-amber-200">
                 {challenge.difficulty} Difficulty
               </span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+              <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
                 {challenge.status}
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-1 max-w-3xl leading-relaxed">
+            <p className="text-xs text-slate-600 mt-1 max-w-3xl leading-relaxed">
               {challenge.description}
             </p>
           </div>
@@ -96,7 +96,7 @@ export default function ChallengeDetailPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/industry/challenges/new"
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold text-xs rounded-xl transition-all"
+              className="px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-semibold text-xs rounded-xl shadow-xs transition-all"
             >
               Post Another Challenge
             </Link>
@@ -105,47 +105,47 @@ export default function ChallengeDetailPage() {
       </div>
 
       {/* Challenge Specifications Card */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-card space-y-4 text-slate-900">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80">
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Prize Pool &amp; Reward</span>
-            <span className="text-xs font-semibold text-emerald-300 mt-1 block">{challenge.prize}</span>
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Prize Pool &amp; Reward</span>
+            <span className="text-xs font-semibold text-emerald-700 mt-1 block">{challenge.prize}</span>
           </div>
 
-          <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80">
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Submission Deadline</span>
-            <span className="text-xs font-semibold text-white mt-1 flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-brand-teal" />
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Submission Deadline</span>
+            <span className="text-xs font-semibold text-slate-900 mt-1 flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-emerald-600" />
               {challenge.deadline}
             </span>
           </div>
 
-          <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80">
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Submissions</span>
-            <span className="text-base font-extrabold text-white mt-1 block font-mono">
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Total Submissions</span>
+            <span className="text-base font-extrabold text-slate-900 mt-1 block font-mono">
               {challengeSubmissions.length} Teams Evaluated
             </span>
           </div>
 
-          <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80">
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Fast-Tracked to Interview</span>
-            <span className="text-base font-extrabold text-amber-400 mt-1 block font-mono">
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Fast-Tracked to Interview</span>
+            <span className="text-base font-extrabold text-amber-700 mt-1 block font-mono">
               {challengeSubmissions.filter((s) => s.status === 'Interview Fast-Tracked').length} Candidates
             </span>
           </div>
         </div>
 
-        <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80 space-y-2">
-          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Problem Statement:</span>
-          <p className="text-xs text-slate-300 leading-relaxed">{challenge.problemStatement}</p>
+        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Problem Statement:</span>
+          <p className="text-xs text-slate-700 leading-relaxed">{challenge.problemStatement}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 pt-1">
-          <span className="text-[11px] font-bold text-slate-400">Target Competencies:</span>
+          <span className="text-[11px] font-bold text-slate-500">Target Competencies:</span>
           {challenge.requiredSkills.map((sk, idx) => (
             <span
               key={idx}
-              className="text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-brand-teal font-medium border border-slate-700/80"
+              className="text-xs px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 font-medium border border-slate-200"
             >
               {sk}
             </span>
@@ -157,11 +157,11 @@ export default function ChallengeDetailPage() {
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-amber-400" />
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-amber-600" />
               <span>Evaluated Student Submissions &amp; Code Benchmark</span>
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               Automated test suite reports, semantic code quality metrics, and 1-click recruitment pipeline fast-tracking.
             </p>
           </div>
@@ -174,7 +174,7 @@ export default function ChallengeDetailPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search team or college..."
-                className="pl-8 pr-3 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-teal w-48 sm:w-60"
+                className="pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 w-48 sm:w-60 shadow-xs"
               />
             </div>
           </div>
@@ -193,8 +193,8 @@ export default function ChallengeDetailPage() {
               onClick={() => setStatusFilter(tab.id)}
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
                 statusFilter === tab.id
-                  ? 'bg-brand-teal text-slate-950 shadow-md shadow-brand-teal/20'
-                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold shadow-xs'
+                  : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
               }`}
             >
               {tab.label}
@@ -207,7 +207,7 @@ export default function ChallengeDetailPage() {
           {filteredSubmissions.map((sub) => (
             <div
               key={sub.id}
-              className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl hover:border-slate-700 transition-all space-y-4"
+              className="bg-white border border-slate-200 rounded-2xl p-5 shadow-card hover:shadow-cardHover transition-all space-y-4 text-slate-900"
             >
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 {/* Team Lead & College */}
@@ -215,62 +215,62 @@ export default function ChallengeDetailPage() {
                   <img
                     src={sub.teamLeadAvatar}
                     alt={sub.teamLead}
-                    className="w-12 h-12 rounded-2xl object-cover border border-slate-700 ring-2 ring-brand-teal/20"
+                    className="w-12 h-12 rounded-2xl object-cover border border-slate-200"
                   />
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-bold text-white text-base">{sub.teamName}</h3>
-                      <span className="text-xs text-slate-400">· Lead: {sub.teamLead}</span>
+                      <h3 className="font-bold text-slate-900 text-base">{sub.teamName}</h3>
+                      <span className="text-xs text-slate-500">· Lead: {sub.teamLead}</span>
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                           sub.status === 'Interview Fast-Tracked'
-                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                            ? 'bg-purple-50 text-purple-800 border-purple-200'
                             : sub.status === 'Winner'
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                            ? 'bg-amber-50 text-amber-800 border-amber-200'
                             : sub.status === 'Shortlisted'
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                            : 'bg-slate-800 text-slate-300 border-slate-700'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            : 'bg-slate-100 text-slate-700 border-slate-200'
                         }`}
                       >
                         {sub.status}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400 mt-0.5">{sub.college}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{sub.college}</p>
                     <span className="text-[11px] text-slate-400 mt-1 block">Submitted on {sub.submissionDate}</span>
                   </div>
                 </div>
 
                 {/* Benchmark Metrics */}
                 <div className="flex items-center gap-3">
-                  <div className="bg-slate-950 px-3.5 py-2 rounded-xl border border-slate-800 text-center">
-                    <span className="text-[10px] text-slate-400 block uppercase font-bold">Benchmark Score</span>
-                    <span className="text-lg font-black text-emerald-400 font-mono">{sub.score} / 100</span>
+                  <div className="bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200 text-center">
+                    <span className="text-[10px] text-slate-500 block uppercase font-bold">Benchmark Score</span>
+                    <span className="text-lg font-black text-emerald-700 font-mono">{sub.score} / 100</span>
                   </div>
 
-                  <div className="bg-slate-950 px-3.5 py-2 rounded-xl border border-slate-800 text-center">
-                    <span className="text-[10px] text-slate-400 block uppercase font-bold">Unit Test Pass Rate</span>
-                    <span className="text-xs font-bold text-white font-mono mt-1 block">{sub.testPassRate}</span>
+                  <div className="bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200 text-center">
+                    <span className="text-[10px] text-slate-500 block uppercase font-bold">Unit Test Pass Rate</span>
+                    <span className="text-xs font-bold text-slate-900 font-mono mt-1 block">{sub.testPassRate}</span>
                   </div>
                 </div>
               </div>
 
               {/* AI Evaluation Summary */}
-              <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800/80 flex items-start gap-2.5">
-                <Sparkles className="w-4 h-4 text-brand-teal flex-shrink-0 mt-0.5" />
-                <div className="text-xs text-slate-300 leading-relaxed">
-                  <span className="font-bold text-brand-teal">Automated Technical Audit: </span>
+              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 flex items-start gap-2.5">
+                <Sparkles className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                <div className="text-xs text-slate-700 leading-relaxed">
+                  <span className="font-bold text-emerald-800">Automated Technical Audit: </span>
                   {sub.aiSummary}
                 </div>
               </div>
 
               {/* Competencies Demonstrated & External Links */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-800/80">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 mr-1">Skills Verified:</span>
+                  <span className="text-[10px] uppercase font-bold text-slate-500 mr-1">Skills Verified:</span>
                   {sub.skillsDemonstrated.map((sk: string, i: number) => (
                     <span
                       key={i}
-                      className="text-[11px] px-2 py-0.5 rounded-md bg-slate-800 text-slate-200 border border-slate-700"
+                      className="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 font-medium"
                     >
                       {sk}
                     </span>
@@ -282,7 +282,7 @@ export default function ChallengeDetailPage() {
                     href={sub.githubUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs flex items-center gap-1.5 transition-colors"
+                    className="p-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs flex items-center gap-1.5 transition-colors shadow-xs"
                   >
                     <GithubIcon className="w-3.5 h-3.5" />
                     <span>Repo</span>
@@ -293,9 +293,9 @@ export default function ChallengeDetailPage() {
                       href={sub.liveDemoUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs flex items-center gap-1.5 transition-colors"
+                      className="p-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs flex items-center gap-1.5 transition-colors shadow-xs"
                     >
-                      <ExternalLink className="w-3.5 h-3.5 text-brand-teal" />
+                      <ExternalLink className="w-3.5 h-3.5 text-emerald-600" />
                       <span>Live Demo</span>
                     </a>
                   )}
@@ -303,14 +303,14 @@ export default function ChallengeDetailPage() {
                   {sub.status !== 'Interview Fast-Tracked' ? (
                     <button
                       onClick={() => fastTrackSubmissionToInterview(sub.id)}
-                      className="px-3 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md transition-all"
+                      className="px-3 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md transition-all"
                     >
                       <Zap className="w-3.5 h-3.5 text-amber-300" />
                       <span>Fast-Track to Interview</span>
                     </button>
                   ) : (
-                    <span className="px-3 py-2 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/40 text-xs font-bold flex items-center gap-1.5">
-                      <Check className="w-3.5 h-3.5" />
+                    <span className="px-3 py-2 rounded-xl bg-purple-50 text-purple-800 border border-purple-200 text-xs font-bold flex items-center gap-1.5">
+                      <Check className="w-3.5 h-3.5 text-purple-700" />
                       <span>Interview Booked</span>
                     </span>
                   )}

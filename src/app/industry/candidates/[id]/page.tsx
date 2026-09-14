@@ -73,60 +73,60 @@ export default function CandidateProfilePage() {
             onClick={() => toggleSaveCandidate(candidate.id)}
             className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors ${
               isSaved
-                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 shadow-xs'
             }`}
           >
-            {isSaved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+            {isSaved ? <BookmarkCheck className="w-4 h-4 text-emerald-600" /> : <Bookmark className="w-4 h-4" />}
             <span>{isSaved ? 'Saved in Talent Pool' : 'Save Candidate'}</span>
           </button>
         </div>
       </div>
 
       {/* Candidate Profile Header Card */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-card space-y-6 text-slate-900">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-5">
             <div className="relative">
               <img
                 src={candidate.avatar}
                 alt={candidate.name}
-                className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl object-cover border-2 border-emerald-500/40 shadow-xl"
+                className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl object-cover border-2 border-emerald-500/30 shadow-md"
               />
-              <span className="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-slate-950 flex items-center justify-center text-[10px] text-white font-bold">
+              <span className="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-[10px] text-white font-bold">
                 ✓
               </span>
             </div>
 
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                   {candidate.name}
                 </h1>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono">
                   {matchBreakdown.overall}% Match with TechNova Roles
                 </span>
               </div>
 
-              <p className="text-sm font-semibold text-emerald-400">{candidate.role}</p>
+              <p className="text-sm font-semibold text-emerald-700">{candidate.role}</p>
 
-              <p className="text-xs text-slate-300 flex items-center gap-1.5">
+              <p className="text-xs text-slate-600 flex items-center gap-1.5 font-medium">
                 <GraduationCap className="w-4 h-4 text-slate-400" />
                 <span>{candidate.education.degree}</span> &bull; <span>{candidate.college}</span>
               </p>
 
-              <div className="flex flex-wrap items-center gap-3 pt-1 text-xs text-slate-400">
+              <div className="flex flex-wrap items-center gap-3 pt-1 text-xs text-slate-500">
                 <span className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                  <MapPin className="w-3.5 h-3.5 text-emerald-600" />
                   {candidate.location}
                 </span>
                 <span>&bull;</span>
                 <span className="flex items-center gap-1">
-                  <Mail className="w-3.5 h-3.5 text-slate-500" />
+                  <Mail className="w-3.5 h-3.5 text-slate-400" />
                   {candidate.email}
                 </span>
                 <span>&bull;</span>
-                <span className="text-emerald-300 font-semibold">{candidate.availability}</span>
+                <span className="text-emerald-700 font-semibold">{candidate.availability}</span>
               </div>
             </div>
           </div>
@@ -135,7 +135,7 @@ export default function CandidateProfilePage() {
           <div className="flex flex-wrap md:flex-col gap-2.5 shrink-0">
             <button
               onClick={handleShortlist}
-              className="flex-1 md:flex-none px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-950/50 flex items-center justify-center gap-2 transition-all"
+              className="flex-1 md:flex-none px-5 py-2.5 bg-gradient-to-r from-brand-emerald to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-2 transition-all"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Shortlist Candidate</span>
@@ -205,19 +205,19 @@ export default function CandidateProfilePage() {
         {/* Left Column (8 cols): Verified Skills, Projects, Experience, Education */}
         <div className="lg:col-span-7 space-y-6">
           {/* Verified Skills */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-card space-y-4 text-slate-900">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-emerald-600" />
                   Verified Skills &amp; Assessments
                 </h3>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-500">
                   Scores audited and verified by National Skill Registry &amp; Institutional Labs.
                 </p>
               </div>
 
-              <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/30">
+              <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
                 {candidate.skills.filter((s) => s.verified).length} Badges Verified
               </span>
             </div>
@@ -228,35 +228,35 @@ export default function CandidateProfilePage() {
                   key={idx}
                   className={`p-3.5 rounded-2xl border flex items-center justify-between ${
                     skill.verified
-                      ? 'bg-slate-950/80 border-emerald-500/30'
-                      : 'bg-slate-950/50 border-slate-800 text-slate-400'
+                      ? 'bg-slate-50 border-emerald-200'
+                      : 'bg-slate-50/50 border-slate-200 text-slate-500'
                   }`}
                 >
                   <div className="space-y-0.5">
-                    <p className="font-bold text-white text-xs flex items-center gap-1.5">
+                    <p className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
                       {skill.name}
-                      {skill.verified && <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />}
+                      {skill.verified && <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />}
                     </p>
-                    <p className="text-[11px] text-slate-400">
-                      Level: <span className="text-slate-200 font-semibold">{skill.level}</span>
+                    <p className="text-[11px] text-slate-500">
+                      Level: <span className="text-slate-800 font-semibold">{skill.level}</span>
                     </p>
                     {skill.verifiedBy && (
-                      <p className="text-[10px] text-slate-500">{skill.verifiedBy}</p>
+                      <p className="text-[10px] text-slate-400">{skill.verifiedBy}</p>
                     )}
                   </div>
 
                   <div className="text-right">
                     {skill.verified ? (
                       <div>
-                        <span className="text-lg font-black text-emerald-400 font-mono">
+                        <span className="text-lg font-black text-brand-dark font-mono">
                           {skill.score}%
                         </span>
-                        <span className="text-[9px] block uppercase font-bold text-emerald-400">
+                        <span className="text-[9px] block uppercase font-bold text-emerald-700">
                           Verified
                         </span>
                       </div>
                     ) : (
-                      <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-1 rounded">
+                      <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-1 rounded">
                         Self-Reported
                       </span>
                     )}
@@ -267,29 +267,29 @@ export default function CandidateProfilePage() {
           </div>
 
           {/* Projects */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <FolderGit2 className="w-5 h-5 text-teal-400" />
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-card space-y-4 text-slate-900">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <FolderGit2 className="w-5 h-5 text-teal-600" />
                 Featured Engineering Projects
               </h3>
-              <span className="text-xs text-slate-400">{candidate.projects.length} Projects</span>
+              <span className="text-xs text-slate-500">{candidate.projects.length} Projects</span>
             </div>
 
             <div className="space-y-4">
               {candidate.projects.map((project, idx) => (
                 <div
                   key={idx}
-                  className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80 space-y-2 hover:border-slate-700 transition-colors"
+                  className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2 hover:border-slate-300 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <h4 className="font-bold text-white text-sm">{project.title}</h4>
+                    <h4 className="font-bold text-slate-900 text-sm">{project.title}</h4>
                     {project.liveUrl && (
                       <a
                         href={project.liveUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-xs text-emerald-400 hover:underline flex items-center gap-1 font-semibold"
+                        className="text-xs text-emerald-700 hover:underline flex items-center gap-1 font-semibold"
                       >
                         <span>Live Demo</span>
                         <ExternalLink className="w-3 h-3" />
@@ -297,13 +297,13 @@ export default function CandidateProfilePage() {
                     )}
                   </div>
 
-                  <p className="text-xs text-slate-300 leading-relaxed">{project.description}</p>
+                  <p className="text-xs text-slate-600 leading-relaxed">{project.description}</p>
 
                   <div className="flex flex-wrap items-center gap-1.5 pt-1">
                     {project.technologies.map((tech, tIdx) => (
                       <span
                         key={tIdx}
-                        className="text-[10px] px-2 py-0.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700"
+                        className="text-[10px] px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 font-medium"
                       >
                         {tech}
                       </span>
@@ -316,23 +316,23 @@ export default function CandidateProfilePage() {
 
           {/* Experience / Sprints */}
           {candidate.experience.length > 0 && (
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
-              <h3 className="text-base font-bold text-white flex items-center gap-2 pb-3 border-b border-slate-800">
-                <Briefcase className="w-5 h-5 text-blue-400" />
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-card space-y-4 text-slate-900">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 pb-3 border-b border-slate-100">
+                <Briefcase className="w-5 h-5 text-blue-600" />
                 Internship &amp; Research Experience
               </h3>
 
               <div className="space-y-4">
                 {candidate.experience.map((exp, idx) => (
-                  <div key={idx} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1">
+                  <div key={idx} className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-1">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h4 className="font-bold text-white text-sm">{exp.title}</h4>
-                        <p className="text-xs text-emerald-400 font-semibold">{exp.company}</p>
+                        <h4 className="font-bold text-slate-900 text-sm">{exp.title}</h4>
+                        <p className="text-xs text-brand-teal font-semibold">{exp.company}</p>
                       </div>
-                      <span className="text-[11px] text-slate-400 font-mono">{exp.duration}</span>
+                      <span className="text-[11px] text-slate-500 font-mono">{exp.duration}</span>
                     </div>
-                    <p className="text-xs text-slate-300 pt-1 leading-relaxed">{exp.description}</p>
+                    <p className="text-xs text-slate-600 pt-1 leading-relaxed">{exp.description}</p>
                   </div>
                 ))}
               </div>
@@ -340,22 +340,22 @@ export default function CandidateProfilePage() {
           )}
 
           {/* Certifications & Achievements */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
-            <h3 className="text-base font-bold text-white flex items-center gap-2 pb-3 border-b border-slate-800">
-              <Award className="w-5 h-5 text-amber-400" />
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-card space-y-4 text-slate-900">
+            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 pb-3 border-b border-slate-100">
+              <Award className="w-5 h-5 text-amber-600" />
               Certifications &amp; Hackathon Accolades
             </h3>
 
             <div className="space-y-2">
               {candidate.certifications.map((cert, idx) => (
-                <div key={idx} className="flex items-center gap-2 text-xs text-slate-300">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                <div key={idx} className="flex items-center gap-2 text-xs text-slate-700">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                   <span>{cert}</span>
                 </div>
               ))}
               {candidate.achievements.map((ach, idx) => (
-                <div key={idx} className="flex items-center gap-2 text-xs text-emerald-300">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <div key={idx} className="flex items-center gap-2 text-xs text-emerald-800">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
                   <span>{ach}</span>
                 </div>
               ))}
@@ -369,29 +369,29 @@ export default function CandidateProfilePage() {
           <SkillMatchBreakdown match={matchBreakdown} candidateName={candidate.name} />
 
           {/* Education Details Card */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-3">
-            <h3 className="text-base font-bold text-white flex items-center gap-2 pb-3 border-b border-slate-800">
-              <GraduationCap className="w-5 h-5 text-purple-400" />
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-card space-y-3 text-slate-900">
+            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 pb-3 border-b border-slate-100">
+              <GraduationCap className="w-5 h-5 text-purple-600" />
               Institutional Background
             </h3>
 
-            <div className="space-y-2 text-xs text-slate-300">
+            <div className="space-y-2 text-xs text-slate-700">
               <div>
-                <span className="text-slate-400 block text-[11px]">College / University:</span>
-                <span className="font-bold text-white text-sm">{candidate.college}</span>
+                <span className="text-slate-500 block text-[11px]">College / University:</span>
+                <span className="font-bold text-slate-900 text-sm">{candidate.college}</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[11px]">Degree &amp; Branch:</span>
+                <span className="text-slate-500 block text-[11px]">Degree &amp; Branch:</span>
                 <span>{candidate.education.degree}</span>
               </div>
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
                 <div>
-                  <span className="text-slate-400 block text-[11px]">Graduation:</span>
-                  <span className="font-mono font-bold text-white">{candidate.education.graduationYear}</span>
+                  <span className="text-slate-500 block text-[11px]">Graduation:</span>
+                  <span className="font-mono font-bold text-slate-900">{candidate.education.graduationYear}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[11px]">Current Standing:</span>
-                  <span className="font-semibold text-emerald-400">{candidate.education.currentYear}</span>
+                  <span className="text-slate-500 block text-[11px]">Current Standing:</span>
+                  <span className="font-semibold text-emerald-700">{candidate.education.currentYear}</span>
                 </div>
               </div>
             </div>
@@ -401,31 +401,31 @@ export default function CandidateProfilePage() {
 
       {/* Resume Viewer Modal */}
       {resumeModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-slate-900">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-emerald-400" />
-                <h3 className="font-bold text-white text-sm">{candidate.name} — Verified Resume</h3>
+                <FileText className="w-4 h-4 text-emerald-600" />
+                <h3 className="font-bold text-slate-900 text-sm">{candidate.name} — Verified Resume</h3>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => showToast('Downloading verified resume PDF...', 'success')}
-                  className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs flex items-center gap-1.5 transition-colors"
+                  className="px-3 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs flex items-center gap-1.5 transition-colors font-semibold shadow-xs"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Download PDF</span>
                 </button>
                 <button
                   onClick={() => setResumeModalOpen(false)}
-                  className="p-1 text-slate-400 hover:text-white rounded-lg"
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded-lg"
                 >
                   ✕
                 </button>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 text-xs text-slate-300 font-mono bg-slate-950 leading-relaxed whitespace-pre-wrap">
+            <div className="flex-1 overflow-y-auto p-6 text-xs text-slate-800 font-mono bg-slate-50 leading-relaxed whitespace-pre-wrap">
               {candidate.resumeText}
             </div>
           </div>

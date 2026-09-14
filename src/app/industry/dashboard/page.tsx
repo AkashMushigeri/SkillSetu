@@ -61,21 +61,21 @@ export default function IndustryDashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Good morning, {company.recruiter.name.split(' ')[0]}
             </h1>
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-600 mt-1">
             Here's your hiring and verified talent intelligence overview for{' '}
-            <span className="text-emerald-400 font-semibold">{company.name}</span> &bull; {company.recruiter.title}
+            <span className="text-emerald-600 font-semibold">{company.name}</span> &bull; {company.recruiter.title}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
           <Link
             href="/industry/jobs/new"
-            className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-950/50 flex items-center gap-1.5 transition-all"
+            className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all"
           >
             <Plus className="w-4 h-4" />
             <span>Post Job</span>
@@ -83,15 +83,15 @@ export default function IndustryDashboardPage() {
 
           <Link
             href="/industry/internships/new"
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold text-xs rounded-xl flex items-center gap-1.5 transition-colors"
+            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-semibold text-xs rounded-xl flex items-center gap-1.5 transition-colors"
           >
-            <GraduationCap className="w-4 h-4 text-emerald-400" />
+            <GraduationCap className="w-4 h-4 text-brand-teal" />
             <span>Post Internship</span>
           </Link>
 
           <Link
             href="/industry/candidates"
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-emerald-300 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors"
+            className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors"
           >
             <Search className="w-4 h-4" />
             <span>Find Talent</span>
@@ -100,10 +100,10 @@ export default function IndustryDashboardPage() {
       </div>
 
       {/* Prominent Core Banner: Hire by Skills, Not Just Resumes */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-brand-dark to-slate-900 border border-emerald-500/30 p-6 sm:p-7 shadow-2xl">
-        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-dark via-brand-teal to-teal-900 text-white p-6 sm:p-7 shadow-xl">
+        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 rounded-full bg-emerald-400/10 blur-3xl pointer-events-none" />
         <div className="relative z-10 max-w-3xl space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-500/40">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-emerald-300 text-[11px] font-bold border border-white/20">
             <Sparkles className="w-3.5 h-3.5" />
             SKILLSETU Core Value Proposition
           </div>
@@ -112,18 +112,18 @@ export default function IndustryDashboardPage() {
             Hire by Skills, Not Just Resumes.
           </h2>
 
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
             Discover verified undergraduate talent based on real coding assessments, verified institutional registries, portfolio projects, and custom skill importance weighting.
           </p>
 
           <div className="pt-2 flex flex-wrap items-center gap-4 text-xs font-semibold">
-            <span className="text-emerald-400 flex items-center gap-1">
+            <span className="text-emerald-300 flex items-center gap-1">
               ✓ Verified Registry Badges Full Weight
             </span>
-            <span className="text-teal-300 flex items-center gap-1">
+            <span className="text-teal-200 flex items-center gap-1">
               ✓ Transparent 100-Point Matching Engine
             </span>
-            <span className="text-sky-300 flex items-center gap-1">
+            <span className="text-sky-200 flex items-center gap-1">
               ✓ 14 Local Partner Colleges Connected
             </span>
           </div>
@@ -184,21 +184,21 @@ export default function IndustryDashboardPage() {
       </div>
 
       {/* 3. Skill-Matched Talent Section */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-800">
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-card space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
           <div>
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-emerald-400" />
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-brand-teal" />
               Skill-Matched Talent
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               184 candidates strongly match your active technical roles at TechNova Labs.
             </p>
           </div>
 
           <Link
             href="/industry/candidates"
-            className="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 self-start sm:self-auto"
+            className="text-xs font-bold text-brand-teal hover:underline flex items-center gap-1 self-start sm:self-auto"
           >
             <span>Explore All 184 Matches</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -207,47 +207,47 @@ export default function IndustryDashboardPage() {
 
         {/* Donut / Match Quality Breakdown */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-slate-950 p-4 rounded-2xl border border-emerald-500/30 space-y-2">
+          <div className="bg-slate-50 p-4 rounded-2xl border border-emerald-200 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+              <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">
                 Strong Match (80%+)
               </span>
-              <span className="text-2xl font-black text-white font-mono">84</span>
+              <span className="text-2xl font-black text-slate-900 font-mono">84</span>
             </div>
-            <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-              <div className="bg-emerald-400 h-full rounded-full" style={{ width: '84%' }} />
+            <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+              <div className="bg-emerald-500 h-full rounded-full" style={{ width: '84%' }} />
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-slate-500">
               Possess 80%+ required skills with verified credentials &amp; production projects.
             </p>
           </div>
 
-          <div className="bg-slate-950 p-4 rounded-2xl border border-amber-500/30 space-y-2">
+          <div className="bg-slate-50 p-4 rounded-2xl border border-amber-200 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
+              <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">
                 Good Match (60–79%)
               </span>
-              <span className="text-2xl font-black text-white font-mono">68</span>
+              <span className="text-2xl font-black text-slate-900 font-mono">68</span>
             </div>
-            <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-              <div className="bg-amber-400 h-full rounded-full" style={{ width: '68%' }} />
+            <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+              <div className="bg-amber-500 h-full rounded-full" style={{ width: '68%' }} />
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-slate-500">
               Possess primary languages and basic frameworks with rapid ramp-up potential.
             </p>
           </div>
 
-          <div className="bg-slate-950 p-4 rounded-2xl border border-blue-500/30 space-y-2">
+          <div className="bg-slate-50 p-4 rounded-2xl border border-blue-200 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">
+              <span className="text-xs font-bold text-blue-800 uppercase tracking-wider">
                 Potential Match (40–59%)
               </span>
-              <span className="text-2xl font-black text-white font-mono">32</span>
+              <span className="text-2xl font-black text-slate-900 font-mono">32</span>
             </div>
-            <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-              <div className="bg-blue-400 h-full rounded-full" style={{ width: '32%' }} />
+            <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+              <div className="bg-blue-500 h-full rounded-full" style={{ width: '32%' }} />
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-slate-500">
               High academic CGPA candidates ideal for startup micro-internships &amp; upskilling.
             </p>
           </div>
@@ -258,18 +258,18 @@ export default function IndustryDashboardPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Briefcase className="w-5 h-5 text-emerald-400" />
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-brand-teal" />
               Active Hiring
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500">
               Live role postings with real-time application and skill matching volume.
             </p>
           </div>
 
           <Link
             href="/industry/jobs"
-            className="text-xs font-semibold text-slate-400 hover:text-white flex items-center gap-1"
+            className="text-xs font-semibold text-brand-teal hover:underline flex items-center gap-1"
           >
             <span>View All 12 Jobs</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -284,21 +284,21 @@ export default function IndustryDashboardPage() {
       </div>
 
       {/* 5. Recent Applications Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-card space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div>
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Users className="w-5 h-5 text-blue-400" />
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-600" />
               Recent Applications
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500">
               Candidates who recently applied across active jobs and internships.
             </p>
           </div>
 
           <Link
             href="/industry/applications"
-            className="text-xs font-semibold text-emerald-400 hover:underline flex items-center gap-1"
+            className="text-xs font-semibold text-brand-teal hover:underline flex items-center gap-1"
           >
             <span>Open Application Manager &rarr;</span>
           </Link>
@@ -307,7 +307,7 @@ export default function IndustryDashboardPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-slate-800 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+              <tr className="border-b border-slate-100 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
                 <th className="py-3 px-4">Candidate</th>
                 <th className="py-3 px-4">Role</th>
                 <th className="py-3 px-4">Skills Match</th>
@@ -317,34 +317,34 @@ export default function IndustryDashboardPage() {
                 <th className="py-3 px-4 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/80">
+            <tbody className="divide-y divide-slate-100">
               {recentApplications.map((app) => (
-                <tr key={app.id} className="hover:bg-slate-850/50 transition-colors">
+                <tr key={app.id} className="hover:bg-slate-50 transition-colors">
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2.5">
                       <img
                         src={app.candidateAvatar}
                         alt={app.candidateName}
-                        className="w-8 h-8 rounded-lg object-cover"
+                        className="w-8 h-8 rounded-lg object-cover border border-slate-200"
                       />
                       <div>
-                        <p className="font-bold text-white text-xs">{app.candidateName}</p>
-                        <p className="text-[10px] text-slate-400">{app.candidateCollege}</p>
+                        <p className="font-bold text-slate-900 text-xs">{app.candidateName}</p>
+                        <p className="text-[10px] text-slate-500">{app.candidateCollege}</p>
                       </div>
                     </div>
                   </td>
 
                   <td className="py-3 px-4">
-                    <span className="font-semibold text-slate-200">{app.jobTitle}</span>
+                    <span className="font-semibold text-slate-800">{app.jobTitle}</span>
                   </td>
 
                   <td className="py-3 px-4">
-                    <span className="font-mono font-bold text-emerald-400 text-xs px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30">
+                    <span className="font-mono font-bold text-emerald-800 text-xs px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200">
                       {app.matchScore}%
                     </span>
                   </td>
 
-                  <td className="py-3 px-4 text-slate-400 text-[11px]">
+                  <td className="py-3 px-4 text-slate-600 text-[11px]">
                     {app.matchedSkills.length > 0 ? `${app.matchedSkills.length} verified skills` : 'Projects: 3'}
                   </td>
 
@@ -352,24 +352,24 @@ export default function IndustryDashboardPage() {
                     <span
                       className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
                         app.stage === 'Shortlisted'
-                          ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                          ? 'bg-purple-50 text-purple-800 border border-purple-200'
                           : app.stage === 'Technical Interview' || app.stage === 'HR Interview'
-                          ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
+                          ? 'bg-blue-50 text-blue-800 border border-blue-200'
                           : app.stage === 'Selected' || app.stage === 'Hired'
-                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                          : 'bg-slate-800 text-slate-300'
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                          : 'bg-slate-100 text-slate-700 border border-slate-200'
                       }`}
                     >
                       {app.stage}
                     </span>
                   </td>
 
-                  <td className="py-3 px-4 text-slate-400 text-[11px]">{app.appliedDate}</td>
+                  <td className="py-3 px-4 text-slate-500 text-[11px]">{app.appliedDate}</td>
 
                   <td className="py-3 px-4 text-right">
                     <button
                       onClick={() => setSelectedApplication(app)}
-                      className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-lg text-[11px] transition-colors border border-slate-700"
+                      className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-[11px] transition-colors border border-slate-200"
                     >
                       Review
                     </button>
@@ -382,21 +382,21 @@ export default function IndustryDashboardPage() {
       </div>
 
       {/* 6. Talent Skill Gap Insights Section */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-card space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div>
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-amber-400" />
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-amber-600" />
               Talent Skill Gap &amp; Industry Demands
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500">
               Real-time analytics highlighting supply-demand misalignments across partner institutions.
             </p>
           </div>
 
           <Link
             href="/industry/analytics"
-            className="text-xs font-semibold text-slate-400 hover:text-white"
+            className="text-xs font-semibold text-brand-teal hover:underline"
           >
             View Full Analytics &rarr;
           </Link>
@@ -406,18 +406,18 @@ export default function IndustryDashboardPage() {
           {skillGapInsights.map((insight) => (
             <div
               key={insight.id}
-              className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-3"
+              className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col justify-between space-y-3"
             >
               <div className="space-y-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
-                  <AlertCircle className="w-3.5 h-3.5" /> {insight.title}
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-600" /> {insight.title}
                 </span>
-                <p className="text-xs text-slate-300 leading-relaxed">{insight.description}</p>
+                <p className="text-xs text-slate-600 leading-relaxed">{insight.description}</p>
               </div>
 
               <Link
                 href={`/industry/candidates?skill=${encodeURIComponent(insight.actionSkill)}`}
-                className="w-full py-2 px-3 bg-slate-900 hover:bg-slate-850 border border-slate-750 text-emerald-300 font-bold text-xs rounded-xl text-center transition-colors flex items-center justify-center gap-1.5"
+                className="w-full py-2 px-3 bg-white hover:bg-slate-100 border border-slate-200 text-brand-teal font-bold text-xs rounded-xl text-center transition-colors flex items-center justify-center gap-1.5 shadow-sm"
               >
                 <span>{insight.actionText}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -431,15 +431,15 @@ export default function IndustryDashboardPage() {
       <IndustryEcosystemMap />
 
       {/* 8. College Collaboration Feature Box */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-brand-dark/40 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="bg-gradient-to-r from-brand-dark via-brand-teal to-teal-900 border border-teal-800 rounded-3xl p-6 sm:p-7 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 text-white">
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-bold border border-purple-500/30">
-            <School className="w-3.5 h-3.5" /> Featured Academia Partnership
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-emerald-300 text-[10px] font-bold border border-white/20">
+            <School className="w-3.5 h-3.5 text-emerald-300" /> Featured Academia Partnership
           </div>
           <h3 className="text-xl font-bold text-white">
             AYUSH Institute of Technology &bull; Bengaluru
           </h3>
-          <p className="text-xs text-slate-300 max-w-xl leading-relaxed">
+          <p className="text-xs text-slate-200 max-w-xl leading-relaxed">
             1,742 verified students &bull; 684 students match your active Python, Machine Learning, and SQL job roles.
             Collaborate on industry challenges, offer micro-sprints, or recruit directly.
           </p>
@@ -448,13 +448,13 @@ export default function IndustryDashboardPage() {
         <div className="flex flex-wrap items-center gap-3 shrink-0">
           <Link
             href="/industry/candidates?college=AYUSH"
-            className="px-4 py-2.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs rounded-xl transition-all"
+            className="px-4 py-2.5 bg-gradient-to-r from-brand-emerald to-emerald-500 hover:from-emerald-600 hover:to-emerald-500 text-white font-bold text-xs rounded-xl transition-all shadow-md"
           >
             View Verified Students
           </Link>
           <Link
             href="/industry/colleges"
-            className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold text-xs rounded-xl transition-colors"
+            className="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-xs rounded-xl transition-colors backdrop-blur-md"
           >
             Manage Partnerships
           </Link>

@@ -45,15 +45,15 @@ export default function StudentManagementPage() {
   });
 
   return (
-    <div className="space-y-6 animate-in fade-in">
+    <div className="space-y-6 animate-in fade-in text-slate-900">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200 rounded-3xl p-6 shadow-card">
         <div>
           <div className="flex items-center gap-2">
-            <Users className="w-6 h-6 text-emerald-400" />
-            <h1 className="text-2xl font-extrabold text-white">Student Management</h1>
+            <Users className="w-6 h-6 text-emerald-600" />
+            <h1 className="text-2xl font-extrabold text-slate-900">Student Management</h1>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Monitor student profiles, verified skills, assessments, and career readiness across {profile.institutionName}.
           </p>
         </div>
@@ -61,7 +61,7 @@ export default function StudentManagementPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsImportModalOpen(true)}
-            className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-emerald-950/40 transition-all"
+            className="px-4 py-2.5 bg-gradient-to-r from-brand-emerald to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-md transition-all"
           >
             <Upload className="w-4 h-4" />
             <span>Import Students (CSV)</span>
@@ -70,26 +70,26 @@ export default function StudentManagementPage() {
       </div>
 
       {/* Search & Multi-Filters Toolbar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4">
-        <div className="flex items-center gap-3 bg-slate-800/80 px-3.5 py-2.5 rounded-2xl border border-slate-700">
-          <Search className="w-4 h-4 text-emerald-400 shrink-0" />
+      <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-card space-y-4">
+        <div className="flex items-center gap-3 bg-slate-50 px-3.5 py-2.5 rounded-2xl border border-slate-200">
+          <Search className="w-4 h-4 text-emerald-600 shrink-0" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search student by name, USN, or technical skills (e.g., Aarav, 1AY23CS001, Python)..."
-            className="w-full bg-transparent text-white text-xs placeholder-slate-400 focus:outline-none"
+            className="w-full bg-transparent text-slate-900 text-xs placeholder-slate-400 focus:outline-none"
           />
         </div>
 
         {/* Filter Dropdowns */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
           <div>
-            <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Department</label>
+            <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Department</label>
             <select
               value={selectedDept}
               onChange={(e) => setSelectedDept(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2 focus:outline-none"
+              className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 focus:outline-none focus:border-brand-teal"
             >
               <option value="All">All Departments</option>
               <option value="CSE">CSE</option>
@@ -102,11 +102,11 @@ export default function StudentManagementPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Academic Year</label>
+            <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Academic Year</label>
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2 focus:outline-none"
+              className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 focus:outline-none focus:border-brand-teal"
             >
               <option value="All">All Years</option>
               <option value="1st Year">1st Year</option>
@@ -117,11 +117,11 @@ export default function StudentManagementPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Verification</label>
+            <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Verification</label>
             <select
               value={selectedVerification}
               onChange={(e) => setSelectedVerification(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2 focus:outline-none"
+              className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 focus:outline-none focus:border-brand-teal"
             >
               <option value="All">All Statuses</option>
               <option value="Verified">Verified</option>
@@ -131,11 +131,11 @@ export default function StudentManagementPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Internship</label>
+            <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Internship</label>
             <select
               value={selectedInternship}
               onChange={(e) => setSelectedInternship(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2 focus:outline-none"
+              className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 focus:outline-none focus:border-brand-teal"
             >
               <option value="All">All Internships</option>
               <option value="Interning">Interning</option>
@@ -146,11 +146,11 @@ export default function StudentManagementPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Placement</label>
+            <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Placement</label>
             <select
               value={selectedPlacement}
               onChange={(e) => setSelectedPlacement(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2 focus:outline-none"
+              className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 focus:outline-none focus:border-brand-teal"
             >
               <option value="All">All Placements</option>
               <option value="Placed">Placed</option>
@@ -163,11 +163,11 @@ export default function StudentManagementPage() {
       </div>
 
       {/* Student Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4">
+      <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-card space-y-4">
         <div className="flex items-center justify-between">
-          <p className="text-xs text-slate-400 font-medium">
-            Showing <strong className="text-white">{filteredStudents.length}</strong> of{' '}
-            <strong className="text-white">{students.length}</strong> students
+          <p className="text-xs text-slate-500 font-medium">
+            Showing <strong className="text-slate-900">{filteredStudents.length}</strong> of{' '}
+            <strong className="text-slate-900">{students.length}</strong> students
           </p>
           {(searchQuery || selectedDept !== 'All' || selectedYear !== 'All') && (
             <button
@@ -179,7 +179,7 @@ export default function StudentManagementPage() {
                 setSelectedInternship('All');
                 setSelectedPlacement('All');
               }}
-              className="text-xs text-emerald-400 hover:underline font-semibold"
+              className="text-xs text-emerald-700 hover:underline font-semibold"
             >
               Clear Filters
             </button>
@@ -187,9 +187,9 @@ export default function StudentManagementPage() {
         </div>
 
         {filteredStudents.length === 0 ? (
-          <div className="p-12 text-center space-y-3 bg-slate-950/60 rounded-2xl border border-slate-800">
-            <Users className="w-10 h-10 text-slate-600 mx-auto" />
-            <p className="text-sm font-bold text-slate-300">No matching student profiles found.</p>
+          <div className="p-12 text-center space-y-3 bg-slate-50 rounded-2xl border border-slate-200">
+            <Users className="w-10 h-10 text-slate-400 mx-auto" />
+            <p className="text-sm font-bold text-slate-800">No matching student profiles found.</p>
             <p className="text-xs text-slate-500">Try refining your search terms or clearing current filters.</p>
             <button
               onClick={() => {
@@ -197,7 +197,7 @@ export default function StudentManagementPage() {
                 setSelectedDept('All');
                 setSelectedYear('All');
               }}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 font-semibold rounded-xl text-xs"
+              className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold rounded-xl text-xs"
             >
               Reset Search &amp; Filters
             </button>
@@ -206,7 +206,7 @@ export default function StudentManagementPage() {
           <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-800 text-slate-400 font-bold uppercase text-[10px]">
+                <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px]">
                   <th className="py-3 px-3">Student Name</th>
                   <th className="py-3 px-3">USN</th>
                   <th className="py-3 px-3">Dept &amp; Year</th>
@@ -217,24 +217,24 @@ export default function StudentManagementPage() {
                   <th className="py-3 px-3 text-right">Profile</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 font-medium">
+              <tbody className="divide-y divide-slate-100 font-medium">
                 {filteredStudents.map((std) => (
-                  <tr key={std.id} className="hover:bg-slate-800/40 transition-colors">
+                  <tr key={std.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="py-3 px-3">
                       <div className="flex items-center gap-3">
                         <img
                           src={std.avatar}
                           alt={std.name}
-                          className="w-8 h-8 rounded-full object-cover border border-slate-700"
+                          className="w-8 h-8 rounded-full object-cover border border-slate-200"
                         />
                         <div>
-                          <p className="font-bold text-white text-xs">{std.name}</p>
-                          <p className="text-[10px] text-slate-400">{std.email}</p>
+                          <p className="font-bold text-slate-900 text-xs">{std.name}</p>
+                          <p className="text-[10px] text-slate-500">{std.email}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="py-3 px-3 font-mono font-bold text-slate-300">{std.usn}</td>
-                    <td className="py-3 px-3 text-slate-300">
+                    <td className="py-3 px-3 font-mono font-bold text-slate-700">{std.usn}</td>
+                    <td className="py-3 px-3 text-slate-700">
                       <div>{std.department}</div>
                       <span className="text-[10px] text-slate-400">{std.year}</span>
                     </td>
@@ -243,13 +243,13 @@ export default function StudentManagementPage() {
                         {std.skills.slice(0, 3).map((sk) => (
                           <span
                             key={sk}
-                            className="px-2 py-0.5 bg-slate-800 border border-slate-700 text-slate-300 rounded text-[10px]"
+                            className="px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-700 rounded text-[10px]"
                           >
                             {sk}
                           </span>
                         ))}
                         {std.skills.length > 3 && (
-                          <span className="text-[10px] text-slate-500">+{std.skills.length - 3}</span>
+                          <span className="text-[10px] text-slate-400">+{std.skills.length - 3}</span>
                         )}
                       </div>
                     </td>
@@ -257,8 +257,8 @@ export default function StudentManagementPage() {
                       <span
                         className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                           std.verificationStatus === 'Verified'
-                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                            : 'bg-amber-500/20 text-amber-300'
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                            : 'bg-amber-50 text-amber-800 border border-amber-200'
                         }`}
                       >
                         {std.verificationStatus}
@@ -268,10 +268,10 @@ export default function StudentManagementPage() {
                       <span
                         className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
                           std.internshipStatus === 'Interning'
-                            ? 'bg-blue-500/20 text-blue-300'
+                            ? 'bg-blue-50 text-blue-800 border border-blue-200'
                             : std.internshipStatus === 'Completed'
-                            ? 'bg-purple-500/20 text-purple-300'
-                            : 'bg-slate-800 text-slate-400'
+                            ? 'bg-purple-50 text-purple-800 border border-purple-200'
+                            : 'bg-slate-100 text-slate-600'
                         }`}
                       >
                         {std.internshipStatus}
@@ -279,19 +279,19 @@ export default function StudentManagementPage() {
                     </td>
                     <td className="py-3 px-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-14 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div className="w-14 h-1.5 bg-slate-200 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-emerald-400 rounded-full"
+                            className="h-full bg-emerald-500 rounded-full"
                             style={{ width: `${std.readinessScore}%` }}
                           />
                         </div>
-                        <span className="font-bold text-white font-mono">{std.readinessScore}%</span>
+                        <span className="font-bold text-slate-900 font-mono">{std.readinessScore}%</span>
                       </div>
                     </td>
                     <td className="py-3 px-3 text-right">
                       <Link
                         href={`/college/students/${std.id}`}
-                        className="p-1.5 rounded-lg hover:bg-slate-800 text-emerald-400 hover:text-emerald-300 font-bold inline-flex items-center gap-1 text-xs"
+                        className="p-1.5 rounded-lg hover:bg-slate-100 text-brand-dark hover:text-emerald-700 font-bold inline-flex items-center gap-1 text-xs"
                       >
                         <span>View</span>
                         <ChevronRight className="w-3.5 h-3.5" />

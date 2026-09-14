@@ -162,25 +162,25 @@ function FindTalentContent() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Find Talent
             </h1>
-            <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+            <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-700 border border-emerald-500/40">
               Skill-First Engine
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-600 mt-1">
             Discover students and emerging professionals based on verified skills, real projects, and code evaluation.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           {/* View toggle */}
-          <div className="p-1 bg-slate-900 border border-slate-800 rounded-xl flex items-center">
+          <div className="p-1 bg-slate-100 border border-slate-200 rounded-xl flex items-center">
             <button
               onClick={() => setViewMode('grid')}
               className={`p-1.5 rounded-lg text-xs transition-colors ${
-                viewMode === 'grid' ? 'bg-slate-800 text-emerald-400' : 'text-slate-400 hover:text-white'
+                viewMode === 'grid' ? 'bg-white text-brand-teal shadow-sm' : 'text-slate-500 hover:text-slate-800'
               }`}
               title="Grid View"
             >
@@ -189,7 +189,7 @@ function FindTalentContent() {
             <button
               onClick={() => setViewMode('table')}
               className={`p-1.5 rounded-lg text-xs transition-colors ${
-                viewMode === 'table' ? 'bg-slate-800 text-emerald-400' : 'text-slate-400 hover:text-white'
+                viewMode === 'table' ? 'bg-white text-brand-teal shadow-sm' : 'text-slate-500 hover:text-slate-800'
               }`}
               title="Table View"
             >
@@ -200,23 +200,23 @@ function FindTalentContent() {
       </div>
 
       {/* 1. Primary Feature: Skill-First Requirement Builder ("What skills do you need?") */}
-      <div className="bg-slate-900 border border-emerald-500/30 rounded-3xl p-6 shadow-2xl space-y-4">
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-card space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-emerald-400" />
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-brand-teal" />
               What skills do you need?
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500">
               Select or type core technical competencies to calculate real-time weighted candidate matching.
             </p>
           </div>
 
           <div className="text-right">
-            <span className="text-xl font-black text-emerald-400 font-mono">
+            <span className="text-xl font-black text-brand-teal font-mono">
               {filteredCandidates.length}
             </span>
-            <span className="text-xs text-slate-400 ml-1.5 font-semibold">candidates found</span>
+            <span className="text-xs text-slate-500 ml-1.5 font-semibold">candidates found</span>
           </div>
         </div>
 
@@ -225,12 +225,12 @@ function FindTalentContent() {
           {selectedSkills.map((skill) => (
             <span
               key={skill}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-200 border border-emerald-500/40 text-xs font-bold shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold shadow-sm"
             >
               <span>{skill}</span>
               <button
                 onClick={() => handleRemoveSkill(skill)}
-                className="text-emerald-400 hover:text-white p-0.5"
+                className="text-emerald-700 hover:text-emerald-950 p-0.5"
                 title={`Remove ${skill}`}
               >
                 <X className="w-3.5 h-3.5" />
@@ -251,12 +251,12 @@ function FindTalentContent() {
                 }
               }}
               placeholder="+ Add skill (e.g. Git, Docker)..."
-              className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500 placeholder:text-slate-500 w-44"
+              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-brand-teal focus:bg-white placeholder:text-slate-400 w-44"
             />
             {skillInput && (
               <button
                 onClick={() => handleAddSkill(skillInput)}
-                className="p-1.5 bg-emerald-500 text-white rounded-xl text-xs"
+                className="p-1.5 bg-brand-teal text-white rounded-xl text-xs shadow-sm"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
@@ -265,8 +265,8 @@ function FindTalentContent() {
         </div>
 
         {/* Quick Suggestion Pills */}
-        <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
-          <span className="text-[11px] font-semibold text-slate-400">Popular Tech:</span>
+        <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+          <span className="text-[11px] font-semibold text-slate-500">Popular Tech:</span>
           {popularTaxonomySkills.slice(0, 10).map((skill) => {
             const isSelected = selectedSkills.includes(skill);
             return (
@@ -275,8 +275,8 @@ function FindTalentContent() {
                 onClick={() => (isSelected ? handleRemoveSkill(skill) : handleAddSkill(skill))}
                 className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
                   isSelected
-                    ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50'
-                    : 'bg-slate-950 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 font-semibold'
+                    : 'bg-slate-50 text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
                 }`}
               >
                 {isSelected ? `✓ ${skill}` : `+ ${skill}`}
@@ -287,17 +287,17 @@ function FindTalentContent() {
       </div>
 
       {/* 2. Search & Filter Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-card space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
           {/* Search Query Input */}
           <div className="sm:col-span-4 relative">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by candidate name, role, college, project..."
-              className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
+              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-brand-teal focus:bg-white"
             />
           </div>
 
@@ -306,7 +306,7 @@ function FindTalentContent() {
             <select
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-emerald-500"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:border-brand-teal focus:bg-white cursor-pointer"
             >
               <option value="All">All Roles</option>
               <option value="AI">AI / Machine Learning</option>
@@ -323,7 +323,7 @@ function FindTalentContent() {
             <select
               value={selectedCollege}
               onChange={(e) => setSelectedCollege(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-emerald-500"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:border-brand-teal focus:bg-white cursor-pointer"
             >
               <option value="All">All Institutions</option>
               <option value="AYUSH">AYUSH Institute of Tech</option>
@@ -340,7 +340,7 @@ function FindTalentContent() {
             <select
               value={selectedAvailability}
               onChange={(e) => setSelectedAvailability(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-emerald-500"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:border-brand-teal focus:bg-white cursor-pointer"
             >
               <option value="All">All Availability</option>
               <option value="Open to Internship">Internship Only</option>
@@ -351,21 +351,21 @@ function FindTalentContent() {
 
           {/* Verified Only Switch & Reset */}
           <div className="sm:col-span-2 flex items-center justify-between sm:justify-end gap-3">
-            <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300 select-none">
+            <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-700 select-none">
               <input
                 type="checkbox"
                 checked={verifiedOnly}
                 onChange={(e) => setVerifiedOnly(e.target.checked)}
-                className="w-4 h-4 accent-emerald-500 rounded"
+                className="w-4 h-4 accent-emerald-600 rounded"
               />
-              <span className="font-semibold text-emerald-400 flex items-center gap-1">
+              <span className="font-semibold text-emerald-700 flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5" /> Verified
               </span>
             </label>
 
             <button
               onClick={clearFilters}
-              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl"
+              className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
               title="Reset Filters"
             >
               <RefreshCw className="w-3.5 h-3.5" />
@@ -376,15 +376,15 @@ function FindTalentContent() {
 
       {/* 3. Candidate Results Display */}
       {filteredCandidates.length === 0 ? (
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-12 text-center text-slate-400 space-y-3 shadow-xl">
-          <Sparkles className="w-10 h-10 text-emerald-400/50 mx-auto" />
-          <h3 className="text-base font-bold text-white">No matching candidates found</h3>
+        <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center text-slate-500 space-y-3 shadow-card">
+          <Sparkles className="w-10 h-10 text-emerald-600/50 mx-auto" />
+          <h3 className="text-base font-bold text-slate-900">No matching candidates found</h3>
           <p className="text-xs max-w-md mx-auto leading-relaxed">
             Try adjusting your required skills, turning off "Verified Only", or expanding your search filters.
           </p>
           <button
             onClick={clearFilters}
-            className="px-4 py-2 bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-950/50"
+            className="px-4 py-2 bg-brand-teal text-white font-bold text-xs rounded-xl shadow-md"
           >
             Clear Filters
           </button>
@@ -410,8 +410,8 @@ export default function FindTalentPage() {
   return (
     <React.Suspense
       fallback={
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-12 text-center text-slate-400 space-y-2">
-          <div className="w-6 h-6 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto" />
+        <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center text-slate-500 shadow-card space-y-2">
+          <div className="w-6 h-6 border-2 border-brand-emerald border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-xs">Loading Candidate Discovery &amp; Skill Matching...</p>
         </div>
       }

@@ -28,12 +28,12 @@ export default function IndustryRootLayout({ children }: { children: React.React
 
   return (
     <IndustryProvider>
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col lg:flex-row font-sans selection:bg-emerald-500 selection:text-white">
+      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col lg:flex-row font-sans selection:bg-emerald-500 selection:text-white">
         {/* Sidebar */}
         <IndustrySidebar mobileOpen={mobileMenuOpen} setMobileOpen={setMobileMenuOpen} />
 
         {/* Main Content Container */}
-        <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        <div className="flex-1 flex flex-col min-w-0 min-h-screen bg-slate-50">
           <IndustryNavbar
             onOpenSearch={() => setIsSearchOpen(true)}
             onOpenMobileMenu={() => setMobileMenuOpen(true)}
@@ -44,7 +44,7 @@ export default function IndustryRootLayout({ children }: { children: React.React
           </main>
 
           {/* Industry Footer */}
-          <footer className="border-t border-slate-900 bg-slate-950 px-6 py-4 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <footer className="border-t border-slate-200 bg-white px-6 py-4 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
             <span>&copy; 2026 SKILLSETU &bull; AYUSH Career Bridge &bull; Industry Portal</span>
             <span>TechNova Labs &bull; Indiranagar, Bengaluru, Karnataka</span>
           </footer>

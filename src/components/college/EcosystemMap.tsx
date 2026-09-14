@@ -59,27 +59,27 @@ export const EcosystemMap: React.FC = () => {
   ];
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4">
+    <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-card space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+          <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">
             <Compass className="w-5 h-5 animate-spin-slow" />
           </div>
           <div>
-            <h3 className="font-bold text-white text-base">Nearby Industry Ecosystem</h3>
-            <p className="text-xs text-slate-400">Bengaluru Industry &amp; Startup Hub Mapping</p>
+            <h3 className="font-bold text-slate-900 text-base">Nearby Industry Ecosystem</h3>
+            <p className="text-xs text-slate-500">Bengaluru Industry &amp; Startup Hub Mapping</p>
           </div>
         </div>
-        <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-emerald-400 border border-slate-700 px-2.5 py-1 rounded-full flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+        <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
           5 Active Hubs
         </span>
       </div>
 
       {/* Styled Interactive Map Area */}
-      <div className="relative w-full h-64 bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden flex flex-col justify-between p-4 group">
+      <div className="relative w-full h-64 bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden flex flex-col justify-between p-4 group">
         {/* Map Grid Backdrop Styling */}
-        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#10B981_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+        <div className="absolute inset-0 opacity-30 bg-[radial-gradient(#0d9488_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
 
         {/* Floating Hub Badges */}
         <div className="relative z-10 grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -91,46 +91,46 @@ export const EcosystemMap: React.FC = () => {
                 onClick={() => setSelectedPoint(pt)}
                 className={`p-2.5 rounded-xl border text-left text-xs transition-all ${
                   isSelected
-                    ? 'bg-emerald-500/20 border-emerald-500 text-white shadow-lg shadow-emerald-900/30 scale-105'
-                    : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-slate-700 hover:bg-slate-800'
+                    ? 'bg-emerald-50 border-emerald-500 text-emerald-950 shadow-md scale-105'
+                    : 'bg-white/90 border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-100 shadow-sm'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <span
-                    className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                    className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${
                       pt.type === 'Startup'
-                        ? 'bg-blue-500/20 text-blue-300'
+                        ? 'bg-blue-50 text-blue-800 border-blue-200'
                         : pt.type === 'Corporate'
-                        ? 'bg-amber-500/20 text-amber-300'
-                        : 'bg-purple-500/20 text-purple-300'
+                        ? 'bg-amber-50 text-amber-800 border-amber-200'
+                        : 'bg-purple-50 text-purple-800 border-purple-200'
                     }`}
                   >
                     {pt.type}
                   </span>
-                  <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                  <MapPin className="w-3.5 h-3.5 text-brand-teal" />
                 </div>
-                <p className="font-bold mt-1 text-white truncate">{pt.name}</p>
-                <p className="text-[10px] text-slate-400 truncate">{pt.locationName}</p>
+                <p className="font-bold mt-1 text-slate-900 truncate">{pt.name}</p>
+                <p className="text-[10px] text-slate-500 truncate">{pt.locationName}</p>
               </button>
             );
           })}
         </div>
 
         {/* Selected Hub Details Drawer */}
-        <div className="relative z-10 bg-slate-900/90 border border-slate-800 backdrop-blur-md p-3 rounded-xl flex items-center justify-between text-xs">
+        <div className="relative z-10 bg-white/95 border border-slate-200 backdrop-blur-md p-3 rounded-xl flex items-center justify-between text-xs shadow-sm">
           {selectedPoint ? (
             <div>
-              <p className="font-bold text-white flex items-center gap-1.5">
-                <Building2 className="w-4 h-4 text-emerald-400" />
-                {selectedPoint.name} &bull; <span className="text-emerald-400">{selectedPoint.locationName}</span>
+              <p className="font-bold text-slate-900 flex items-center gap-1.5">
+                <Building2 className="w-4 h-4 text-brand-teal" />
+                {selectedPoint.name} &bull; <span className="text-brand-teal">{selectedPoint.locationName}</span>
               </p>
-              <p className="text-[11px] text-slate-400 mt-0.5">
+              <p className="text-[11px] text-slate-600 mt-0.5">
                 {selectedPoint.activeOffers} Active Internship &amp; Placement Roles Available for AYUSH Students
               </p>
             </div>
           ) : (
-            <div className="text-slate-400 text-xs flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-slate-500" />
+            <div className="text-slate-500 text-xs flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-slate-400" />
               <span>Click any corporate hub above to view partnership details &amp; active opportunities.</span>
             </div>
           )}

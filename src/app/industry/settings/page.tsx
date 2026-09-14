@@ -42,32 +42,32 @@ export default function IndustrySettingsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Settings &amp; Hiring Preferences
             </h1>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-600 mt-1">
             Configure recruitment filters, notification triggers, and organization preferences.
           </p>
         </div>
 
         <button
           onClick={resetToDefaults}
-          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs flex items-center gap-2 transition-colors self-start md:self-auto"
+          className="px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs flex items-center gap-2 transition-colors self-start md:self-auto shadow-xs font-semibold"
         >
-          <RotateCcw className="w-3.5 h-3.5" />
+          <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
           <span>Reset Demo Data</span>
         </button>
       </div>
 
       {/* 1. Hiring Preferences */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-7 shadow-xl space-y-5">
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-card space-y-5 text-slate-900">
         <div>
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <Sliders className="w-5 h-5 text-emerald-400" />
+          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <Sliders className="w-5 h-5 text-emerald-600" />
             Candidate Matching &amp; Eligibility Preferences
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500">
             Customize parameters influencing the automated candidate recommendation algorithm.
           </p>
         </div>
@@ -75,7 +75,7 @@ export default function IndustrySettingsPage() {
         <form onSubmit={handleSaveHiringPrefs} className="space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-slate-300 font-semibold mb-1.5">
+              <label className="block text-slate-700 font-semibold mb-1.5">
                 Minimum Candidate CGPA Threshold
               </label>
               <input
@@ -85,18 +85,18 @@ export default function IndustrySettingsPage() {
                 max="10.0"
                 value={minCgpa}
                 onChange={(e) => setMinCgpa(Number(e.target.value))}
-                className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-mono focus:outline-none focus:border-emerald-500"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono focus:outline-none focus:border-emerald-500 shadow-xs"
               />
             </div>
 
             <div>
-              <label className="block text-slate-300 font-semibold mb-1.5">
+              <label className="block text-slate-700 font-semibold mb-1.5">
                 Default Talent Search Radius (km)
               </label>
               <select
                 value={radius}
                 onChange={(e) => setRadius(Number(e.target.value))}
-                className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-emerald-500"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-emerald-500 shadow-xs"
               >
                 <option value={5}>5 km</option>
                 <option value={10}>10 km</option>
@@ -108,35 +108,35 @@ export default function IndustrySettingsPage() {
           </div>
 
           <div className="space-y-3 pt-2">
-            <label className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-950 border border-slate-800 cursor-pointer">
+            <label className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 cursor-pointer shadow-xs">
               <input
                 type="checkbox"
                 checked={prioritizeVerified}
                 onChange={(e) => setPrioritizeVerified(e.target.checked)}
-                className="w-4 h-4 accent-emerald-500 rounded"
+                className="w-4 h-4 accent-emerald-600 rounded"
               />
               <div>
-                <span className="font-bold text-white block">
+                <span className="font-bold text-slate-900 block">
                   Prioritize Candidates with Verified Registry Badges
                 </span>
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-slate-500">
                   Awards full 15-point weighting only to skills with formal institutional assessment pass certificates.
                 </span>
               </div>
             </label>
 
-            <label className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-950 border border-slate-800 cursor-pointer">
+            <label className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 cursor-pointer shadow-xs">
               <input
                 type="checkbox"
                 checked={prioritizeStartup}
                 onChange={(e) => setPrioritizeStartup(e.target.checked)}
-                className="w-4 h-4 accent-blue-500 rounded"
+                className="w-4 h-4 accent-blue-600 rounded"
               />
               <div>
-                <span className="font-bold text-white block">
+                <span className="font-bold text-slate-900 block">
                   Prioritize Candidates with Prior Startup Sprint Experience
                 </span>
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-slate-500">
                   Boosts ranking for students who previously completed verified micro-internships.
                 </span>
               </div>
@@ -146,7 +146,7 @@ export default function IndustrySettingsPage() {
           <div className="pt-3 flex justify-end">
             <button
               type="submit"
-              className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-md transition-colors"
+              className="px-5 py-2.5 bg-gradient-to-r from-brand-emerald to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-xl shadow-md transition-colors"
             >
               Save Hiring Preferences
             </button>
@@ -155,45 +155,45 @@ export default function IndustrySettingsPage() {
       </div>
 
       {/* 2. Notification Preferences */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-7 shadow-xl space-y-4">
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-card space-y-4 text-slate-900">
         <div>
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <Bell className="w-5 h-5 text-purple-400" />
+          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <Bell className="w-5 h-5 text-purple-600" />
             Recruiter Alerts &amp; Digest
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500">
             Control automated notifications for high-match candidate discoveries and application status updates.
           </p>
         </div>
 
         <div className="space-y-2 text-xs">
-          <label className="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 cursor-pointer">
-            <span className="text-slate-300">Email notifications on new high-match candidates (&gt; 90%)</span>
+          <label className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200 cursor-pointer shadow-xs">
+            <span className="text-slate-700">Email notifications on new high-match candidates (&gt; 90%)</span>
             <input
               type="checkbox"
               checked={notifMatches}
               onChange={(e) => setNotifMatches(e.target.checked)}
-              className="w-4 h-4 accent-emerald-500 rounded"
+              className="w-4 h-4 accent-emerald-600 rounded"
             />
           </label>
 
-          <label className="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 cursor-pointer">
-            <span className="text-slate-300">Real-time alerts when college accepts collaboration request</span>
+          <label className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200 cursor-pointer shadow-xs">
+            <span className="text-slate-700">Real-time alerts when college accepts collaboration request</span>
             <input
               type="checkbox"
               checked={notifApplications}
               onChange={(e) => setNotifApplications(e.target.checked)}
-              className="w-4 h-4 accent-emerald-500 rounded"
+              className="w-4 h-4 accent-emerald-600 rounded"
             />
           </label>
 
-          <label className="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 cursor-pointer">
-            <span className="text-slate-300">Daily talent pipeline digest</span>
+          <label className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200 cursor-pointer shadow-xs">
+            <span className="text-slate-700">Daily talent pipeline digest</span>
             <input
               type="checkbox"
               checked={notifEmail}
               onChange={(e) => setNotifEmail(e.target.checked)}
-              className="w-4 h-4 accent-emerald-500 rounded"
+              className="w-4 h-4 accent-emerald-600 rounded"
             />
           </label>
         </div>
