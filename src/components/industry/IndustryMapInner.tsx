@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { CollegePartner } from '@/types/industry';
 import { useRouter } from 'next/navigation';
+import { Building2, School, Compass, RotateCcw, Plus, Minus, Layers } from 'lucide-react';
 
 interface IndustryMapInnerProps {
   companyCoords: { lat: number; lng: number };
@@ -25,21 +27,35 @@ export default function IndustryMapInner({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const radiusCircleRef = useRef<L.Circle | null>(null);
+  const [filterType, setFilterType] = useState<'all' | 'partner' | 'discovery'>('all');
 
+  const safeCoords =
+    companyCoords && typeof companyCoords.lat === 'number' && !isNaN(companyCoords.lat)
+      ? companyCoords
+      : { lat: 12.9784, lng: 77.6408 };
+
+  // Initialize Map
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
+    // Reset leaflet id if attached previously
+    if ((mapContainerRef.current as any)._leaflet_id) {
+      (mapContainerRef.current as any)._leaflet_id = null;
+    }
+
     if (!mapInstanceRef.current) {
       const map = L.map(mapContainerRef.current, {
-        center: [companyCoords.lat, companyCoords.lng],
-        zoom: radiusKm <= 10 ? 12 : radiusKm <= 25 ? 11 : 10,
-        zoomControl: true,
+        center: [safeCoords.lat, safeCoords.lng],
+        zoom: radiusKm <= 5 ? 13 : radiusKm <= 10 ? 12 : radiusKm <= 25 ? 11 : 10,
+        zoomControl: false,
         attributionControl: false,
       });
 
+      // Standard OpenStreetMap tile layer with subdomains
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors',
+        subdomains: ['a', 'b', 'c'],
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(map);
 
       L.control.attribution({ position: 'bottomright' }).addTo(map);
@@ -47,14 +63,36 @@ export default function IndustryMapInner({
       const markersLayer = L.layerGroup().addTo(map);
       markersLayerRef.current = markersLayer;
       mapInstanceRef.current = map;
-    }
 
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
+      // Force size invalidation so tiles render even on initial layout
+      const timer1 = setTimeout(() => {
+        map.invalidateSize();
+      }, 100);
+
+      const timer2 = setTimeout(() => {
+        map.invalidateSize();
+      }, 350);
+
+      let resizeObserver: ResizeObserver | null = null;
+      if (typeof ResizeObserver !== 'undefined' && mapContainerRef.current) {
+        resizeObserver = new ResizeObserver(() => {
+          map.invalidateSize();
+        });
+        resizeObserver.observe(mapContainerRef.current);
       }
-    };
+
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+        if (resizeObserver) {
+          resizeObserver.disconnect();
+        }
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.remove();
+          mapInstanceRef.current = null;
+        }
+      };
+    }
   }, []);
 
   // Update center, circle, markers on changes
@@ -62,9 +100,8 @@ export default function IndustryMapInner({
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    map.setView([companyCoords.lat, companyCoords.lng], radiusKm <= 10 ? 12 : radiusKm <= 25 ? 11 : 10, {
-      animate: true,
-    });
+    // Invalidate size in case wrapper dimensions updated
+    map.invalidateSize();
 
     if (markersLayerRef.current) {
       markersLayerRef.current.clearLayers();
@@ -74,15 +111,21 @@ export default function IndustryMapInner({
     }
 
     // 1. Draw Company Hiring Radius Circle
-    const circle = L.circle([companyCoords.lat, companyCoords.lng], {
-      color: '#10B981',
+    const circle = L.circle([safeCoords.lat, safeCoords.lng], {
+      color: '#059669',
       fillColor: '#10B981',
       fillOpacity: 0.08,
       weight: 2,
-      dashArray: '5, 8',
+      dashArray: '6, 8',
       radius: radiusKm * 1000,
     }).addTo(map);
     radiusCircleRef.current = circle;
+
+    try {
+      map.fitBounds(circle.getBounds(), { padding: [30, 30], maxZoom: 14 });
+    } catch {
+      map.setView([safeCoords.lat, safeCoords.lng], radiusKm <= 10 ? 12 : 11);
+    }
 
     // 2. Add TechNova Labs Company HQ Marker
     const companyIcon = L.divIcon({
@@ -92,28 +135,28 @@ export default function IndustryMapInner({
           background: #082F38;
           border: 2.5px solid #10B981;
           color: white;
-          width: 34px;
-          height: 34px;
+          width: 36px;
+          height: 36px;
           border-radius: 12px;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 4px 15px rgba(16,185,129,0.4);
+          box-shadow: 0 4px 15px rgba(16,185,129,0.45);
           font-weight: 900;
-          font-size: 14px;
+          font-size: 16px;
         ">
           🚀
         </div>
       `,
-      iconSize: [34, 34],
-      iconAnchor: [17, 17],
+      iconSize: [36, 36],
+      iconAnchor: [18, 18],
     });
 
-    const companyMarker = L.marker([companyCoords.lat, companyCoords.lng], {
+    const companyMarker = L.marker([safeCoords.lat, safeCoords.lng], {
       icon: companyIcon,
       zIndexOffset: 2000,
     }).bindPopup(`
-      <div style="font-family: sans-serif; padding: 6px; min-width: 180px;">
+      <div style="font-family: sans-serif; padding: 6px; min-width: 190px;">
         <div style="display:flex; align-items:center; gap:6px; font-weight:800; font-size:13px; color:#082F38;">
           <span>🚀</span> ${companyName}
         </div>
@@ -121,15 +164,23 @@ export default function IndustryMapInner({
           Industry HQ &bull; Indiranagar Innovation Center
         </div>
         <div style="font-size: 11px; color: #64748B; margin-top: 4px;">
-          Radius: ${radiusKm} km search active
+          Active hiring radius: <b>${radiusKm} km</b>
         </div>
       </div>
     `);
 
     markersLayerRef.current?.addLayer(companyMarker);
 
-    // 3. Add Partner & Discovery Colleges Markers
-    colleges.forEach((col) => {
+    // 3. Filter Colleges
+    const visibleColleges = (colleges || []).filter((col) => {
+      if (!col.coordinates || typeof col.coordinates.lat !== 'number') return false;
+      if (filterType === 'partner') return col.partnershipStatus === 'Active';
+      if (filterType === 'discovery') return col.partnershipStatus !== 'Active';
+      return true;
+    });
+
+    // 4. Add College Markers
+    visibleColleges.forEach((col) => {
       const isPartner = col.partnershipStatus === 'Active';
       const colColor = isPartner ? '#10B981' : col.partnershipStatus === 'Pending' ? '#F59E0B' : '#6366F1';
 
@@ -138,8 +189,8 @@ export default function IndustryMapInner({
         html: `
           <div style="
             background: ${colColor};
-            width: 30px;
-            height: 30px;
+            width: 32px;
+            height: 32px;
             border-radius: 50% 50% 50% 0;
             transform: rotate(-45deg);
             border: 2px solid white;
@@ -152,16 +203,16 @@ export default function IndustryMapInner({
             <div style="
               transform: rotate(45deg);
               color: white;
-              font-size: 11px;
+              font-size: 12px;
               font-weight: 800;
             ">
               🏛️
             </div>
           </div>
         `,
-        iconSize: [30, 30],
-        iconAnchor: [15, 30],
-        popupAnchor: [0, -30],
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+        popupAnchor: [0, -32],
       });
 
       const popupHtml = `
@@ -204,16 +255,123 @@ export default function IndustryMapInner({
         </div>
       `;
 
-      const marker = L.marker([col.coordinates.lat, col.coordinates.lng], { icon: colIcon })
-        .bindPopup(popupHtml);
+      const marker = L.marker([col.coordinates.lat, col.coordinates.lng], { icon: colIcon }).bindPopup(popupHtml);
 
       markersLayerRef.current?.addLayer(marker);
     });
-  }, [companyCoords, radiusKm, colleges, companyName]);
+  }, [safeCoords, radiusKm, colleges, companyName, filterType]);
+
+  const handleZoomIn = () => {
+    mapInstanceRef.current?.zoomIn();
+  };
+
+  const handleZoomOut = () => {
+    mapInstanceRef.current?.zoomOut();
+  };
+
+  const handleRecenter = () => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    if (radiusCircleRef.current) {
+      map.fitBounds(radiusCircleRef.current.getBounds(), { padding: [30, 30], maxZoom: 14 });
+    } else {
+      map.setView([safeCoords.lat, safeCoords.lng], 11);
+    }
+  };
 
   return (
-    <div className="relative w-full h-full min-h-[340px] lg:min-h-[420px] rounded-2xl overflow-hidden shadow-inner border border-slate-800">
-      <div ref={mapContainerRef} className="w-full h-full" />
+    <div className="relative w-full h-full min-h-[400px]">
+      {/* Map DOM Element */}
+      <div
+        ref={mapContainerRef}
+        className="w-full h-full absolute inset-0 z-0"
+        style={{ width: '100%', height: '100%' }}
+      />
+
+      {/* Floating Controls: Zoom & Recenter */}
+      <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-1.5 shadow-md">
+        <button
+          onClick={handleZoomIn}
+          title="Zoom In"
+          aria-label="Zoom In"
+          className="p-2 bg-white/95 hover:bg-white text-slate-700 rounded-xl border border-slate-200 shadow-sm transition-all hover:text-brand-teal active:scale-95"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+        <button
+          onClick={handleZoomOut}
+          title="Zoom Out"
+          aria-label="Zoom Out"
+          className="p-2 bg-white/95 hover:bg-white text-slate-700 rounded-xl border border-slate-200 shadow-sm transition-all hover:text-brand-teal active:scale-95"
+        >
+          <Minus className="w-4 h-4" />
+        </button>
+        <button
+          onClick={handleRecenter}
+          title="Recenter Map on HQ"
+          aria-label="Recenter Map"
+          className="p-2 bg-white/95 hover:bg-white text-slate-700 rounded-xl border border-slate-200 shadow-sm transition-all hover:text-brand-teal active:scale-95"
+        >
+          <RotateCcw className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Floating Filter Pills */}
+      <div className="absolute top-3 left-3 z-[1000] bg-white/95 backdrop-blur-md rounded-2xl p-1 shadow-md border border-slate-200 flex items-center gap-1 text-xs">
+        <button
+          onClick={() => setFilterType('all')}
+          className={`px-2.5 py-1 rounded-xl font-bold text-[11px] transition-all ${
+            filterType === 'all'
+              ? 'bg-brand-teal text-white shadow-sm'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          All ({colleges?.length || 0})
+        </button>
+        <button
+          onClick={() => setFilterType('partner')}
+          className={`px-2.5 py-1 rounded-xl font-bold text-[11px] transition-all ${
+            filterType === 'partner'
+              ? 'bg-emerald-600 text-white shadow-sm'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          Partners
+        </button>
+        <button
+          onClick={() => setFilterType('discovery')}
+          className={`px-2.5 py-1 rounded-xl font-bold text-[11px] transition-all ${
+            filterType === 'discovery'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          Discovery
+        </button>
+      </div>
+
+      {/* Legend Overlay at Bottom-Left */}
+      <div className="absolute bottom-3 left-3 z-[1000] bg-white/95 backdrop-blur-md rounded-2xl p-2.5 shadow-md border border-slate-200 text-[11px] space-y-1 hidden sm:block">
+        <span className="font-bold text-slate-800 block text-[11px] mb-1">Ecosystem Legend</span>
+        <div className="flex flex-col gap-1 text-[10px] text-slate-600">
+          <div className="flex items-center gap-2">
+            <span className="text-xs">🚀</span>
+            <span className="font-semibold text-slate-800">{companyName} HQ</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+            <span>Active Partner College</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+            <span>Pending Partnership</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+            <span>Potential Candidate Hub</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

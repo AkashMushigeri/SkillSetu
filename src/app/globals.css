@@ -24,6 +24,12 @@ body {
   z-index: 10;
 }
 
+.custom-company-marker,
+.custom-college-pin {
+  background: transparent !important;
+  border: none !important;
+}
+
 .custom-pulse-marker {
   position: relative;
   width: 24px;

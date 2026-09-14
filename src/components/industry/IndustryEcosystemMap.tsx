@@ -8,7 +8,7 @@ import { Compass, MapPin, Building2, Users, Loader2, Sparkles } from 'lucide-rea
 const DynamicMap = dynamic(() => import('./IndustryMapInner'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full min-h-[340px] lg:min-h-[420px] rounded-2xl bg-slate-100 flex flex-col items-center justify-center border border-slate-200">
+    <div className="w-full h-[400px] sm:h-[460px] rounded-2xl bg-slate-100 flex flex-col items-center justify-center border border-slate-200">
       <Loader2 className="w-8 h-8 text-brand-teal animate-spin" />
       <span className="text-xs font-semibold text-slate-500 mt-2">
         Loading Nearby Talent &amp; Ecosystem Map...
@@ -74,12 +74,14 @@ export const IndustryEcosystemMap: React.FC = () => {
       </div>
 
       {/* Dynamic Map Component */}
-      <DynamicMap
-        companyCoords={company.coordinates}
-        companyName={company.name}
-        colleges={colleges}
-        radiusKm={searchRadiusKm}
-      />
+      <div className="w-full h-[400px] sm:h-[460px] rounded-2xl overflow-hidden border border-slate-200 shadow-inner relative bg-slate-50">
+        <DynamicMap
+          companyCoords={company?.coordinates || { lat: 12.9784, lng: 77.6408 }}
+          companyName={company?.name || 'TechNova Labs'}
+          colleges={colleges || []}
+          radiusKm={searchRadiusKm || 25}
+        />
+      </div>
 
       {/* Dynamic Radius Metrics Ribbon */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
