@@ -13,6 +13,15 @@ import {
   signOut as firebaseSignOutFn,
   User as FirebaseUser,
 } from 'firebase/auth';
+import {
+  getFirestore,
+  Firestore,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  serverTimestamp,
+} from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyBYafwhkKarQs36-GehGM50b1QqZKTvzPk',
@@ -25,18 +34,21 @@ const firebaseConfig = {
 
 let app: FirebaseApp;
 let auth: Auth;
+let db: Firestore;
 
 if (typeof window !== 'undefined') {
   if (!getApps().length) {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
+    db = getFirestore(app);
   } else {
     app = getApps()[0];
     auth = getAuth(app);
+    db = getFirestore(app);
   }
 }
 
-export { app, auth };
+export { app, auth, db };
 
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
@@ -152,3 +164,151 @@ export const onAuthChange = (callback: (user: ExtendedUser | null) => void) => {
     }
   });
 };
+
+export interface UserProfileData {
+  uid: string;
+  email: string;
+  role: UserRole;
+  displayName: string;
+  phone: string;
+  photoURL?: string;
+  onboardingCompleted: boolean;
+  createdAt?: any;
+  updatedAt?: any;
+
+  // Student specific:
+  college?: string;
+  degree?: string;
+  department?: string;
+  year?: string;
+  gpa?: string;
+  careerGoal?: string;
+  skills?: string[];
+  location?: string;
+  bio?: string;
+  github?: string;
+  linkedin?: string;
+
+  // Industry specific:
+  companyName?: string;
+  companyIndustry?: string;
+  companySize?: string;
+  companyLocation?: string;
+  companyWebsite?: string;
+  recruiterTitle?: string;
+  hiringDomains?: string[];
+  companyBio?: string;
+
+  // College specific:
+  institutionName?: string;
+  collegeCode?: string;
+  designation?: string;
+  institutionLocation?: string;
+  institutionWebsite?: string;
+  departments?: string[];
+  totalStudents?: number;
+  naacGrade?: string;
+}
+
+const getProfileStorageKey = (uid: string) => `skillsetu_user_profile_${uid}`;
+
+export const saveUserProfile = async (
+  uid: string,
+  profileData: Partial<UserProfileData>
+): Promise<UserProfileData> => {
+  const existingLocal = getLocalProfile(uid);
+  const updatedProfile: UserProfileData = {
+    uid,
+    email: profileData.email || existingLocal?.email || '',
+    role: (profileData.role || existingLocal?.role || 'STUDENT') as UserRole,
+    displayName: profileData.displayName || existingLocal?.displayName || '',
+    phone: profileData.phone || existingLocal?.phone || '',
+    photoURL: profileData.photoURL || existingLocal?.photoURL || '',
+    onboardingCompleted: profileData.onboardingCompleted ?? existingLocal?.onboardingCompleted ?? false,
+    ...existingLocal,
+    ...profileData,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (!updatedProfile.createdAt) {
+    updatedProfile.createdAt = new Date().toISOString();
+  }
+
+  // 1. Immediately cache locally for offline reliability & zero-latency UI
+  setLocalProfile(uid, updatedProfile);
+  if (updatedProfile.role) {
+    saveUserRole(updatedProfile.role);
+  }
+
+  // 2. Persist to Firebase Firestore
+  if (db) {
+    try {
+      const userDocRef = doc(db, 'users', uid);
+      await setDoc(
+        userDocRef,
+        {
+          ...updatedProfile,
+          updatedAt: serverTimestamp(),
+          createdAt: existingLocal?.createdAt ? existingLocal.createdAt : serverTimestamp(),
+        },
+        { merge: true }
+      );
+    } catch (err) {
+      console.warn('Firestore write warning (local profile saved successfully):', err);
+    }
+  }
+
+  return updatedProfile;
+};
+
+export const getUserProfile = async (uid: string): Promise<UserProfileData | null> => {
+  if (!uid) return null;
+
+  // Try Firestore first if available
+  if (db) {
+    try {
+      const userDocRef = doc(db, 'users', uid);
+      const snapshot = await getDoc(userDocRef);
+      if (snapshot.exists()) {
+        const data = snapshot.data() as UserProfileData;
+        setLocalProfile(uid, data);
+        if (data.role) {
+          saveUserRole(data.role);
+        }
+        return data;
+      }
+    } catch (err) {
+      console.warn('Firestore read error (falling back to local cache):', err);
+    }
+  }
+
+  // Fallback to local cache
+  return getLocalProfile(uid);
+};
+
+export const updateUserProfile = async (
+  uid: string,
+  partialData: Partial<UserProfileData>
+): Promise<UserProfileData> => {
+  return saveUserProfile(uid, partialData);
+};
+
+const getLocalProfile = (uid: string): UserProfileData | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(getProfileStorageKey(uid));
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+const setLocalProfile = (uid: string, profile: UserProfileData) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(getProfileStorageKey(uid), JSON.stringify(profile));
+  } catch (e) {
+    console.error('Failed to cache profile locally', e);
+  }
+};
+

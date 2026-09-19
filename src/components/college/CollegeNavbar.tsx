@@ -16,7 +16,8 @@ import {
   Calendar,
   CheckCheck,
   Building,
-  Info
+  Info,
+  Sparkles
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -209,6 +210,14 @@ export const CollegeNavbar: React.FC<NavbarProps> = ({ onOpenSearch, onOpenMobil
                   >
                     <Building className="w-4 h-4 text-slate-400" />
                     College Profile
+                  </Link>
+                  <Link
+                    href="/onboarding"
+                    onClick={() => setProfileDropdownOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-slate-700 hover:text-slate-900 hover:bg-slate-50 font-medium"
+                  >
+                    <Sparkles className="w-4 h-4 text-emerald-600" />
+                    Update College Setup
                   </Link>
                   <Link
                     href="/college/settings"

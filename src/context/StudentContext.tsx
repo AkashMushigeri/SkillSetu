@@ -35,6 +35,8 @@ import {
   industryStageToStudentStatus,
 } from '@/lib/syncConverters';
 import { fetchVerifiedJobsNearCity } from '@/lib/jobsApi';
+import { useAuth } from '@/context/AuthContext';
+import { saveUserProfile } from '@/lib/firebase';
 
 interface StudentContextType {
   profile: StudentProfile;
@@ -76,6 +78,8 @@ interface StudentContextType {
 const StudentContext = createContext<StudentContextType | undefined>(undefined);
 
 export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, userProfile } = useAuth();
+
   // 1. Profile State
   const [profile, setProfile] = useState<StudentProfile>(() => {
     if (typeof window !== 'undefined') {
@@ -86,6 +90,27 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
     return INITIAL_STUDENT_PROFILE;
   });
+
+  // Sync profile when authenticated userProfile changes from Firebase Firestore
+  useEffect(() => {
+    if (userProfile && userProfile.role === 'STUDENT') {
+      setProfile((prev) => ({
+        ...prev,
+        name: userProfile.displayName || prev.name,
+        email: userProfile.email || prev.email,
+        phone: userProfile.phone || prev.phone,
+        college: userProfile.college || prev.college,
+        degree: userProfile.degree || prev.degree,
+        year: userProfile.year || prev.year,
+        gpa: userProfile.gpa || prev.gpa,
+        careerGoal: userProfile.careerGoal || prev.careerGoal,
+        location: userProfile.location || prev.location,
+        bio: userProfile.bio || prev.bio,
+        github: userProfile.github || prev.github,
+        linkedin: userProfile.linkedin || prev.linkedin,
+      }));
+    }
+  }, [userProfile]);
 
   // 2. Skills State
   const [skills, setSkills] = useState<Skill[]>(() => {
@@ -300,9 +325,30 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   // Update profile
-  const updateProfile = useCallback((updates: Partial<StudentProfile>) => {
-    setProfile((prev) => ({ ...prev, ...updates }));
-  }, []);
+  const updateProfile = useCallback(
+    (updates: Partial<StudentProfile>) => {
+      setProfile((prev) => {
+        const next = { ...prev, ...updates };
+        if (user?.uid) {
+          saveUserProfile(user.uid, {
+            displayName: next.name,
+            phone: next.phone,
+            college: next.college,
+            degree: next.degree,
+            year: next.year,
+            gpa: next.gpa,
+            careerGoal: next.careerGoal,
+            location: next.location,
+            bio: next.bio,
+            github: next.github,
+            linkedin: next.linkedin,
+          }).catch((err) => console.warn('Background Firestore profile sync error:', err));
+        }
+        return next;
+      });
+    },
+    [user]
+  );
 
   // Toggle resource completion for a skill
   const toggleResourceCompletion = useCallback((skillId: string, resourceId: string) => {

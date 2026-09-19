@@ -203,7 +203,15 @@ export const IndustryNavbar: React.FC<NavbarProps> = ({ onOpenSearch, onOpenMobi
             className="flex items-center gap-2.5 p-1 sm:pl-2 sm:pr-3 sm:py-1.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition-colors"
           >
             <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-brand-teal to-brand-emerald flex items-center justify-center font-bold text-white text-xs shadow-2xs">
-              TN
+              {company.name
+                ? company.name
+                    .split(' ')
+                    .filter(Boolean)
+                    .map((n) => n[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase()
+                : 'CO'}
             </div>
             <div className="hidden sm:block text-left leading-none">
               <p className="font-bold text-xs text-slate-900">{company.name}</p>
@@ -227,6 +235,15 @@ export const IndustryNavbar: React.FC<NavbarProps> = ({ onOpenSearch, onOpenMobi
               >
                 <Building2 className="w-4 h-4 text-slate-500" />
                 <span>Company Profile &amp; Branding</span>
+              </Link>
+
+              <Link
+                href="/onboarding"
+                onClick={() => setProfileDropdownOpen(false)}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+              >
+                <Sparkles className="w-4 h-4 text-emerald-600" />
+                <span>Update Account Setup</span>
               </Link>
 
               <Link

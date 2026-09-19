@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
+import { OnboardingGuard } from '@/components/auth/OnboardingGuard';
 
 export const metadata: Metadata = {
   title: 'SkillSetu — AYUSH Career Bridge | Academia–Industry Collaboration',
@@ -24,7 +25,9 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-slate-50 text-slate-900 min-h-screen antialiased">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <OnboardingGuard>{children}</OnboardingGuard>
+        </AuthProvider>
       </body>
     </html>
   );

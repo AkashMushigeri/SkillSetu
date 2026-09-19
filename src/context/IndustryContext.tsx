@@ -41,6 +41,8 @@ import {
   publishApplicationStageUpdate,
   publishAcceptedOffer,
 } from '@/lib/syncConverters';
+import { useAuth } from '@/context/AuthContext';
+import { saveUserProfile } from '@/lib/firebase';
 
 export interface ToastMessage {
   id: string;
@@ -166,7 +168,31 @@ const defaultNotifications: IndustryNotification[] = [
 const IndustryContext = createContext<IndustryContextType | undefined>(undefined);
 
 export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, userProfile } = useAuth();
   const [company, setCompany] = useState<CompanyProfile>(defaultCompanyProfile);
+
+  // Sync with Firebase Firestore profile
+  useEffect(() => {
+    if (userProfile && userProfile.role === 'INDUSTRY') {
+      setCompany((prev) => ({
+        ...prev,
+        name: userProfile.companyName || prev.name,
+        industry: userProfile.companyIndustry || prev.industry,
+        employees: userProfile.companySize || prev.employees,
+        location: userProfile.companyLocation || userProfile.location || prev.location,
+        website: userProfile.companyWebsite || prev.website,
+        about: userProfile.companyBio || prev.about,
+        hiringDomains: userProfile.hiringDomains || prev.hiringDomains,
+        recruiter: {
+          ...prev.recruiter,
+          name: userProfile.displayName || prev.recruiter.name,
+          title: userProfile.recruiterTitle || prev.recruiter.title,
+          email: userProfile.email || prev.recruiter.email,
+        },
+      }));
+    }
+  }, [userProfile]);
+
   const [preferences, setPreferences] = useState<HiringPreferences>(defaultHiringPreferences);
   const [jobs, setJobs] = useState<IndustryJob[]>(mockJobs);
   const [internships, setInternships] = useState<IndustryInternship[]>(mockInternships);
@@ -586,7 +612,22 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const updateCompanyProfile = (profile: Partial<CompanyProfile>) => {
-    setCompany((prev) => ({ ...prev, ...profile }));
+    setCompany((prev) => {
+      const next = { ...prev, ...profile };
+      if (user?.uid) {
+        saveUserProfile(user.uid, {
+          companyName: next.name,
+          companyIndustry: next.industry,
+          companySize: next.employees,
+          companyLocation: next.location,
+          companyWebsite: next.website,
+          companyBio: next.about,
+          displayName: next.recruiter.name,
+          recruiterTitle: next.recruiter.title,
+        }).catch((err) => console.warn('Background Firestore profile sync error:', err));
+      }
+      return next;
+    });
     showToast('Company Profile updated successfully.', 'success');
   };
 

@@ -31,6 +31,8 @@ import {
   collegeTrainingToSignal,
 } from '@/lib/syncConverters';
 import { writeSyncRecord, SYNC_DOMAINS } from '@/lib/syncBridge';
+import { useAuth } from '@/context/AuthContext';
+import { saveUserProfile } from '@/lib/firebase';
 
 interface ToastState {
   message: string;
@@ -64,8 +66,34 @@ interface CollegeContextType {
 const CollegeContext = createContext<CollegeContextType | undefined>(undefined);
 
 export const CollegeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user, userProfile } = useAuth();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
   const [profile, setProfile] = useState<CollegeProfileInfo>(INITIAL_COLLEGE_PROFILE);
+
+  // Sync with Firebase Firestore profile
+  useEffect(() => {
+    if (userProfile && userProfile.role === 'COLLEGE') {
+      setProfile((prev) => ({
+        ...prev,
+        institutionName: userProfile.institutionName || prev.institutionName,
+        collegeId: userProfile.collegeCode || prev.collegeId,
+        location: userProfile.institutionLocation || userProfile.location || prev.location,
+        website: userProfile.institutionWebsite || prev.website,
+        email: userProfile.email || prev.email,
+        phone: userProfile.phone || prev.phone,
+        totalStudents: userProfile.totalStudents || prev.totalStudents,
+        naacGrade: userProfile.naacGrade || prev.naacGrade,
+        placementOfficer: {
+          ...prev.placementOfficer,
+          name: userProfile.displayName || prev.placementOfficer.name,
+          title: userProfile.designation || prev.placementOfficer.title,
+          email: userProfile.email || prev.placementOfficer.email,
+          phone: userProfile.phone || prev.placementOfficer.phone,
+        },
+      }));
+    }
+  }, [userProfile]);
+
   const [trainingPrograms, setTrainingPrograms] = useState<TrainingProgram[]>(INITIAL_TRAINING_PROGRAMS);
   const [announcements, setAnnouncements] = useState<CampusAnnouncement[]>(INITIAL_ANNOUNCEMENTS);
   const [students, setStudents] = useState<CollegeStudent[]>(MOCK_STUDENTS);
@@ -238,6 +266,19 @@ export const CollegeProvider: React.FC<{ children: ReactNode }> = ({ children })
         localStorage.setItem('skillsetu_college_profile', JSON.stringify(next));
       } catch (e) {
         console.error(e);
+      }
+      if (user?.uid) {
+        saveUserProfile(user.uid, {
+          institutionName: next.institutionName,
+          collegeCode: next.collegeId,
+          institutionLocation: next.location,
+          institutionWebsite: next.website,
+          totalStudents: next.totalStudents,
+          naacGrade: next.naacGrade,
+          displayName: next.placementOfficer.name,
+          designation: next.placementOfficer.title,
+          phone: next.placementOfficer.phone,
+        }).catch((err) => console.warn('Background Firestore profile sync error:', err));
       }
       return next;
     });

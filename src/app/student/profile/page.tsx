@@ -45,7 +45,15 @@ export default function StudentProfilePage() {
           <div className="flex flex-col sm:flex-row sm:items-center gap-5">
             {/* Avatar */}
             <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-tr from-brand-teal to-brand-emerald text-white flex items-center justify-center font-black text-2xl sm:text-3xl shadow-md shrink-0">
-              AS
+              {profile.name
+                ? profile.name
+                    .split(' ')
+                    .filter(Boolean)
+                    .map((n) => n[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase()
+                : 'ST'}
             </div>
 
             <div className="space-y-1.5">
@@ -80,13 +88,24 @@ export default function StudentProfilePage() {
           </div>
 
           <div className="flex flex-row md:flex-col items-center md:items-end justify-between gap-3 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
-            <Link
-              href="/student/resume"
-              className="px-4 py-2.5 rounded-xl bg-brand-teal hover:bg-brand-dark text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5"
-            >
-              <FileCheck2 className="w-4 h-4" />
-              <span>Preview ATS Resume</span>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/onboarding"
+                className="px-3.5 py-2 rounded-xl border border-slate-200 hover:border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5"
+                title="Update your verified profile and database records"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-slate-500" />
+                <span>Edit Profile</span>
+              </Link>
+
+              <Link
+                href="/student/resume"
+                className="px-4 py-2 rounded-xl bg-brand-teal hover:bg-brand-dark text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5"
+              >
+                <FileCheck2 className="w-4 h-4" />
+                <span>Preview ATS Resume</span>
+              </Link>
+            </div>
 
             <div className="text-right text-xs">
               <span className="text-slate-400 block text-[11px]">SkillSetu ID</span>
