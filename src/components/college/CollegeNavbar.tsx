@@ -231,7 +231,7 @@ export const CollegeNavbar: React.FC<NavbarProps> = ({ onOpenSearch, onOpenMobil
                     onClick={() => {
                       setProfileDropdownOpen(false);
                       logout();
-                      router.push('/college/login');
+                      router.push('/login?role=college');
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-rose-600 hover:bg-rose-50 font-medium"
                   >

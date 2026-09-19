@@ -56,7 +56,7 @@ export const CollegeSidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOp
 
   const handleLogout = () => {
     logout();
-    router.push('/college/login');
+    router.push('/login?role=college');
   };
 
   const sidebarContent = (

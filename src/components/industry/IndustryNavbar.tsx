@@ -246,7 +246,7 @@ export const IndustryNavbar: React.FC<NavbarProps> = ({ onOpenSearch, onOpenMobi
                   onClick={() => {
                     setProfileDropdownOpen(false);
                     showToast('Logged out of Industry Portal', 'info');
-                    router.push('/industry/login');
+                    router.push('/login?role=industry');
                   }}
                   className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors"
                 >
