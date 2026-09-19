@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Candidate,
   IndustryJob,
@@ -29,6 +29,18 @@ import { mockSubmissions } from '@/data/industry/industrySubmissions';
 import { mockOffers } from '@/data/industry/industryOffers';
 import { mockCollegeMous } from '@/data/industry/industryMous';
 import { calculateCandidateMatch } from '@/lib/industryMatching';
+import {
+  subscribeToSync,
+  readNotificationsFor,
+  consumeNotification,
+} from '@/lib/syncBridge';
+import {
+  readIndustryApplicationsFromStudents,
+  readTrainingSignalsFromCollege,
+  publishIndustryOpportunities,
+  publishApplicationStageUpdate,
+  publishAcceptedOffer,
+} from '@/lib/syncConverters';
 
 export interface ToastMessage {
   id: string;
@@ -207,6 +219,97 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
+  // ------------------------------------------------------------------
+  // Cross-sector sync subscription (Student/College -> Industry)
+  // ------------------------------------------------------------------
+  const syncRefresh = useCallback(() => {
+    try {
+      // 1. Pull applications submitted from the Student Portal
+      const inboundApps = readIndustryApplicationsFromStudents();
+      if (inboundApps.length) {
+        setApplications((prev) => {
+          const ids = new Set(prev.map((a) => a.id));
+          const fresh = inboundApps.filter((a) => !ids.has(a.id));
+          if (!fresh.length) return prev;
+          const merged = [...fresh, ...prev];
+          saveState('skillsetu_ind_applications', merged);
+          return merged;
+        });
+      }
+
+      // 2. Pull college training signals (readiness/curriculum feedback)
+      const trainingSignals = readTrainingSignalsFromCollege();
+      if (trainingSignals.length) {
+        // Surface as a notification (kept generic so no structural risk)
+        setNotifications((prev) => {
+          const existingIds = new Set(prev.map((n) => n.id));
+          const fresh = trainingSignals
+            .filter((t) => t && typeof t === 'object' && t.id && !existingIds.has(`sync-training-${t.id}`))
+            .map((t) => ({
+              id: `sync-training-${t.id}`,
+              title: 'College Training Signal',
+              message: `${t.enrolledStudents || 0} students enrolled in "${t.programName || t.skill}" (${t.level || 'Basic'}).`,
+              time: 'Just now',
+              read: false,
+              type: 'partnership' as const,
+            }));
+          return fresh.length ? [...fresh, ...prev] : prev;
+        });
+      }
+
+      // 3. Merge cross-sector notifications (student engagement, offers, etc.)
+      const inboundNotifs = readNotificationsFor('industry');
+      if (inboundNotifs.length) {
+        setNotifications((prev) => {
+          const existingIds = new Set(prev.map((n) => n.id));
+          const fresh = inboundNotifs
+            .filter((n) => !existingIds.has(n.id))
+            .map((n) => ({
+              id: n.id,
+              title: n.title,
+              message: n.message,
+              time: n.time,
+              read: !!n.read,
+              type: (n.type === 'application' || n.type === 'shortlist' || n.type === 'offer'
+                ? 'application'
+                : n.type === 'challenge'
+                ? 'challenge'
+                : n.type === 'placement'
+                ? 'pipeline'
+                : 'partnership') as IndustryNotification['type'],
+              link: n.link,
+            }));
+          if (!fresh.length) return prev;
+          const merged = [...fresh, ...prev];
+          return merged;
+        });
+        inboundNotifs.forEach((n) => consumeNotification(n.id));
+      }
+    } catch (e) {
+      console.warn('[Sync] Industry refresh failed safely:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    syncRefresh();
+    return subscribeToSync(syncRefresh);
+  }, [syncRefresh]);
+
+  // Publish the full existing catalog once on mount so the Student &
+  // College portals can surface them (idempotent via correlation ids).
+  useEffect(() => {
+    try {
+      publishIndustryOpportunities({
+        jobs,
+        internships,
+        challenges: challenges.filter((c) => c.status === 'Active'),
+      });
+    } catch (e) {
+      console.warn('[Sync] Failed to publish initial catalog:', e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Save changes
   const saveState = <T,>(key: string, data: T) => {
     try {
@@ -332,6 +435,15 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const app = prev.find((a) => a.id === applicationId);
       if (app) {
         showToast(`Moved ${app.candidateName} to ${nextStage}`, 'success');
+        // Publish stage updates to the Student portal (shortlist / reject / offer)
+        try {
+          publishApplicationStageUpdate(
+            { id: app.id, jobTitle: app.jobTitle, stage: nextStage },
+            app.candidateEmail
+          );
+        } catch (e) {
+          console.warn('[Sync] Failed to publish stage update:', e);
+        }
       }
       return updated;
     });
@@ -353,6 +465,12 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newJob, ...jobs];
     setJobs(updated);
     saveState('skillsetu_ind_jobs', updated);
+    // Publish to Student portal as a live opportunity
+    try {
+      publishIndustryOpportunities({ jobs: [newJob] });
+    } catch (e) {
+      console.warn('[Sync] Failed to publish job:', e);
+    }
     showToast(`Job "${newJob.title}" published successfully!`, 'success');
     return newJob;
   };
@@ -368,6 +486,12 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newInternship, ...internships];
     setInternships(updated);
     saveState('skillsetu_ind_internships', updated);
+    // Publish to Student & College portals as live opportunities
+    try {
+      publishIndustryOpportunities({ internships: [newInternship] });
+    } catch (e) {
+      console.warn('[Sync] Failed to publish internship:', e);
+    }
     showToast(`Internship "${newInternship.title}" published successfully!`, 'success');
     return newInternship;
   };
@@ -431,6 +555,12 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newChallenge, ...challenges];
     setChallenges(updated);
     saveState('skillsetu_ind_challenges', updated);
+    // Publish to Student portal as a challenge micro-internship
+    try {
+      publishIndustryOpportunities({ challenges: [newChallenge] });
+    } catch (e) {
+      console.warn('[Sync] Failed to publish challenge:', e);
+    }
     showToast(`Industry Challenge "${newChallenge.title}" published!`, 'success');
     return newChallenge;
   };
@@ -536,6 +666,15 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setOffers((prev) => {
       const updated = prev.map((o) => (o.id === offerId ? { ...o, status } : o));
       saveState('skillsetu_ind_offers', updated);
+      const target = prev.find((o) => o.id === offerId);
+      if (target && status === 'Accepted') {
+        // Sync accepted offer to College (placement) + Student (notification)
+        try {
+          publishAcceptedOffer(target);
+        } catch (e) {
+          console.warn('[Sync] Failed to publish accepted offer:', e);
+        }
+      }
       return updated;
     });
     showToast(`Offer status updated to ${status}`, 'success');

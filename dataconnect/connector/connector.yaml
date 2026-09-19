@@ -1,0 +1,9 @@
+connectorId: "skillsetu"
+generate:
+  javascriptSdk:
+    outputDir: "../../src/generated/dataconnect"
+    package: "@skillsetu/dataconnect"
+    packageJsonDir: ../..
+    react: true
+    angular: false
+    clientCache: {}

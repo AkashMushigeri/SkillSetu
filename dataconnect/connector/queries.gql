@@ -1,0 +1,626 @@
+query ListCompanies @auth(level: PUBLIC, insecureReason: "Anyone can browse companies.") {
+  companies {
+    id
+    name
+    type
+    industry
+    location
+    employees
+    founded
+    website
+    tagline
+    logo
+    coverImage
+  }
+}
+
+query GetCompany($id: UUID!) @auth(level: PUBLIC, insecureReason: "Anyone can view a company.") {
+  company(id: $id) {
+    id
+    name
+    type
+    industry
+    location
+    coordinates
+    employees
+    founded
+    website
+    tagline
+    about
+    mission
+    techStack
+    departments
+    hiringDomains
+    benefits
+    culture
+    logo
+    coverImage
+    jobs_on_company {
+      id
+      title
+      location
+      workMode
+      jobType
+      salaryRange
+      status
+      postedDate
+    }
+    internships_on_company {
+      id
+      title
+      location
+      workMode
+      duration
+      stipend
+      status
+      postedDate
+    }
+  }
+}
+
+query ListColleges @auth(level: PUBLIC, insecureReason: "Anyone can browse colleges.") {
+  colleges {
+    id
+    name
+    location
+    studentsCount
+    verifiedStudentsCount
+    placementReadiness
+    partnershipStatus
+    contactPerson
+    contactEmail
+  }
+}
+
+query GetMyProfile @auth(level: USER_EMAIL_VERIFIED, insecureReason: "Verified users can view their profile.") {
+  user(key: { uid_expr: "auth.uid" }) {
+    uid
+    displayName
+    email
+    photoUrl
+    role
+    college
+    location
+    phone
+    candidateSkills: userSkills_on_user {
+      level
+      verified
+      score
+      skill {
+        name
+        category
+      }
+    }
+    candidateProjects_on_user {
+      id
+      title
+      description
+      technologies
+      githubUrl
+      liveUrl
+      createdAt
+    }
+    candidateExperiences_on_user {
+      id
+      title
+      company
+      duration
+      description
+      location
+      startDate
+      endDate
+    }
+    candidateEducations_on_user {
+      id
+      degree
+      department
+      college
+      graduationYear
+      cgpa
+      currentYear
+      createdAt
+    }
+  }
+}
+
+query SearchCandidates($skillNames: [String!])
+  @auth(expr: "auth.token.userRole == 'INDUSTRY'", insecureReason: "Industry recruiters can search candidates by skills.") {
+  candidates: users(
+    where: { role: { eq: STUDENT } }
+    limit: 50
+  ) {
+    uid
+    displayName
+    email
+    photoUrl
+    college
+    location
+    filteredSkills: userSkills_on_user(where: { skill: { name: { in: $skillNames } } }) {
+      level
+      verified
+      score
+      skill {
+        name
+      }
+    }
+    candidateProjects_on_user {
+      title
+      description
+      technologies
+      githubUrl
+      liveUrl
+    }
+    candidateEducations_on_user {
+      degree
+      department
+      college
+      graduationYear
+      cgpa
+      currentYear
+    }
+  }
+}
+
+query GetCandidateProfile($uid: String!)
+  @auth(level: USER, insecureReason: "Authenticated users can view candidate profiles.") {
+  user(key: { uid: $uid }) {
+    uid
+    displayName
+    email
+    photoUrl
+    college
+    location
+    phone
+    candidateSkills: userSkills_on_user {
+      level
+      verified
+      score
+      verificationDate
+      verifiedBy
+      badgeUrl
+      skill {
+        name
+        category
+      }
+    }
+    candidateProjects_on_user {
+      id
+      title
+      description
+      technologies
+      githubUrl
+      liveUrl
+      createdAt
+    }
+    candidateExperiences_on_user {
+      id
+      title
+      company
+      duration
+      description
+      location
+      startDate
+      endDate
+    }
+    candidateEducations_on_user {
+      id
+      degree
+      department
+      college
+      graduationYear
+      cgpa
+      currentYear
+      createdAt
+    }
+  }
+}
+
+query ListJobs @auth(level: PUBLIC, insecureReason: "Anyone can browse jobs.") {
+  jobs {
+    id
+    title
+    company {
+      id
+      name
+      logo
+    }
+    department
+    location
+    workMode
+    jobType
+    salaryRange
+    experienceRequired
+    minimumCgpa
+    jobRequiredSkills_on_job {
+      level
+      importance
+      minScore
+      skill {
+        name
+      }
+    }
+    deadline
+    openings
+    applicationsCount
+    status
+    postedDate
+  }
+}
+
+query ListInternships @auth(level: PUBLIC, insecureReason: "Anyone can browse internships.") {
+  internships {
+    id
+    title
+    company {
+      id
+      name
+      logo
+    }
+    department
+    location
+    workMode
+    duration
+    stipend
+    eligibility
+    startDate
+    applicationDeadline
+    internshipRequiredSkills_on_internship {
+      level
+      importance
+      minScore
+      skill {
+        name
+      }
+    }
+    openings
+    isStartupFriendly
+    eligibleForConversion
+    applicationsCount
+    status
+    postedDate
+  }
+}
+
+query ListMyApplications
+  @auth(expr: "auth.token.userRole == 'STUDENT'", insecureReason: "Students can view their applications.") {
+  applications(where: { candidateUid: { eq_expr: "auth.uid" } }) {
+    id
+    company {
+      id
+      name
+    }
+    jobId
+    internshipId
+    title
+    jobType
+    matchScore
+    appliedDate
+    stage
+    matchedSkills
+    missingSkills
+    interviewId
+  }
+}
+
+query ListCompanyApplications($companyId: UUID!)
+  @auth(expr: "auth.token.userRole == 'INDUSTRY'", insecureReason: "Industry users can view their company's applications.") {
+  applications(where: { companyId: { eq: $companyId } }) {
+    id
+    candidate {
+      uid
+      displayName
+      email
+      photoUrl
+      college
+      location
+    }
+    jobId
+    internshipId
+    title
+    jobType
+    matchScore
+    appliedDate
+    stage
+    matchedSkills
+    missingSkills
+  }
+}
+
+query ListMyInterviews
+  @auth(level: USER, insecureReason: "Users can view their interviews.") {
+  interviews(where: { candidateUid: { eq_expr: "auth.uid" } }) {
+    id
+    candidate {
+      uid
+      displayName
+    }
+    company {
+      id
+      name
+    }
+    title
+    round
+    date
+    time
+    mode
+    meetingLink
+    interviewers
+    status
+    score
+    createdAt
+  }
+}
+
+query ListCompanyInterviews($companyId: UUID!)
+  @auth(expr: "auth.token.userRole == 'INDUSTRY'", insecureReason: "Industry users can view their company's interviews.") {
+  interviews(where: { companyId: { eq: $companyId } }) {
+    id
+    candidate {
+      uid
+      displayName
+    }
+    company {
+      id
+      name
+    }
+    title
+    round
+    date
+    time
+    mode
+    meetingLink
+    interviewers
+    status
+    score
+    createdAt
+  }
+}
+
+query ListChallenges @auth(level: PUBLIC, insecureReason: "Anyone can browse challenges.") {
+  challenges {
+    id
+    title
+    description
+    difficulty
+    deadline
+    teamSize
+    prize
+    participantsCount
+    submissionsCount
+    status
+    company {
+      id
+      name
+      logo
+    }
+    requiredSkills
+    createdDate
+  }
+}
+
+query GetChallenge($id: UUID!)
+  @auth(level: PUBLIC, insecureReason: "Anyone can view a challenge.") {
+  challenge(id: $id) {
+    id
+    title
+    description
+    problemStatement
+    requiredSkills
+    difficulty
+    deadline
+    teamSize
+    prize
+    submissionRequirements
+    collegeParticipation
+    participantsCount
+    submissionsCount
+    status
+    company {
+      id
+      name
+      logo
+    }
+    createdDate
+    createdAt
+  }
+}
+
+query ListChallengeSubmissions($challengeId: UUID!)
+  @auth(level: PUBLIC, insecureReason: "Anyone can view submissions for a challenge.") {
+  challengeSubmissions(where: { challengeId: { eq: $challengeId } }) {
+    id
+    teamName
+    teamLeadUid
+    college
+    submissionDate
+    githubUrl
+    liveDemoUrl
+    videoUrl
+    score
+    testPassRate
+    aiSummary
+    status
+    skillsDemonstrated
+  }
+}
+
+query ListMyOffers
+  @auth(expr: "auth.token.userRole == 'STUDENT'", insecureReason: "Students can view their offers.") {
+  offers(where: { candidateUid: { eq_expr: "auth.uid" } }) {
+    id
+    candidate {
+      uid
+      displayName
+      email
+    }
+    jobOrInternshipId
+    roleTitle
+    type
+    department
+    location
+    workMode
+    compensation
+    baseFixed
+    variableBonus
+    retentionJoiningBonus
+    benefitsSummary
+    joiningDate
+    validUntil
+    status
+    generatedDate
+    authorizedSignatory
+    signatoryTitle
+  }
+}
+
+query ListMoUs
+  @auth(expr: "auth.token.userRole == 'INDUSTRY'", insecureReason: "Industry users can list MoUs.") {
+  collegeCompanies(where: { mouStatus: { eq: ACTIVE } }) {
+    college {
+      id
+      name
+      location
+    }
+    company {
+      id
+      name
+      logo
+    }
+    studentsCount
+    internshipsOffered
+    studentsHired
+    activePrograms
+    industryChallengesActive
+    mouStatus
+    curriculumModules_on_collegeCompany {
+      semester
+      currentSubject
+      industryRecommendation
+      recommendedTechnologies
+      rationale
+      status
+    }
+  }
+}
+
+query ListMoUsForCollege
+  @auth(expr: "auth.token.userRole == 'COLLEGE'", insecureReason: "College users can list MoUs.") {
+  collegeCompanies(where: { mouStatus: { eq: ACTIVE } }) {
+    college {
+      id
+      name
+      location
+    }
+    company {
+      id
+      name
+      logo
+    }
+    studentsCount
+    internshipsOffered
+    studentsHired
+    activePrograms
+    industryChallengesActive
+    mouStatus
+    curriculumModules_on_collegeCompany {
+      semester
+      currentSubject
+      industryRecommendation
+      recommendedTechnologies
+      rationale
+      status
+    }
+  }
+}
+
+query ListSkills @auth(level: PUBLIC, insecureReason: "Anyone can browse skills.") {
+  skills {
+    id
+    name
+    category
+    description
+  }
+}
+
+query ListMySkills
+  @auth(expr: "auth.token.userRole == 'STUDENT'", insecureReason: "Students can view their skills.") {
+  userSkills(where: { userUid: { eq_expr: "auth.uid" } }) {
+    level
+    verified
+    score
+    verificationDate
+    verifiedBy
+    badgeUrl
+    skill {
+      name
+      category
+    }
+  }
+}
+
+query ListCompanyJobs($companyId: UUID!)
+  @auth(expr: "auth.token.userRole == 'INDUSTRY'", insecureReason: "Industry users can view their company's jobs.") {
+  jobs(where: { companyId: { eq: $companyId } }) {
+    id
+    title
+    department
+    location
+    workMode
+    jobType
+    salaryRange
+    experienceRequired
+    minimumCgpa
+    deadline
+    openings
+    applicationsCount
+    shortlistedCount
+    strongMatchesCount
+    status
+    postedDate
+    createdAt
+    updatedAt
+  }
+}
+
+query ListCompanyInternships($companyId: UUID!)
+  @auth(expr: "auth.token.userRole == 'INDUSTRY'", insecureReason: "Industry users can view their company's internships.") {
+  internships(where: { companyId: { eq: $companyId } }) {
+    id
+    title
+    department
+    location
+    workMode
+    duration
+    stipend
+    eligibility
+    startDate
+    applicationDeadline
+    openings
+    isStartupFriendly
+    eligibleForConversion
+    applicationsCount
+    shortlistedCount
+    status
+    postedDate
+    createdAt
+    updatedAt
+  }
+}
+
+query ListCompanyChallenges($companyId: UUID!)
+  @auth(expr: "auth.token.userRole == 'INDUSTRY'", insecureReason: "Industry users can view their company's challenges.") {
+  challenges(where: { companyId: { eq: $companyId } }) {
+    id
+    title
+    description
+    difficulty
+    deadline
+    teamSize
+    prize
+    participantsCount
+    submissionsCount
+    status
+    createdDate
+    createdAt
+  }
+}

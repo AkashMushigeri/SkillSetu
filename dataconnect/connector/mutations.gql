@@ -1,0 +1,308 @@
+mutation UpsertStudentProfile($displayName: String!, $email: String!, $photoUrl: String, $college: String, $location: String, $phone: String)
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'STUDENT'", insecureReason: "Verified students can upsert their profile.") {
+  user_upsert(data: {
+    uid_expr: "auth.uid",
+    displayName: $displayName,
+    email: $email,
+    role: STUDENT,
+    photoUrl: $photoUrl,
+    college: $college,
+    location: $location,
+    phone: $phone
+  })
+}
+
+mutation UpsertCompany($name: String!, $type: String, $industry: String, $location: String, $coordinates: Any, $employees: String, $founded: Int, $website: String, $tagline: String, $about: String, $mission: String, $techStack: [String!], $departments: [String!], $hiringDomains: [String!], $benefits: [String!], $culture: [String!], $logo: String, $coverImage: String)
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'", insecureReason: "Verified industry users can create their company profile.") {
+  company_insert(data: {
+    ownerUid_expr: "auth.uid",
+    name: $name,
+    type: $type,
+    industry: $industry,
+    location: $location,
+    coordinates: $coordinates,
+    employees: $employees,
+    founded: $founded,
+    website: $website,
+    tagline: $tagline,
+    about: $about,
+    mission: $mission,
+    techStack: $techStack,
+    departments: $departments,
+    hiringDomains: $hiringDomains,
+    benefits: $benefits,
+    culture: $culture,
+    logo: $logo,
+    coverImage: $coverImage
+  })
+}
+
+mutation UpsertCollege($name: String!, $location: String, $coordinates: Any, $studentsCount: Int, $verifiedStudentsCount: Int, $placementReadiness: Int, $contactPerson: String, $contactEmail: String)
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'COLLEGE'", insecureReason: "Verified college users can upsert their college profile.") {
+  college_insert(data: {
+    name: $name,
+    location: $location,
+    coordinates: $coordinates,
+    studentsCount: $studentsCount,
+    verifiedStudentsCount: $verifiedStudentsCount,
+    placementReadiness: $placementReadiness,
+    contactPerson: $contactPerson,
+    contactEmail: $contactEmail,
+    partnershipStatus: POTENTIAL
+  })
+}
+
+mutation CreateSkill($name: String!, $category: String, $description: String)
+  @auth(level: USER, insecureReason: "Authenticated users can create skills.") {
+  skill_insert(data: {
+    name: $name,
+    category: $category,
+    description: $description
+  })
+}
+
+mutation UpsertUserSkill($skillId: UUID!, $level: SkillLevel!, $verified: Boolean, $score: Float, $badgeUrl: String)
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'STUDENT'", insecureReason: "Verified students can upsert their skills.") {
+  userSkill_upsert(data: {
+    userUid_expr: "auth.uid",
+    skillId: $skillId,
+    level: $level,
+    verified: $verified,
+    score: $score,
+    verificationDate_expr: "request.time",
+    badgeUrl: $badgeUrl
+  })
+}
+
+mutation CreateCandidateProject($title: String!, $description: String, $technologies: [String!], $githubUrl: String, $liveUrl: String)
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'STUDENT'", insecureReason: "Verified students can create projects.") {
+  candidateProject_insert(data: {
+    userUid_expr: "auth.uid",
+    title: $title,
+    description: $description,
+    technologies: $technologies,
+    githubUrl: $githubUrl,
+    liveUrl: $liveUrl
+  })
+}
+
+mutation CreateCandidateExperience($title: String!, $company: String!, $duration: String, $description: String, $location: String, $startDate: Timestamp, $endDate: Timestamp)
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'STUDENT'", insecureReason: "Verified students can add experience.") {
+  candidateExperience_insert(data: {
+    userUid_expr: "auth.uid",
+    title: $title,
+    company: $company,
+    duration: $duration,
+    description: $description,
+    location: $location,
+    startDate: $startDate,
+    endDate: $endDate
+  })
+}
+
+mutation CreateCandidateEducation($degree: String!, $department: String!, $college: String!, $graduationYear: Int, $cgpa: Float, $currentYear: String)
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'STUDENT'", insecureReason: "Verified students can add education.") {
+  candidateEducation_insert(data: {
+    userUid_expr: "auth.uid",
+    degree: $degree,
+    department: $department,
+    college: $college,
+    graduationYear: $graduationYear,
+    cgpa: $cgpa,
+    currentYear: $currentYear
+  })
+}
+
+mutation CreateJob($companyId: UUID!, $title: String!, $department: String, $location: String, $workMode: String, $jobType: String, $salaryRange: String, $experienceRequired: String, $education: String, $graduationYear: String, $minimumCgpa: Float, $description: String, $responsibilities: [String!], $qualifications: [String!], $deadline: Timestamp, $openings: Int, $status: String)
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'", insecureReason: "Verified industry users can create jobs.") {
+  job_insert(data: {
+    companyId: $companyId,
+    title: $title,
+    department: $department,
+    location: $location,
+    workMode: $workMode,
+    jobType: $jobType,
+    salaryRange: $salaryRange,
+    experienceRequired: $experienceRequired,
+    education: $education,
+    graduationYear: $graduationYear,
+    minimumCgpa: $minimumCgpa,
+    description: $description,
+    responsibilities: $responsibilities,
+    qualifications: $qualifications,
+    deadline: $deadline,
+    openings: $openings,
+    status: $status
+  })
+}
+
+mutation UpsertJobRequiredSkill($jobId: UUID!, $skillId: UUID!, $level: SkillLevel!, $importance: SkillImportance!, $minScore: Float)
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'", insecureReason: "Verified industry users can manage job required skills.") {
+  jobRequiredSkill_upsert(data: {
+    jobId: $jobId,
+    skillId: $skillId,
+    level: $level,
+    importance: $importance,
+    minScore: $minScore
+  })
+}
+
+mutation CreateInternship($companyId: UUID!, $title: String!, $department: String, $location: String, $workMode: String, $duration: String, $stipend: String, $eligibility: String, $startDate: Timestamp, $applicationDeadline: Timestamp, $description: String, $learningOutcomes: [String!], $mentor: String, $openings: Int, $isStartupFriendly: Boolean, $targetAudience: String, $eligibleForConversion: Boolean, $status: String)
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'", insecureReason: "Verified industry users can create internships.") {
+  internship_insert(data: {
+    companyId: $companyId,
+    title: $title,
+    department: $department,
+    location: $location,
+    workMode: $workMode,
+    duration: $duration,
+    stipend: $stipend,
+    eligibility: $eligibility,
+    startDate: $startDate,
+    applicationDeadline: $applicationDeadline,
+    description: $description,
+    learningOutcomes: $learningOutcomes,
+    mentor: $mentor,
+    openings: $openings,
+    isStartupFriendly: $isStartupFriendly,
+    targetAudience: $targetAudience,
+    eligibleForConversion: $eligibleForConversion,
+    status: $status
+  })
+}
+
+mutation UpsertInternshipRequiredSkill($internshipId: UUID!, $skillId: UUID!, $level: SkillLevel!, $importance: SkillImportance!, $minScore: Float)
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'", insecureReason: "Verified industry users can manage internship required skills.") {
+  internshipRequiredSkill_upsert(data: {
+    internshipId: $internshipId,
+    skillId: $skillId,
+    level: $level,
+    importance: $importance,
+    minScore: $minScore
+  })
+}
+
+mutation CreateApplication($companyId: UUID!, $jobId: String, $internshipId: String, $title: String!, $jobType: String!, $matchScore: Int, $matchedSkills: [String!], $missingSkills: [String!])
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'STUDENT'", insecureReason: "Verified students can apply to jobs/internships.") {
+  application_insert(data: {
+    candidateUid_expr: "auth.uid",
+    companyId: $companyId,
+    jobId: $jobId,
+    internshipId: $internshipId,
+    title: $title,
+    jobType: $jobType,
+    matchScore: $matchScore,
+    matchedSkills: $matchedSkills,
+    missingSkills: $missingSkills
+  })
+}
+
+mutation UpdateApplicationStage($id: UUID!, $stage: ApplicationStage!, $note: String)
+  @auth(expr: "auth.token.userRole == 'INDUSTRY'", insecureReason: "Industry users can update application stages.") {
+  application_update(id: $id, data: {
+    stage: $stage,
+    recruiterNotes: $note,
+    updatedAt_expr: "request.time"
+  })
+}
+
+mutation CreateInterview($candidateUid: String!, $companyId: UUID!, $title: String!, $round: String!, $date: Timestamp!, $time: String!, $mode: String, $meetingLink: String, $interviewers: [String!], $notes: String, $applicationId: UUID)
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'", insecureReason: "Verified industry users can schedule interviews.") {
+  interview_insert(data: {
+    candidateUid: $candidateUid,
+    companyId: $companyId,
+    applicationId: $applicationId,
+    title: $title,
+    round: $round,
+    date: $date,
+    time: $time,
+    mode: $mode,
+    meetingLink: $meetingLink,
+    interviewers: $interviewers,
+    notes: $notes
+  })
+}
+
+mutation CreateChallenge($companyId: UUID!, $title: String!, $description: String, $problemStatement: String, $requiredSkills: [String!], $difficulty: String, $deadline: Timestamp!, $teamSize: String, $prize: String, $submissionRequirements: String, $collegeParticipation: String, $status: ChallengeStatus)
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'", insecureReason: "Verified industry users can create challenges.") {
+  challenge_insert(data: {
+    companyId: $companyId,
+    title: $title,
+    description: $description,
+    problemStatement: $problemStatement,
+    requiredSkills: $requiredSkills,
+    difficulty: $difficulty,
+    deadline: $deadline,
+    teamSize: $teamSize,
+    prize: $prize,
+    submissionRequirements: $submissionRequirements,
+    collegeParticipation: $collegeParticipation,
+    status: $status
+  })
+}
+
+mutation CreateChallengeSubmission($challengeId: UUID!, $teamName: String!, $githubUrl: String!, $liveDemoUrl: String, $videoUrl: String, $skillsDemonstrated: [String!])
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'STUDENT'", insecureReason: "Verified students can submit to challenges.") {
+  challengeSubmission_insert(data: {
+    challengeId: $challengeId,
+    teamName: $teamName,
+    teamLeadUid_expr: "auth.uid",
+    githubUrl: $githubUrl,
+    liveDemoUrl: $liveDemoUrl,
+    videoUrl: $videoUrl,
+    skillsDemonstrated: $skillsDemonstrated
+  })
+}
+
+mutation CreateOffer($candidateUid: String!, $jobOrInternshipId: String, $roleTitle: String!, $type: String!, $department: String, $location: String, $workMode: String, $compensation: String, $baseFixed: String, $variableBonus: String, $retentionJoiningBonus: String, $benefitsSummary: String, $joiningDate: Timestamp, $validUntil: Timestamp, $status: OfferStatus, $authorizedSignatory: String, $signatoryTitle: String)
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'", insecureReason: "Verified industry users can create offers.") {
+  offer_insert(data: {
+    candidateUid: $candidateUid,
+    jobOrInternshipId: $jobOrInternshipId,
+    roleTitle: $roleTitle,
+    type: $type,
+    department: $department,
+    location: $location,
+    workMode: $workMode,
+    compensation: $compensation,
+    baseFixed: $baseFixed,
+    variableBonus: $variableBonus,
+    retentionJoiningBonus: $retentionJoiningBonus,
+    benefitsSummary: $benefitsSummary,
+    joiningDate: $joiningDate,
+    validUntil: $validUntil,
+    status: $status,
+    authorizedSignatory: $authorizedSignatory,
+    signatoryTitle: $signatoryTitle
+  })
+}
+
+mutation CreateCurriculumModule($collegeCompanyCollegeId: UUID!, $collegeCompanyCompanyId: UUID!, $semester: String!, $currentSubject: String!, $industryRecommendation: String, $recommendedTechnologies: [String!], $rationale: String, $status: CurriculumStatus)
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'", insecureReason: "Verified industry users can manage curriculum modules.") {
+  curriculumModule_insert(data: {
+    collegeCompanyCollegeId: $collegeCompanyCollegeId,
+    collegeCompanyCompanyId: $collegeCompanyCompanyId,
+    semester: $semester,
+    currentSubject: $currentSubject,
+    industryRecommendation: $industryRecommendation,
+    recommendedTechnologies: $recommendedTechnologies,
+    rationale: $rationale,
+    status: $status
+  })
+}
+
+mutation UpsertHiringPreferences($companyId: UUID!, $preferredDepartments: [String!], $preferredDegrees: [String!], $preferredGraduationYears: [String!], $preferredLocations: [String!], $workModes: [String!], $minimumCgpa: Float, $prioritizeVerifiedSkills: Boolean, $prioritizeStartupExperience: Boolean, $searchRadiusKm: Int)
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'", insecureReason: "Verified industry users can manage hiring preferences.") {
+  hiringPreferences_upsert(data: {
+    companyId: $companyId,
+    preferredDepartments: $preferredDepartments,
+    preferredDegrees: $preferredDegrees,
+    preferredGraduationYears: $preferredGraduationYears,
+    preferredLocations: $preferredLocations,
+    workModes: $workModes,
+    minimumCgpa: $minimumCgpa,
+    prioritizeVerifiedSkills: $prioritizeVerifiedSkills,
+    prioritizeStartupExperience: $prioritizeStartupExperience,
+    searchRadiusKm: $searchRadiusKm
+  })
+}

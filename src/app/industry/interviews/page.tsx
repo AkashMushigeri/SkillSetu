@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useIndustry } from '@/context/IndustryContext';
 import { ScheduleInterviewModal } from '@/components/industry/ScheduleInterviewModal';
+import { AIInterviewModal } from '@/components/AIInterviewModal';
 import {
   CalendarCheck,
   Calendar,
@@ -16,11 +17,17 @@ import {
   CheckCircle2,
   CheckCircle,
   AlertCircle,
+  Sparkles,
 } from 'lucide-react';
 
 export default function InterviewsPage() {
   const { interviews, candidates, jobs } = useIndustry();
   const [modalOpen, setModalOpen] = useState(false);
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [selectedCandidateForAI, setSelectedCandidateForAI] = useState<{ name: string; title: string }>({
+    name: 'Akash Mushigeri',
+    title: 'Full Stack Engineering Candidate',
+  });
   const [activeTab, setActiveTab] = useState<'All' | 'Today' | 'Upcoming' | 'Completed'>('All');
 
   const upcomingInterviews = interviews.filter((i) => i.status === 'Scheduled');
@@ -50,13 +57,29 @@ export default function InterviewsPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => setModalOpen(true)}
-          className="px-4 py-2.5 bg-gradient-to-r from-brand-emerald to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 self-start md:self-auto transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Schedule New Interview</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-3 self-start md:self-auto">
+          <button
+            onClick={() => {
+              setSelectedCandidateForAI({
+                name: candidates[0]?.name || 'Akash Mushigeri',
+                title: jobs[0]?.title || 'Full Stack Engineer',
+              });
+              setAiModalOpen(true);
+            }}
+            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-emerald-400 font-bold text-xs rounded-xl shadow-md flex items-center gap-2 transition-all border border-slate-700"
+          >
+            <Sparkles className="w-4 h-4 text-emerald-400" />
+            <span>Launch AI Interview Room (Voice &amp; Mic)</span>
+          </button>
+
+          <button
+            onClick={() => setModalOpen(true)}
+            className="px-4 py-2.5 bg-gradient-to-r from-brand-emerald to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Schedule New Interview</span>
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -198,6 +221,14 @@ export default function InterviewsPage() {
         onClose={() => setModalOpen(false)}
         candidate={candidates[0]}
         job={jobs[0]}
+      />
+
+      {/* AI Interview Room Modal */}
+      <AIInterviewModal
+        isOpen={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+        candidateName={selectedCandidateForAI.name}
+        roleTitle={selectedCandidateForAI.title}
       />
     </div>
   );

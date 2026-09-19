@@ -57,6 +57,7 @@ export const StudentHeader: React.FC = () => {
     { name: 'Home', href: '/student', icon: GraduationCap },
     { name: 'Explore Opportunities', href: '/student/opportunities', icon: Compass },
     { name: 'Skills', href: '/student/skills', icon: Award },
+    { name: 'AI Interview', href: '/student/ai-interview', icon: Sparkles },
     { name: 'Learning', href: '/student/learning', icon: BookOpen },
     { name: 'Saved', href: '/student/saved', icon: Bookmark },
     { name: 'Applications', href: '/student/applications', icon: FileCheck2 },

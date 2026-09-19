@@ -22,6 +22,19 @@ import {
   CITIES_LIST,
 } from '@/data/mockStudentData';
 import { calculateHaversineDistance, computeOpportunityMatch } from '@/lib/matchUtils';
+import {
+  subscribeToSync,
+  readNotificationsFor,
+  consumeNotification,
+} from '@/lib/syncBridge';
+import {
+  readStudentOpportunitiesFromIndustry,
+  readApplicationUpdatesFromIndustry,
+  mergeSyncNotifications,
+  publishStudentApplication,
+  industryStageToStudentStatus,
+} from '@/lib/syncConverters';
+import { fetchVerifiedJobsNearCity } from '@/lib/jobsApi';
 
 interface StudentContextType {
   profile: StudentProfile;
@@ -57,6 +70,7 @@ interface StudentContextType {
   workModeFilter: 'All' | 'Remote' | 'Hybrid' | 'On-site';
   setWorkModeFilter: (mode: 'All' | 'Remote' | 'Hybrid' | 'On-site') => void;
   resetToDemo: () => void;
+  liveApiLoading: boolean;
 }
 
 const StudentContext = createContext<StudentContextType | undefined>(undefined);
@@ -120,6 +134,41 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return INITIAL_NOTIFICATIONS;
   });
 
+  // Mirror of `notifications` for imperative access inside sync handlers.
+  const notificationsRef = React.useRef<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  useEffect(() => {
+    notificationsRef.current = notifications;
+  }, [notifications]);
+
+   // 6b. Cross-sector synced opportunities (published by the Industry portal)
+  const [syncedOpportunities, setSyncedOpportunities] = useState<Opportunity[]>(() => {
+    if (typeof window !== 'undefined') {
+      return readStudentOpportunitiesFromIndustry();
+    }
+    return [];
+  });
+
+  // 6c. Live API-fetched verified jobs
+  const [liveApiJobs, setLiveApiJobs] = useState<Opportunity[]>([]);
+  const [liveApiLoading, setLiveApiLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    const loadLiveJobs = async () => {
+      setLiveApiLoading(true);
+      try {
+        const city = CITIES_LIST[0].name;
+        const jobs = await fetchVerifiedJobsNearCity(city, 20);
+        setLiveApiJobs(jobs);
+      } catch (e) {
+        console.warn('[API] Failed to load verified jobs:', e);
+        setLiveApiJobs([]);
+      } finally {
+        setLiveApiLoading(false);
+      }
+    };
+    loadLiveJobs();
+  }, []);
+
   // 7. Geolocation & City
   const [selectedCity, setSelectedCity] = useState<CityLocation>(CITIES_LIST[0]); // Bengaluru
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number }>(CITIES_LIST[0].coordinates);
@@ -162,6 +211,55 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       localStorage.setItem('skillsetu_notifications', JSON.stringify(notifications));
     }
   }, [notifications]);
+
+  // ------------------------------------------------------------------
+  // Cross-sector sync subscription (Industry -> Student)
+  // ------------------------------------------------------------------
+  useEffect(() => {
+    const refresh = () => {
+      try {
+        // 1. Pull fresh opportunities published by the Industry portal
+        setSyncedOpportunities(readStudentOpportunitiesFromIndustry());
+
+        // 2. Pull application stage updates (shortlist / reject / offer)
+        const updates = readApplicationUpdatesFromIndustry();
+        if (updates.length) {
+          setApplications((prev) => {
+            let changed = false;
+            const next = prev.map((app) => {
+              const update = updates.find(
+                (u) => app.opportunityTitle.toLowerCase() === (u.jobTitle || '').toLowerCase()
+              );
+              if (!update) return app;
+              const localStatus = industryStageToStudentStatus(update.stage);
+              if (localStatus !== app.status) {
+                changed = true;
+                return { ...app, status: localStatus };
+              }
+              return app;
+            });
+            return changed ? next : prev;
+          });
+        }
+
+        // 3. Merge cross-sector notifications (shortlist / offer / interview)
+        const inboundNotifs = readNotificationsFor('student');
+        if (inboundNotifs.length) {
+          // Merge outside the state updater (avoids side-effects under StrictMode)
+          const merged = mergeSyncNotifications(notificationsRef.current, inboundNotifs);
+          notificationsRef.current = merged;
+          setNotifications(merged);
+          inboundNotifs.forEach((n) => consumeNotification(n.id));
+        }
+      } catch (e) {
+        console.warn('[Sync] Student refresh failed safely:', e);
+      }
+    };
+
+    refresh();
+    return subscribeToSync(refresh);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Request browser geolocation
   const requestUserLocation = useCallback(async (): Promise<boolean> => {
@@ -327,10 +425,12 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Submit Application
   const submitApplication = useCallback(
     (oppId: string): boolean => {
-      const opp = INITIAL_OPPORTUNITIES.find((o) => o.id === oppId);
+      const opp =
+        INITIAL_OPPORTUNITIES.find((o) => o.id === oppId) ||
+        syncedOpportunities.find((o) => o.id === oppId);
       if (!opp) return false;
 
-      // Check if already applied
+      // Check if already applied (across both local & synced ids)
       const existing = applications.find((a) => a.opportunityId === oppId);
       if (existing) return true;
 
@@ -356,6 +456,13 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       setApplications((prev) => [newApp, ...prev]);
 
+      // Publish to the Industry portal through the sync bridge
+      try {
+        publishStudentApplication(newApp, opp);
+      } catch (e) {
+        console.warn('[Sync] Failed to publish application:', e);
+      }
+
       // Add notification
       setNotifications((prev) => [
         {
@@ -372,7 +479,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       return true;
     },
-    [applications, skills]
+    [applications, skills, syncedOpportunities]
   );
 
   // Notifications helpers
@@ -393,7 +500,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Compute live opportunities with distances, skill match, and match boost
   const opportunities = useMemo(() => {
-    return INITIAL_OPPORTUNITIES.map((opp) => {
+    const local = INITIAL_OPPORTUNITIES.map((opp) => {
       const distance = calculateHaversineDistance(
         userCoords.lat,
         userCoords.lng,
@@ -412,7 +519,56 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         isMatchBoosted: match.isMatchBoosted,
       };
     });
-  }, [userCoords, skills]);
+
+    // Cross-sector opportunities published by the Industry portal.
+    const synced = syncedOpportunities
+      .filter((o) => !local.some((loc) => loc.id === o.id))
+      .map((opp) => {
+        const distance = calculateHaversineDistance(
+          userCoords.lat,
+          userCoords.lng,
+          opp.coordinates.lat,
+          opp.coordinates.lng
+        );
+
+        const match = computeOpportunityMatch(opp, skills);
+
+        return {
+          ...opp,
+          distanceKm: distance,
+          matchScore: match.matchScore,
+          matchedSkills: match.matchedSkills,
+          missingSkills: match.missingSkills,
+          isMatchBoosted: match.isMatchBoosted,
+        };
+      });
+
+    // Live API-fetched verified jobs
+    const apiJobs = liveApiJobs
+      .filter((o) => !local.some((loc) => loc.id === o.id))
+      .filter((o) => !synced.some((s) => s.id === o.id))
+      .map((opp) => {
+        const distance = calculateHaversineDistance(
+          userCoords.lat,
+          userCoords.lng,
+          opp.coordinates.lat,
+          opp.coordinates.lng
+        );
+
+        const match = computeOpportunityMatch(opp, skills);
+
+        return {
+          ...opp,
+          distanceKm: distance,
+          matchScore: match.matchScore !== undefined && match.matchScore > 0 ? match.matchScore : opp.matchScore,
+          matchedSkills: match.matchedSkills,
+          missingSkills: match.missingSkills,
+          isMatchBoosted: match.isMatchBoosted ?? opp.isMatchBoosted,
+        };
+      });
+
+    return [...local, ...synced, ...apiJobs];
+  }, [userCoords, skills, syncedOpportunities, liveApiJobs]);
 
   // Reset demo state
   const resetToDemo = useCallback(() => {
@@ -473,6 +629,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         workModeFilter,
         setWorkModeFilter,
         resetToDemo,
+        liveApiLoading,
       }}
     >
       {children}

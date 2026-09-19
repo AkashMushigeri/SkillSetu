@@ -19,6 +19,18 @@ import {
   MOCK_INTERNSHIPS,
   MOCK_PLACEMENT_DRIVES
 } from '@/data/collegeData';
+import {
+  subscribeToSync,
+  readNotificationsFor,
+  consumeNotification,
+} from '@/lib/syncBridge';
+import {
+  readCollegeInternshipsFromIndustry,
+  readPlacementsFromIndustry,
+  applyPlacementsToCollegeStudents,
+  collegeTrainingToSignal,
+} from '@/lib/syncConverters';
+import { writeSyncRecord, SYNC_DOMAINS } from '@/lib/syncBridge';
 
 interface ToastState {
   message: string;
@@ -75,6 +87,67 @@ export const CollegeProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   }, []);
 
+  // ------------------------------------------------------------------
+  // Cross-sector sync (Industry -> College)
+  // ------------------------------------------------------------------
+  const syncRefresh = React.useCallback(() => {
+    try {
+      // 1. Pull internships published by the Industry portal
+      const inboundInternships = readCollegeInternshipsFromIndustry();
+      if (inboundInternships.length) {
+        setInternships((prev) => {
+          const ids = new Set(prev.map((i) => i.id));
+          const fresh = inboundInternships.filter((i) => i && typeof i === 'object' && i.id && !ids.has(i.id));
+          return fresh.length ? [...fresh, ...prev] : prev;
+        });
+      }
+
+      // 2. Pull placements (accepted offers) from the Industry portal
+      const inboundPlacements = readPlacementsFromIndustry();
+      if (inboundPlacements.length) {
+        setPlacements((prev) => {
+          const ids = new Set(prev.map((p) => p.id));
+          const fresh = inboundPlacements.filter((p) => p && typeof p === 'object' && p.id && !ids.has(p.id));
+          return fresh.length ? [...fresh, ...prev] : prev;
+        });
+        // 3. Reflect placements on matching college students
+        setStudents((prev) => applyPlacementsToCollegeStudents(prev, inboundPlacements));
+      }
+
+      // 4. Merge cross-sector notifications (new placement / MoU etc.)
+      const inboundNotifs = readNotificationsFor('college');
+      if (inboundNotifs.length) {
+        setNotifications((prev) => {
+          const existingIds = new Set(prev.map((n) => n.id));
+          const fresh = inboundNotifs
+            .filter((n) => !existingIds.has(n.id))
+            .map((n) => ({
+              id: n.id,
+              title: n.title,
+              message: n.message,
+              time: n.time,
+              read: !!n.read,
+              type: 'internship' as const,
+              link: n.link,
+              targetRoute: n.link || '/college/dashboard',
+            }));
+          if (!fresh.length) return prev;
+          const merged = [...fresh, ...prev];
+          return merged;
+        });
+        inboundNotifs.forEach((n) => consumeNotification(n.id));
+      }
+    } catch (e) {
+      console.warn('[Sync] College refresh failed safely:', e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    syncRefresh();
+    return subscribeToSync(syncRefresh);
+  }, [syncRefresh]);
+
   const showToast = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => {
@@ -114,6 +187,16 @@ export const CollegeProvider: React.FC<{ children: ReactNode }> = ({ children })
       status: 'Active',
     };
     setTrainingPrograms((prev) => [newProgram, ...prev]);
+    // Publish training signal to Industry portal (curriculum readiness)
+    try {
+      const signal = collegeTrainingToSignal(newProgram);
+      writeSyncRecord(SYNC_DOMAINS.COLLEGE_TRAINING, signal, {
+        from: 'college',
+        correlationId: `training-${newProgram.id}`,
+      });
+    } catch (e) {
+      console.warn('[Sync] Failed to publish training signal:', e);
+    }
     showToast(`Training Program "${newProgram.name}" created successfully!`, 'success');
   };
 
