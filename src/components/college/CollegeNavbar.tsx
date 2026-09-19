@@ -16,8 +16,7 @@ import {
   Calendar,
   CheckCheck,
   Building,
-  Info,
-  Sparkles
+  Info
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -105,7 +104,10 @@ export const CollegeNavbar: React.FC<NavbarProps> = ({ onOpenSearch, onOpenMobil
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 text-white font-bold text-[9px] rounded-full flex items-center justify-center animate-pulse">
+                <span
+                  suppressHydrationWarning
+                  className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 text-white font-bold text-[9px] rounded-full flex items-center justify-center animate-pulse"
+                >
                   {unreadCount}
                 </span>
               )}
@@ -119,7 +121,10 @@ export const CollegeNavbar: React.FC<NavbarProps> = ({ onOpenSearch, onOpenMobil
                     <Bell className="w-4 h-4 text-emerald-600" />
                     <span className="font-bold text-xs text-slate-900">Campus Notifications</span>
                     {unreadCount > 0 && (
-                      <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full">
+                      <span
+                        suppressHydrationWarning
+                        className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full"
+                      >
                         {unreadCount} new
                       </span>
                     )}
@@ -212,14 +217,6 @@ export const CollegeNavbar: React.FC<NavbarProps> = ({ onOpenSearch, onOpenMobil
                     College Profile
                   </Link>
                   <Link
-                    href="/onboarding"
-                    onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-slate-700 hover:text-slate-900 hover:bg-slate-50 font-medium"
-                  >
-                    <Sparkles className="w-4 h-4 text-emerald-600" />
-                    Update College Setup
-                  </Link>
-                  <Link
                     href="/college/settings"
                     onClick={() => setProfileDropdownOpen(false)}
                     className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-slate-700 hover:text-slate-900 hover:bg-slate-50 font-medium"
@@ -234,7 +231,7 @@ export const CollegeNavbar: React.FC<NavbarProps> = ({ onOpenSearch, onOpenMobil
                     onClick={() => {
                       setProfileDropdownOpen(false);
                       logout();
-                      router.push('/college/login');
+                      router.push('/login?role=college');
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-rose-600 hover:bg-rose-50 font-medium"
                   >

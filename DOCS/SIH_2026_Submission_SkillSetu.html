@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIH 2026 Idea Submission - PS 26044 - SkillSetu</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+    :root {
+      --primary: #1e3a8a;
+      --primary-light: #3b82f6;
+      --accent: #0284c7;
+      --ayush-green: #047857;
+      --ayush-gold: #b45309;
+      --text-dark: #0f172a;
+      --text-muted: #475569;
+      --border-color: #cbd5e1;
+      --bg-card: #f8fafc;
+      --bg-highlight: #eff6ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text-dark);
+      background-color: #f1f5f9;
+      line-height: 1.6;
+      font-size: 13.5px;
+      padding: 24px;
+    }
+
+    /* Print action floating bar */
+    .print-bar {
+      position: sticky;
+      top: 16px;
+      z-index: 1000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #1e293b;
+      color: #ffffff;
+      padding: 12px 24px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25);
+      margin: 0 auto 24px auto;
+      max-width: 900px;
+    }
+
+    .print-bar .title {
+      font-weight: 600;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .print-bar .btn {
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      padding: 8px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease;
+    }
+
+    .print-bar .btn:hover {
+      background: #1d4ed8;
+    }
+
+    /* Document Container */
+    .document-page {
+      background: #ffffff;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 48px 56px;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e2e8f0;
+    }
+
+    /* SIH Header Banner */
+    .sih-header {
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 20px;
+      margin-bottom: 24px;
+    }
+
+    .top-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .sih-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #ea580c 0%, #16a34a 100%);
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 4px 10px;
+      border-radius: 4px;
+    }
+
+    .team-badge {
+      font-family: 'JetBrains Mono', monospace;
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .header-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1.3;
+      margin-bottom: 8px;
+    }
+
+    .ps-info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px 16px;
+      background: var(--bg-card);
+      padding: 12px 16px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      margin-top: 12px;
+      font-size: 12px;
+    }
+
+    .ps-info-item strong {
+      color: var(--text-dark);
+      font-weight: 600;
+    }
+
+    .ps-info-item span {
+      color: var(--text-muted);
+    }
+
+    /* Section Styling */
+    .submission-field {
+      margin-top: 32px;
+      page-break-inside: auto;
+    }
+
+    .field-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-left: 4px solid var(--primary);
+      padding-left: 12px;
+      margin-bottom: 14px;
+      background: #f8fafc;
+      padding-top: 6px;
+      padding-bottom: 6px;
+      border-radius: 0 4px 4px 0;
+    }
+
+    .field-header h2 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .char-limit {
+      font-size: 11px;
+      font-weight: 500;
+      color: #64748b;
+      margin-right: 12px;
+    }
+
+    .title-box {
+      font-size: 17px;
+      font-weight: 700;
+      color: #0f172a;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 14px 18px;
+      border-radius: 6px;
+      line-height: 1.4;
+    }
+
+    .content-box {
+      color: #1e293b;
+      text-align: justify;
+    }
+
+    .content-box p {
+      margin-bottom: 12px;
+    }
+
+    h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-top: 18px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 4px;
+    }
+
+    h4 {
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+      margin-top: 12px;
+      margin-bottom: 6px;
+    }
+
+    ul, ol {
+      margin-left: 20px;
+      margin-bottom: 12px;
+    }
+
+    li {
+      margin-bottom: 4px;
+    }
+
+    /* Highlight blocks & Callouts */
+    .callout-box {
+      background: #f0fdf4;
+      border-left: 3px solid var(--ayush-green);
+      padding: 10px 14px;
+      border-radius: 0 6px 6px 0;
+      margin: 14px 0;
+      font-size: 12.5px;
+    }
+
+    .callout-box strong {
+      color: var(--ayush-green);
+    }
+
+    .pipeline-diagram {
+      background: #0f172a;
+      color: #38bdf8;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      padding: 14px;
+      border-radius: 6px;
+      text-align: center;
+      margin: 14px 0;
+      letter-spacing: 0.5px;
+      font-weight: 500;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      font-size: 12px;
+    }
+
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 8px 12px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f1f5f9;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    tr:nth-child(even) td {
+      background-color: #f8fafc;
+    }
+
+    /* Code block */
+    pre {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 12px 16px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 12px 0;
+      line-height: 1.4;
+    }
+
+    .tag-bubble {
+      display: inline-block;
+      background: #e0f2fe;
+      color: #0369a1;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 14px;
+      font-size: 12px;
+      border: 1px solid #bae6fd;
+    }
+
+    .page-break {
+      page-break-before: always;
+      margin-top: 30px;
+    }
+
+    /* Print Media Queries */
+    @media print {
+      body {
+        background-color: #ffffff;
+        padding: 0;
+        font-size: 12px;
+        line-height: 1.5;
+        color: #000;
+      }
+
+      .print-bar {
+        display: none !important;
+      }
+
+      .document-page {
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+        border: none;
+        box-shadow: none;
+      }
+
+      .page-break {
+        page-break-before: always;
+      }
+
+      .submission-field {
+        page-break-inside: auto;
+      }
+
+      table, tr, td, th {
+        page-break-inside: avoid;
+      }
+
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+
+      @page {
+        size: A4;
+        margin: 16mm 14mm 16mm 14mm;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Screen Floating Print Action Bar -->
+  <div class="print-bar">
+    <div class="title">
+      <span>📄</span>
+      <span>SIH 2026 Submission Document — SkillSetu (PS: 26044)</span>
+    </div>
+    <button class="btn" onclick="window.print()">
+      <span>🖨️</span> Save as PDF / Print
+    </button>
+  </div>
+
+  <!-- Main Printable Document Container -->
+  <div class="document-page">
+
+    <!-- Header / Metadata -->
+    <header class="sih-header">
+      <div class="top-meta-row">
+        <div class="sih-badge">Smart India Hackathon 2026 · Official Idea Submission</div>
+        <div class="team-badge">Team ID: GAT054</div>
+      </div>
+      <h1 class="header-title">SKILLSETU — AYUSH CAREER BRIDGE</h1>
+      <p style="color: var(--text-muted); font-size: 13px; font-weight: 500;">
+        <em>"Learn. Connect. Grow Together."</em>
+      </p>
+
+      <div class="ps-info-grid">
+        <div class="ps-info-item">
+          <strong>Problem Statement ID:</strong> <span>26044</span>
+        </div>
+        <div class="ps-info-item">
+          <strong>Category / Theme:</strong> <span>Software / Smart Automation</span>
+        </div>
+        <div class="ps-info-item" style="grid-column: span 2;">
+          <strong>Problem Title:</strong> <span>"Portal for Academia - Industry collaboration for Skill Mapping, Internships and Placement"</span>
+        </div>
+        <div class="ps-info-item">
+          <strong>Organization:</strong> <span>Ministry of Ayush</span>
+        </div>
+        <div class="ps-info-item">
+          <strong>Department:</strong> <span>All India Institute of Ayurveda (AIIA)</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- SECTION 1: IDEA TITLE -->
+    <section class="submission-field">
+      <div class="field-header">
+        <h2>1. Idea Title</h2>
+        <span class="char-limit">Character Count: 96 / 100 max</span>
+      </div>
+      <div class="title-box">
+        SkillSetu: Academia-Industry Collaboration Platform for Skill Mapping, Internships and Placement
+      </div>
+    </section>
+
+    <!-- SECTION 2: TECHNOLOGY BUCKET -->
+    <section class="submission-field">
+      <div class="field-header">
+        <h2>2. Technology Bucket</h2>
+        <span class="char-limit">Exact Selection from SIH Portal Dropdown</span>
+      </div>
+      <div>
+        <span class="tag-bubble">Coding and Programming</span>
+        <p style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">
+          <em>Rationale: Platform built on robust web engineering architecture (React, Next.js, TypeScript, Tailwind CSS, Leaflet/OSM, and algorithmic match engines) with planned microservice scaling.</em>
+        </p>
+      </div>
+    </section>
+
+    <!-- SECTION 3: YOUTUBE LINK -->
+    <section class="submission-field">
+      <div class="field-header">
+        <h2>3. YouTube Link</h2>
+        <span class="char-limit">Optional SIH Field</span>
+      </div>
+      <div style="font-style: italic; color: #64748b; font-size: 13px; padding: 8px 12px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 4px;">
+        [To be inserted by team prior to final portal submission]
+      </div>
+    </section>
+
+    <!-- SECTION 4: ABSTRACT / SUMMARY -->
+    <section class="submission-field page-break">
+      <div class="field-header">
+        <h2>4. Abstract / Summary</h2>
+        <span class="char-limit">Word / Character Compliant (Max 10,000 characters)</span>
+      </div>
+      <div class="content-box">
+        <p>
+          <strong>SkillSetu – AYUSH Career Bridge</strong> is an intelligent, competency-first digital collaboration platform engineered to bridge the structural divide between academic education and industry expectations. Submitted for <strong>Smart India Hackathon 2026 under Problem Statement ID: 26044</strong> (Ministry of Ayush / All India Institute of Ayurveda), the platform directly targets the curriculum-skill latency gap that leaves students unprepared for practical employment and forces recruiters to sift through unverified, keyword-stuffed resumes.
+        </p>
+        <p>
+          Traditional recruitment portals function as passive advertising directories that treat employment as a disconnected transaction. SkillSetu replaces this outdated paradigm with an active, tripartite ecosystem connecting <strong>Students</strong>, <strong>Academic Institutions</strong>, and <strong>Industry Employers</strong> through a continuous six-stage progression lifecycle:
+        </p>
+
+        <div class="pipeline-diagram">
+          LEARN &nbsp;⟶&nbsp; ASSESS &nbsp;⟶&nbsp; VERIFY &nbsp;⟶&nbsp; MATCH &nbsp;⟶&nbsp; APPLY &nbsp;⟶&nbsp; GROW
+        </div>
+
+        <h3>Key System Innovations & Workflows:</h3>
+        <ul>
+          <li><strong>Three-Tier Skill Taxonomy & Dynamic Gap Analysis:</strong> Student competencies are structured into Basic (syntax & concepts), Intermediate (tooling & APIs), and Advanced (system design & optimization) tiers. When targeting aspirational roles, students receive an immediate visual diagnosis of missing competencies alongside step-by-step modular learning roadmaps.</li>
+          <li><strong>Objective 100-Point Match Engine:</strong> Candidate-to-opportunity matching is governed by a transparent, multi-factor scoring rubric: Skill Overlap (60%), Verified Assessment Audit (15%), Practical Project Portfolio (10%), Prior Sprint Experience (5%), Academic CGPA (5%), and Proximity Radius (5%), completely eliminating superficial resume keyword screening.</li>
+          <li><strong>Tripartite Stakeholder Collaboration:</strong>
+            <ul>
+              <li><em>Students</em> gain transparent career progression, verified skill credentials, and real-time application status tracking.</li>
+              <li><em>Academia / Colleges</em> obtain batch-wide skill readiness heatmaps, automated placement eligibility thresholds, and tools to modernize curricula via bilateral industry MoUs.</li>
+              <li><em>Industry</em> gains precision skill-first talent search, an 8-stage interactive Kanban recruitment pipeline, code benchmark evaluation, and standardized digital offer generation.</li>
+            </ul>
+          </li>
+          <li><strong>Location-Based Opportunity Radar:</strong> Utilizing the Browser Geolocation API and OpenStreetMap/Leaflet, students dynamically discover nearby startups, institutional internships, and industry partners across customizable radius boundaries (5 km to 100 km).</li>
+        </ul>
+
+        <h3>Technical Implementation Status:</h3>
+        <p>
+          The <strong>operational prototype</strong> is built with React, Next.js, TypeScript (strict mode), and Tailwind CSS, featuring role-specific dashboards, client-side execution of the 100-point matching algorithm, interactive Leaflet geo-mapping, and an interactive Kanban hiring board. The <strong>production roadmap</strong> outlines an enterprise Node.js/PostgreSQL microservices backend, secure role-based access control (RBAC), proctored assessment sandboxes, and proposed AI/ML models for automated syllabus gap discovery and semantic skill-to-role vector matching.
+        </p>
+        <p>
+          By transforming recruitment from static resume claims into verified, demonstrated competencies, SkillSetu provides a scalable, national-level solution ensuring no student is left behind due to lack of career direction or industry misalignment.
+        </p>
+      </div>
+    </section>
+
+    <!-- SECTION 5: IDEA DESCRIPTION -->
+    <section class="submission-field page-break">
+      <div class="field-header">
+        <h2>5. Idea Description</h2>
+        <span class="char-limit">Comprehensive SIH Narrative (Max 50,000 characters)</span>
+      </div>
+      <div class="content-box">
+
+        <h3>1. Executive Summary & Problem Context</h3>
+        <p>
+          In higher and technical education across India—including technical, bio-computational, healthcare, and allied domains under the purview of institutions like the All India Institute of Ayurveda (AIIA) and the Ministry of Ayush—a critical structural divide persists: the <strong>Curriculum-Skill Latency Gap</strong>. Academic curricula update on multi-year institutional revision cycles, whereas industry, high-growth startups, and modern research organizations evolve their required skillsets on a continuous basis.
+        </p>
+        <p>This disconnect produces three systemic bottlenecks:</p>
+        <ol>
+          <li><strong>The Student Dilemma:</strong> Students graduate with degrees and theoretical coursework but lack a quantitative understanding of their actual practical competencies, current market expectations, or specific skill gaps. Traditional job search engines merely index static resumes that reward keyword stuffing over demonstrated practical competence.</li>
+          <li><strong>The Industry Hiring Bottleneck:</strong> Employers and startups face overwhelming volumes of unvetted resumes. Without standardized, capability-based validation, recruiters spend hundreds of hours filtering candidates through superficial proxies (such as college tier or CGPA) rather than verifiable skill competencies.</li>
+          <li><strong>The Academia Visibility Void:</strong> Academic institutions and placement cells lack dynamic, data-driven visibility into the real-time skill distribution of their student cohorts and emerging industry demands. Consequently, curriculum enhancements, bilateral Memoranda of Understanding (MoUs), and campus training interventions remain reactive and anecdotal.</li>
+        </ol>
+
+        <div class="callout-box">
+          <strong>SIH Problem Alignment:</strong> SkillSetu is engineered specifically to address <strong>Problem Statement ID: 26044</strong> ("Portal for Academia - Industry collaboration for Skill Mapping, Internships and Placement"), transforming recruitment from a passive job board into an active competency-first collaboration bridge.
+        </div>
+
+        <h3>2. Core Differentiator: The Six-Stage Continuous Competency Loop</h3>
+        <p>
+          Unlike traditional job portals that simply list job vacancies, SkillSetu operates on a structured, closed-loop progression pipeline:
+        </p>
+        <ul>
+          <li><strong>LEARN:</strong> Students access structured learning modules and curated technical resources tailored to specific industry competencies.</li>
+          <li><strong>ASSESS:</strong> Students undergo progressive, modular competency evaluations to benchmark their conceptual and practical grasp.</li>
+          <li><strong>VERIFY:</strong> Successful evaluations yield verified digital skill credentials and competency ratings, moving talent evaluation from self-proclaimed resume claims to objective, demonstrated capability.</li>
+          <li><strong>MATCH:</strong> A transparent, multi-dimensional match engine evaluates candidate skill profiles directly against verified industry role criteria, calculating an objective match score.</li>
+          <li><strong>APPLY:</strong> Students discover and apply directly to matching internships, apprenticeships, micro-sprints, and full-time opportunities with complete pipeline transparency.</li>
+          <li><strong>GROW:</strong> Continuous feedback from assessments and recruiter requirements reveals actionable skill gaps, recommending the next step in the student's career trajectory.</li>
+        </ul>
+
+        <h3>3. System Architecture & Multi-Stakeholder Workflows</h3>
+        <pre>
++-----------------------------------------------------------------------------+
+|                          SKILLSETU CENTRAL PLATFORM                         |
++-----------------------------------------------------------------------------+
+          ▲                                  ▲                              ▲
+          │                                  │                              │
++-------------------+              +-------------------+          +-------------------+
+|  STUDENT PORTAL   |              |  COLLEGE PORTAL   |          |  INDUSTRY PORTAL  |
+| - Skill Profiling |              | - Cohort Heatmaps |          | - Skill-First HR  |
+| - Self-Assessment |              | - Skill Gap Radar |          | - 100-Pt Matching |
+| - Micro-Learning  |              | - Drive Oversight |          | - Kanban Pipeline |
+| - Geo-Radar Maps  |              | - Bilateral MoUs  |          | - Offer Studio    |
++-------------------+              +-------------------+          +-------------------+
+        </pre>
+
+        <h4>A. Student Workflow</h4>
+        <ul>
+          <li><strong>Profile & Taxonomy Mapping:</strong> Students build a dynamic competency profile categorizing their capabilities across a three-tier taxonomy: Basic, Intermediate, and Advanced.</li>
+          <li><strong>Skill Gap Identification:</strong> When a student targets an aspirational role (e.g., Data Analyst, Python Developer, Health-Informatics Associate), the platform dynamically compares their current verified skills against the target role's prerequisite matrix, visually highlighting exact skill deficits.</li>
+          <li><strong>Targeted Learning & Assessment:</strong> Students access structured learning roadmaps addressing their identified deficiencies and complete modular quizzes to validate progression.</li>
+          <li><strong>Location-Based Discovery:</strong> Utilizing browser geolocation and interactive maps, students discover regional startups, institutional internships, and industry partners within custom distance radii (5 km to 100 km).</li>
+          <li><strong>Application Lifecycle Tracking:</strong> Real-time status tracking across screening, technical interviews, and formal offer letter issuance eliminates recruitment opacity.</li>
+        </ul>
+
+        <h4>B. College & Academia Workflow</h4>
+        <ul>
+          <li><strong>Batch-Wide Competency Heatmaps:</strong> Institutional dashboards aggregate department-level skill proficiencies across cohorts, providing placement officers with an empirical baseline of student capability.</li>
+          <li><strong>Curriculum Alignment & Gap Analytics:</strong> By aggregating recruiter requirements and candidate assessment results, colleges gain actionable intelligence on syllabus blind spots, enabling data-backed curriculum revisions.</li>
+          <li><strong>Placement Drive & Eligibility Automation:</strong> Placement cells define granular eligibility criteria (combining academic CGPA with mandatory verified skill thresholds), preventing mismatched candidate submissions.</li>
+          <li><strong>Institutional Industry Partnerships:</strong> Digital management of bilateral Memoranda of Understanding (MoUs), industry-sponsored hackathons, and guest faculty immersion initiatives.</li>
+        </ul>
+
+        <h4>C. Industry & Corporate Workflow</h4>
+        <ul>
+          <li><strong>Skill-First Candidate Discovery:</strong> Employers filter applicants directly by verified skill competencies, sub-discipline proficiencies, and project validation rather than static resume text.</li>
+          <li><strong>Transparent Multi-Factor Matching:</strong> Evaluates candidates against specific job role requirements through an objective, weighted scoring framework.</li>
+          <li><strong>8-Stage Hiring Pipeline:</strong> An interactive Kanban pipeline (New Application → Screening → Shortlisted → Technical Assessment → Technical Interview → HR Interview → Selected → Formal Offer Sent) that streamlines communication and reduces hiring turnaround time.</li>
+          <li><strong>Academic Collaboration & Curriculum Studio:</strong> Industry partners submit advisory inputs to academic senates regarding obsolete tools or emerging framework requirements, directly bridging curriculum latency.</li>
+          <li><strong>Digital Offer Generation:</strong> Standardized generation of structured internship and employment offer packages directly within the platform.</li>
+        </ul>
+
+        <div class="page-break"></div>
+
+        <h3>4. Skill Mapping & Assessment Engine</h3>
+        <h4>A. Granular Three-Tier Taxonomy</h4>
+        <ul>
+          <li><strong>Basic Level (Knowledge & Syntax):</strong> Core principles, theoretical understanding, language syntax, and basic operational workflows.</li>
+          <li><strong>Intermediate Level (Application & Tooling):</strong> API integration, database management, testing methodologies, and standard industry workflows.</li>
+          <li><strong>Advanced Level (System Design & Optimization):</strong> Architectural design, scalability, security hardening, automated pipelines, and edge-case resolution.</li>
+        </ul>
+
+        <h4>B. Transparent 100-Point Match Algorithm</h4>
+        <p>To eliminate hiring bias and subjective screening, SkillSetu evaluates candidate fit using an objective, multi-dimensional scoring rubric:</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Evaluation Component</th>
+              <th style="text-align: center; width: 80px;">Weight</th>
+              <th>Operational Metric</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Skill Overlap</strong></td>
+              <td style="text-align: center;"><strong>60%</strong></td>
+              <td>Direct intersection between candidate verified skills and job mandatory skills</td>
+            </tr>
+            <tr>
+              <td><strong>Verified Assessment Audit</strong></td>
+              <td style="text-align: center;"><strong>15%</strong></td>
+              <td>Standardized score achieved in platform competency evaluations</td>
+            </tr>
+            <tr>
+              <td><strong>Project & Practical Portfolio</strong></td>
+              <td style="text-align: center;"><strong>10%</strong></td>
+              <td>Validated repositories, capstone projects, and code artifacts</td>
+            </tr>
+            <tr>
+              <td><strong>Prior Sprint / Internship Experience</strong></td>
+              <td style="text-align: center;"><strong>5%</strong></td>
+              <td>Previous practical exposure and verified micro-sprint completion</td>
+            </tr>
+            <tr>
+              <td><strong>Academic Baseline (CGPA)</strong></td>
+              <td style="text-align: center;"><strong>5%</strong></td>
+              <td>Institutional academic record and foundational coursework performance</td>
+            </tr>
+            <tr>
+              <td><strong>Proximity & Work-Mode Alignment</strong></td>
+              <td style="text-align: center;"><strong>5%</strong></td>
+              <td>Geographic match for hybrid/on-site roles or remote-readiness</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>5. Location-Based Opportunity Discovery</h3>
+        <p>
+          Regional collaboration is vital for micro-internships, local startup incubation, and specialized research centers (such as state Ayush research institutes and regional testing laboratories).
+        </p>
+        <ul>
+          <li><strong>Browser Geolocation API:</strong> Safely captures user-consented browser coordinates to center the opportunity radar.</li>
+          <li><strong>Interactive Mapping (Leaflet & OpenStreetMap):</strong> Renders interactive map views displaying verified corporate offices, research facilities, and colleges without proprietary API licensing bottlenecks.</li>
+          <li><strong>Proximity Radius Filtering:</strong> Enables students and recruiters to adjust search boundaries (5 km, 15 km, 25 km, 50 km, 100 km) to find localized apprenticeships, summer internships, and physical campus drives.</li>
+        </ul>
+
+        <h3>6. Current Prototype Capabilities vs. Proposed Production Architecture</h3>
+        <p>
+          To maintain strict technical credibility and transparency for SIH evaluators, the platform architecture is cleanly separated into current operational capabilities and planned production enhancements:
+        </p>
+
+        <h4>A. Current Prototype Capabilities (Fully Functional in Current Build)</h4>
+        <ul>
+          <li><strong>Frontend Architecture:</strong> Built using a modern component architecture with React, Next.js, and TypeScript in strict mode, styled with Tailwind CSS.</li>
+          <li><strong>Role-Based Routing & Dashboards:</strong> Dedicated operational portals for Students, Colleges, and Industry with dedicated authentication flows and role-specific KPI dashboards.</li>
+          <li><strong>Interactive Leaflet & OpenStreetMap Integration:</strong> Live map view rendering institutional coordinates, startup headquarters, and dynamic radius circles using browser geolocation.</li>
+          <li><strong>Deterministic 100-Point Matching Engine:</strong> Client-side execution of the multi-factor candidate ranking algorithm based on active opportunity parameters.</li>
+          <li><strong>Interactive 8-Stage Kanban Board:</strong> Drag-and-drop recruitment workflow management with state synchronization.</li>
+          <li><strong>Client-Side State Persistence:</strong> Persistent session states using React Context and browser storage engines to showcase uninterrupted user flows during demonstrations.</li>
+          <li><strong>Curriculum Advisory & MoU Exporter:</strong> Institutional agreement generator producing standardized collaboration documents.</li>
+        </ul>
+
+        <h4>B. Proposed / Planned Production Capabilities (Scalability Roadmap)</h4>
+        <ul>
+          <li><strong>Production Backend & Database Layer:</strong> Transition to a secure Node.js/FastAPI REST/GraphQL microservices architecture backed by PostgreSQL for relational transactional data and Redis for session caching.</li>
+          <li><strong>Secure Role-Based Access Control (RBAC):</strong> Enterprise authentication featuring JWT tokens, OAuth2, and multi-factor authentication (MFA) compliant with data protection standards.</li>
+          <li><strong>AI/ML Skill Gap & Career Recommendation Engine (Proposed):</strong>
+            <ul>
+              <li>Natural Language Processing (NLP) models to parse emerging industry job descriptions and extract trending competency vectors.</li>
+              <li>Semantic vector matching (using cosine similarity on skill embeddings) to calculate non-linear career recommendations.</li>
+              <li>Automated curriculum comparison comparing university syllabi text against real-time industry requirement clusters.</li>
+            </ul>
+          </li>
+          <li><strong>Proctored Assessment & Live Code Sandbox:</strong> In-browser coding and testing sandboxes with automated test case evaluation.</li>
+          <li><strong>National & Enterprise Registry Integration:</strong> Secure API connectors for Digilocker, Academic Bank of Credits (ABC), and National Career Service (NCS) frameworks.</li>
+        </ul>
+
+        <h3>7. How SkillSetu Solves Problem Statement 26044</h3>
+        <ol>
+          <li><strong>Solves Information Asymmetry:</strong> Replaces vague resumes and generic job postings with standardized, level-indexed skill requirements.</li>
+          <li><strong>Eliminates Recruiter Screening Fatigue:</strong> The 100-point transparent match score immediately bubbles up the most capable candidates, cutting time-to-hire by an estimated 40–60%.</li>
+          <li><strong>Empowers Academic Governance:</strong> Colleges no longer operate blind; they receive empirical analytics on which subject areas fail to meet industry thresholds.</li>
+          <li><strong>Fosters Regional & SME Inclusivity:</strong> Startups and regional research centers that cannot afford expensive corporate recruitment portals gain direct, map-based access to local, verified college talent.</li>
+        </ol>
+
+        <h3>8. Scalability, Security & Future Scope</h3>
+        <ul>
+          <li><strong>Horizontal Disciplinary Scaling:</strong> While demonstrated on core engineering and digital competencies, the underlying three-tier taxonomy is domain-agnostic. It can scale directly to specialized disciplines including Ayurvedic Pharmaceutical Manufacturing, Herbal Quality Control, Clinical Research, and Bio-Medical Informatics.</li>
+          <li><strong>Privacy by Design:</strong> Candidate location queries operate strictly with client-level permission; recruiter views display candidate capability data without exposing private student contact details prior to formal shortlisting.</li>
+          <li><strong>National Policy Alignment:</strong> Designed to support the objectives of the National Education Policy (NEP 2020) and AICTE internship mandates by digitizing industry-academia bilateral MoUs and credit-aligned apprenticeship tracking.</li>
+        </ul>
+
+      </div>
+    </section>
+
+    <!-- SECTION 6: WHY THIS CONTENT MATCHES SIH PS 26044 -->
+    <section class="submission-field page-break">
+      <div class="field-header">
+        <h2>Why This Content Matches SIH Problem Statement 26044</h2>
+        <span class="char-limit">5 Core Evaluator Alignment Pillars</span>
+      </div>
+      <div class="content-box">
+        <ol style="margin-left: 24px; font-size: 13px;">
+          <li style="margin-bottom: 12px;">
+            <strong>Direct Alignment with Core Problem Statement Mandate:</strong> Problem Statement 26044 explicitly calls for a <em>"Portal for Academia - Industry collaboration for Skill Mapping, Internships and Placement"</em>. SkillSetu is purpose-built as a tripartite ecosystem directly connecting Students, Colleges, and Employers rather than a generic, single-sided job board.
+          </li>
+          <li style="margin-bottom: 12px;">
+            <strong>Explicit Skill-First Mapping Over Resume Keywords:</strong> The solution directly implements a 3-tier skill mapping taxonomy (Basic, Intermediate, Advanced) and a transparent 100-point matching algorithm, resolving the specific problem of inaccurate student skill representation.
+          </li>
+          <li style="margin-bottom: 12px;">
+            <strong>Complete End-to-End Recruitment & Internship Lifecycle:</strong> The architecture addresses the entire pipeline—from student learning, self-assessment, and verified credentials to internship/job discovery, 8-stage Kanban application management, and formal digital offer letter issuance.
+          </li>
+          <li style="margin-bottom: 12px;">
+            <strong>Institutional Empowerment for Colleges & Ministries:</strong> By providing batch-wide skill heatmaps, curriculum gap identification, and bilateral MoU management, the platform empowers colleges and governing bodies (such as the Ministry of Ayush) to proactively identify and rectify syllabus deficits.
+          </li>
+          <li style="margin-bottom: 12px;">
+            <strong>Technically Honest & Credible Architecture:</strong> The proposal strictly adheres to SIH standards by cleanly separating current working prototype capabilities (React, Next.js, TypeScript, Leaflet, Geolocation, deterministic matching) from proposed enterprise/AI scaling modules, avoiding unsupported buzzwords while demonstrating a clear, realistic engineering roadmap.
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Document Footer -->
+    <footer style="margin-top: 40px; padding-top: 16px; border-top: 1px solid #cbd5e1; display: flex; justify-content: space-between; font-size: 11px; color: #64748b;">
+      <span>SkillSetu: Academia–Industry Collaboration Platform</span>
+      <span>Smart India Hackathon 2026 · Team GAT054</span>
+      <span>Ministry of Ayush / AIIA</span>
+    </footer>
+
+  </div>
+
+</body>
+</html>

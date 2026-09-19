@@ -145,7 +145,10 @@ export const IndustryNavbar: React.FC<NavbarProps> = ({ onOpenSearch, onOpenMobi
           >
             <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 text-white font-bold text-[9px] flex items-center justify-center ring-2 ring-white animate-pulse">
+              <span
+                suppressHydrationWarning
+                className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 text-white font-bold text-[9px] flex items-center justify-center ring-2 ring-white animate-pulse"
+              >
                 {unreadCount}
               </span>
             )}
@@ -203,15 +206,7 @@ export const IndustryNavbar: React.FC<NavbarProps> = ({ onOpenSearch, onOpenMobi
             className="flex items-center gap-2.5 p-1 sm:pl-2 sm:pr-3 sm:py-1.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition-colors"
           >
             <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-brand-teal to-brand-emerald flex items-center justify-center font-bold text-white text-xs shadow-2xs">
-              {company.name
-                ? company.name
-                    .split(' ')
-                    .filter(Boolean)
-                    .map((n) => n[0])
-                    .join('')
-                    .slice(0, 2)
-                    .toUpperCase()
-                : 'CO'}
+              TN
             </div>
             <div className="hidden sm:block text-left leading-none">
               <p className="font-bold text-xs text-slate-900">{company.name}</p>
@@ -238,15 +233,6 @@ export const IndustryNavbar: React.FC<NavbarProps> = ({ onOpenSearch, onOpenMobi
               </Link>
 
               <Link
-                href="/onboarding"
-                onClick={() => setProfileDropdownOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition-colors"
-              >
-                <Sparkles className="w-4 h-4 text-emerald-600" />
-                <span>Update Account Setup</span>
-              </Link>
-
-              <Link
                 href="/industry/settings"
                 onClick={() => setProfileDropdownOpen(false)}
                 className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition-colors"
@@ -260,7 +246,7 @@ export const IndustryNavbar: React.FC<NavbarProps> = ({ onOpenSearch, onOpenMobi
                   onClick={() => {
                     setProfileDropdownOpen(false);
                     showToast('Logged out of Industry Portal', 'info');
-                    router.push('/industry/login');
+                    router.push('/login?role=industry');
                   }}
                   className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors"
                 >

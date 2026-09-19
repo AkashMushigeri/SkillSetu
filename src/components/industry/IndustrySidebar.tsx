@@ -77,7 +77,7 @@ export const IndustrySidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileO
 
   const handleLogout = () => {
     showToast('Logged out of Industry Portal', 'info');
-    router.push('/industry/login');
+    router.push('/login?role=industry');
   };
 
   return (
