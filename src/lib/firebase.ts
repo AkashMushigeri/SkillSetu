@@ -110,11 +110,31 @@ export const signInWithGoogleRedirect = async (): Promise<ExtendedUser> => {
   return {} as ExtendedUser;
 };
 
+export const isNetworkError = (e: any): boolean => {
+  if (!e) return false;
+  const msg = (e.message || '').toLowerCase();
+  return (
+    e.code === 'auth/network-request-failed' ||
+    msg.includes('network error') ||
+    msg.includes('err_network_changed') ||
+    msg.includes('interrupted connection') ||
+    msg.includes('unreachable host')
+  );
+};
+
 export const checkGoogleRedirect = async (): Promise<ExtendedUser | null> => {
   if (!auth || typeof window === 'undefined') return null;
-  const result = await getRedirectResult(auth);
-  if (!result) return null;
-  return result.user as ExtendedUser;
+  try {
+    const result = await getRedirectResult(auth);
+    if (!result) return null;
+    return result.user as ExtendedUser;
+  } catch (err: any) {
+    if (isNetworkError(err)) {
+      console.warn('Network changed or offline while checking redirect:', err.message);
+      return null;
+    }
+    throw err;
+  }
 };
 
 export const signInWithEmail = async (
@@ -122,8 +142,19 @@ export const signInWithEmail = async (
   password: string
 ): Promise<ExtendedUser> => {
   if (!auth) throw new Error('Auth not initialized');
-  const result = await signInWithEmailAndPassword(auth, email, password);
-  return result.user as ExtendedUser;
+  try {
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    return result.user as ExtendedUser;
+  } catch (err: any) {
+    // Retry once if network dropped or changed
+    if (isNetworkError(err)) {
+      console.warn('Network error during signInWithEmail, retrying in 1.2s...');
+      await new Promise((r) => setTimeout(r, 1200));
+      const retryResult = await signInWithEmailAndPassword(auth, email, password);
+      return retryResult.user as ExtendedUser;
+    }
+    throw err;
+  }
 };
 
 export const signUpWithEmail = async (
@@ -132,9 +163,20 @@ export const signUpWithEmail = async (
   displayName: string
 ): Promise<ExtendedUser> => {
   if (!auth) throw new Error('Auth not initialized');
-  const result = await createUserWithEmailAndPassword(auth, email, password);
-  await updateProfile(result.user, { displayName });
-  return result.user as ExtendedUser;
+  try {
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    await updateProfile(result.user, { displayName });
+    return result.user as ExtendedUser;
+  } catch (err: any) {
+    if (isNetworkError(err)) {
+      console.warn('Network error during signUpWithEmail, retrying in 1.2s...');
+      await new Promise((r) => setTimeout(r, 1200));
+      const retryResult = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(retryResult.user, { displayName });
+      return retryResult.user as ExtendedUser;
+    }
+    throw err;
+  }
 };
 
 export const signOutFirebase = async (): Promise<void> => {

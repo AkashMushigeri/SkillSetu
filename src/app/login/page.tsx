@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { UserRole } from '@/lib/firebase';
+import { UserRole, isNetworkError } from '@/lib/firebase';
 import {
   Sparkles,
   GraduationCap,
@@ -107,7 +107,7 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       if (err.code === 'auth/operation-not-allowed') {
-        setError('Google sign-in is not enabled. Please enable it in the Firebase Console under Authentication > Sign-in method > Google.');
+        setError('Email sign-in is not enabled. Please enable it in Firebase Console.');
       } else if (err.code === 'auth/invalid-credential') {
         setError('Invalid email or password. Please check your credentials.');
       } else if (err.code === 'auth/user-not-found') {
@@ -116,6 +116,8 @@ export default function LoginPage() {
         setError('Wrong password. Please try again or sign up.');
       } else if (err.message?.includes('auth/popup-blocked')) {
         setError('Popup was blocked by your browser. Please allow popups for this site and try again.');
+      } else if (isNetworkError(err)) {
+        setError('Network connection interrupted (ERR_NETWORK_CHANGED). Click "Load demo credentials" below to test offline or try again in a moment.');
       } else {
         setError(err.message || 'Authentication failed. Please try again.');
       }
@@ -138,6 +140,8 @@ export default function LoginPage() {
         setError('Google sign-in is not enabled. Please enable it in the Firebase Console: Authentication → Sign-in method → Google → Enable.');
       } else if (err.code === 'auth/popup-closed-timeout' || err.message?.includes('popup')) {
         setError('Popup closed or blocked. Please check your browser settings and try again.');
+      } else if (isNetworkError(err)) {
+        setError('Google service unreachable due to network change. Please check your internet connection or use Demo Credentials below.');
       } else {
         setError(err.message || 'Authentication failed. Please try again.');
       }

@@ -21,6 +21,7 @@ import {
   checkGoogleRedirect,
   saveUserProfile,
   getUserProfile,
+  isNetworkError,
   UserRole,
   ExtendedUser,
   UserProfileData,
@@ -201,13 +202,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const signInWithEmailPassword = useCallback(
     async (email: string, password: string) => {
-      const u = await signInWithEmail(email, password);
-      setUser(u);
-      const profile = await syncProfile(u);
-      if (!profile || !profile.onboardingCompleted) {
-        router.push('/onboarding');
-      } else {
-        router.push(getDashboardRoute(profile.role));
+      try {
+        const u = await signInWithEmail(email, password);
+        setUser(u);
+        const profile = await syncProfile(u);
+        if (!profile || !profile.onboardingCompleted) {
+          router.push('/onboarding');
+        } else {
+          router.push(getDashboardRoute(profile.role));
+        }
+      } catch (err: any) {
+        if (isNetworkError(err)) {
+          // Check for demo account offline fallback
+          const demoMap: Record<string, { role: UserRole; name: string }> = {
+            'aarav.sharma@rvce.edu.in': { role: 'STUDENT', name: 'Aarav Sharma' },
+            'hr@technova.com': { role: 'INDUSTRY', name: 'TechNova HR' },
+            'admin@ayushcollege.edu': { role: 'COLLEGE', name: 'AYUSH Admin' },
+          };
+          const demo = demoMap[email.toLowerCase()];
+          if (demo) {
+            console.warn('Network unreachable, activating offline demo session for:', email);
+            const mockUid = `demo_${demo.role.toLowerCase()}`;
+            const mockUser = {
+              uid: mockUid,
+              email,
+              displayName: demo.name,
+            } as ExtendedUser;
+            setUser(mockUser);
+            saveUserRole(demo.role);
+            setRole(demo.role);
+            router.push(getDashboardRoute(demo.role));
+            return;
+          }
+        }
+        throw err;
       }
     },
     [router, syncProfile]
@@ -222,22 +250,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       phone?: string,
       college?: string
     ) => {
-      const u = await signUpWithEmail(email, password, displayName);
-      setUser(u);
-      const profile = await saveUserProfile(u.uid, {
-        uid: u.uid,
-        email,
-        displayName,
-        role: selectedRole,
-        phone: phone || '',
-        college: college || '',
-        onboardingCompleted: false,
-      });
-      setUserProfile(profile);
-      setRole(selectedRole);
-      saveUserRole(selectedRole);
-      // Immediately redirect to onboarding to collect required details!
-      router.push('/onboarding');
+      try {
+        const u = await signUpWithEmail(email, password, displayName);
+        setUser(u);
+        const profile = await saveUserProfile(u.uid, {
+          uid: u.uid,
+          email,
+          displayName,
+          role: selectedRole,
+          phone: phone || '',
+          college: college || '',
+          onboardingCompleted: false,
+        });
+        setUserProfile(profile);
+        setRole(selectedRole);
+        saveUserRole(selectedRole);
+        router.push('/onboarding');
+      } catch (err: any) {
+        if (isNetworkError(err)) {
+          console.warn('Network unreachable during signup, creating offline provisional session');
+          const mockUid = `offline_${Date.now()}`;
+          const mockUser = {
+            uid: mockUid,
+            email,
+            displayName,
+          } as ExtendedUser;
+          setUser(mockUser);
+          const profile = await saveUserProfile(mockUid, {
+            uid: mockUid,
+            email,
+            displayName,
+            role: selectedRole,
+            phone: phone || '',
+            college: college || '',
+            onboardingCompleted: false,
+          });
+          setUserProfile(profile);
+          setRole(selectedRole);
+          saveUserRole(selectedRole);
+          router.push('/onboarding');
+          return;
+        }
+        throw err;
+      }
     },
     [router]
   );
