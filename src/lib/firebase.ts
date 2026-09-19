@@ -14,6 +14,9 @@ import {
   User as FirebaseUser,
 } from 'firebase/auth';
 import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   getFirestore,
   Firestore,
   doc,
@@ -40,11 +43,23 @@ if (typeof window !== 'undefined') {
   if (!getApps().length) {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
-    db = getFirestore(app);
+    try {
+      db = initializeFirestore(app, {
+        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+      });
+    } catch {
+      db = getFirestore(app);
+    }
   } else {
     app = getApps()[0];
     auth = getAuth(app);
-    db = getFirestore(app);
+    try {
+      db = initializeFirestore(app, {
+        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+      });
+    } catch {
+      db = getFirestore(app);
+    }
   }
 }
 
@@ -295,8 +310,12 @@ export const saveUserProfile = async (
         },
         { merge: true }
       );
-    } catch (err) {
-      console.warn('Firestore write warning (local profile saved successfully):', err);
+    } catch (err: any) {
+      if (err?.code === 'unavailable' || err?.message?.includes('offline')) {
+        // Backend temporarily offline; profile successfully cached locally
+      } else {
+        console.warn('Firestore write notice (local cache updated):', err);
+      }
     }
   }
 
@@ -319,8 +338,12 @@ export const getUserProfile = async (uid: string): Promise<UserProfileData | nul
         }
         return data;
       }
-    } catch (err) {
-      console.warn('Firestore read error (falling back to local cache):', err);
+    } catch (err: any) {
+      if (err?.code === 'unavailable' || err?.message?.includes('offline')) {
+        // Reading from local cache while client is offline
+      } else {
+        console.warn('Firestore read notice (falling back to local cache):', err);
+      }
     }
   }
 
