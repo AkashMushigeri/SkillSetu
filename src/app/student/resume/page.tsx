@@ -92,10 +92,15 @@ export default function ResumePage() {
             <span className="flex items-center gap-1">
               <Phone className="w-3.5 h-3.5 text-slate-400" /> {profile.phone}
             </span>
-            <span>&bull;</span>
-            <span className="flex items-center gap-1">
-              <GithubIcon className="w-3.5 h-3.5 text-slate-400" /> github.com/aarav-sharma-dev
-            </span>
+            {profile.github && (
+              <>
+                <span>&bull;</span>
+                <span className="flex items-center gap-1">
+                  <GithubIcon className="w-3.5 h-3.5 text-slate-400" />
+                  {profile.github.replace(/^https?:\/\//, '')}
+                </span>
+              </>
+            )}
           </div>
         </div>
 
@@ -105,7 +110,7 @@ export default function ResumePage() {
             Career Objective &amp; Summary
           </h2>
           <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
-            {profile.bio} Specializing in software development, data analytics, and full-stack engineering with an emphasis on building high-reliability digital solutions for healthcare and the AYUSH domain.
+            {profile.bio || 'Motivated professional focused on software engineering, technology innovation, and applied technical solutions.'}
           </p>
         </div>
 
@@ -117,15 +122,21 @@ export default function ResumePage() {
           <div className="flex justify-between items-start text-xs sm:text-sm">
             <div>
               <strong className="font-bold text-slate-900 block">
-                RV College of Engineering (RVCE), Bengaluru
+                {profile.college || 'Institution'}
               </strong>
               <span className="text-slate-600">
-                Bachelor of Technology (B.Tech) in Computer Science &amp; Engineering
+                {profile.degree || 'Degree Program'}
               </span>
             </div>
             <div className="text-right">
-              <span className="font-bold text-slate-800 block">2023 &ndash; 2027</span>
-              <span className="text-emerald-700 font-bold">CGPA: 8.74 / 10</span>
+              <span className="font-bold text-slate-800 block">{profile.year || 'Academic Year'}</span>
+              {profile.gpa && (
+                <span className="text-emerald-700 font-bold">
+                  {profile.gpa.toLowerCase().includes('cgpa') || profile.gpa.includes('/')
+                    ? profile.gpa
+                    : `CGPA: ${profile.gpa} / 10`}
+                </span>
+              )}
             </div>
           </div>
         </div>

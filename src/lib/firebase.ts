@@ -25,6 +25,15 @@ import {
   updateDoc,
   serverTimestamp,
 } from 'firebase/firestore';
+import { getDataConnect, DataConnect } from 'firebase/data-connect';
+import {
+  connectorConfig,
+  upsertStudentProfile,
+  upsertCompany,
+  upsertCollege,
+  createSkill,
+  createCandidateEducation,
+} from '@skillsetu/dataconnect';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyBYafwhkKarQs36-GehGM50b1QqZKTvzPk',
@@ -38,6 +47,7 @@ const firebaseConfig = {
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
+let dataConnect: DataConnect | null = null;
 
 if (typeof window !== 'undefined') {
   if (!getApps().length) {
@@ -50,6 +60,11 @@ if (typeof window !== 'undefined') {
     } catch {
       db = getFirestore(app);
     }
+    try {
+      dataConnect = getDataConnect(app, connectorConfig);
+    } catch (e) {
+      console.warn('DataConnect init notice:', e);
+    }
   } else {
     app = getApps()[0];
     auth = getAuth(app);
@@ -60,10 +75,15 @@ if (typeof window !== 'undefined') {
     } catch {
       db = getFirestore(app);
     }
+    try {
+      dataConnect = getDataConnect(app, connectorConfig);
+    } catch (e) {
+      console.warn('DataConnect init notice:', e);
+    }
   }
 }
 
-export { app, auth, db };
+export { app, auth, db, dataConnect };
 
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
@@ -297,7 +317,72 @@ export const saveUserProfile = async (
     saveUserRole(updatedProfile.role);
   }
 
-  // 2. Persist to Firebase Firestore
+  // 2. Persist to Firebase Data Connect (PostgreSQL Cloud SQL Database)
+  if (dataConnect && auth?.currentUser) {
+    try {
+      if (updatedProfile.role === 'STUDENT') {
+        await upsertStudentProfile(dataConnect, {
+          displayName: updatedProfile.displayName || auth.currentUser.displayName || 'Student',
+          email: updatedProfile.email || auth.currentUser.email || '',
+          photoUrl: updatedProfile.photoURL || auth.currentUser.photoURL || undefined,
+          college: updatedProfile.college || undefined,
+          location: updatedProfile.location || undefined,
+          phone: updatedProfile.phone || undefined,
+        });
+
+        if (updatedProfile.degree && updatedProfile.college) {
+          try {
+            await createCandidateEducation(dataConnect, {
+              degree: updatedProfile.degree,
+              department: updatedProfile.department || updatedProfile.degree,
+              college: updatedProfile.college,
+              graduationYear: parseInt(String(updatedProfile.year || '2026').replace(/\D/g, ''), 10) || 2026,
+              cgpa: parseFloat(String(updatedProfile.gpa || '8.0').replace(/[^\d.]/g, '')) || 8.0,
+              currentYear: updatedProfile.year || '3rd Year',
+            });
+          } catch (edErr) {
+            console.warn('DataConnect education upsert notice:', edErr);
+          }
+        }
+
+        if (updatedProfile.skills && updatedProfile.skills.length > 0) {
+          for (const skillName of updatedProfile.skills.slice(0, 5)) {
+            try {
+              await createSkill(dataConnect, {
+                name: skillName,
+                category: 'Technical',
+                description: `Verified candidate competency in ${skillName}`,
+              });
+            } catch (skErr) {
+              // Skill may already exist or waiting on permission
+            }
+          }
+        }
+      } else if (updatedProfile.role === 'INDUSTRY') {
+        await upsertCompany(dataConnect, {
+          name: updatedProfile.companyName || updatedProfile.displayName || 'Company',
+          industry: updatedProfile.companyIndustry || undefined,
+          employees: updatedProfile.companySize || undefined,
+          location: updatedProfile.companyLocation || updatedProfile.location || undefined,
+          website: updatedProfile.companyWebsite || undefined,
+          about: updatedProfile.companyBio || updatedProfile.bio || undefined,
+          mission: updatedProfile.companyBio || updatedProfile.bio || undefined,
+        });
+      } else if (updatedProfile.role === 'COLLEGE') {
+        await upsertCollege(dataConnect, {
+          name: updatedProfile.institutionName || updatedProfile.displayName || 'College',
+          location: updatedProfile.institutionLocation || updatedProfile.location || undefined,
+          contactPerson: updatedProfile.displayName || undefined,
+          contactEmail: updatedProfile.email || auth.currentUser.email || undefined,
+        });
+      }
+      console.log('Firebase Data Connect profile sync completed for role:', updatedProfile.role);
+    } catch (dcErr: any) {
+      console.warn('Firebase Data Connect sync notice:', dcErr?.message || dcErr);
+    }
+  }
+
+  // 3. Persist to Firebase Firestore
   if (db) {
     try {
       const userDocRef = doc(db, 'users', uid);

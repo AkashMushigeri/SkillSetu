@@ -91,24 +91,64 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return INITIAL_STUDENT_PROFILE;
   });
 
-  // Sync profile when authenticated userProfile changes from Firebase Firestore
+  // Sync profile when authenticated userProfile changes from Firebase
   useEffect(() => {
     if (userProfile && userProfile.role === 'STUDENT') {
       setProfile((prev) => ({
         ...prev,
+        id: userProfile.uid || prev.id,
         name: userProfile.displayName || prev.name,
         email: userProfile.email || prev.email,
-        phone: userProfile.phone || prev.phone,
-        college: userProfile.college || prev.college,
-        degree: userProfile.degree || prev.degree,
-        year: userProfile.year || prev.year,
-        gpa: userProfile.gpa || prev.gpa,
-        careerGoal: userProfile.careerGoal || prev.careerGoal,
-        location: userProfile.location || prev.location,
-        bio: userProfile.bio || prev.bio,
-        github: userProfile.github || prev.github,
-        linkedin: userProfile.linkedin || prev.linkedin,
+        phone: userProfile.phone !== undefined && userProfile.phone !== '' ? userProfile.phone : prev.phone,
+        college: userProfile.college !== undefined && userProfile.college !== '' ? userProfile.college : prev.college,
+        degree: userProfile.degree !== undefined && userProfile.degree !== '' ? userProfile.degree : prev.degree,
+        year: userProfile.year !== undefined && userProfile.year !== '' ? userProfile.year : prev.year,
+        gpa: userProfile.gpa !== undefined && userProfile.gpa !== '' ? userProfile.gpa : prev.gpa,
+        careerGoal: userProfile.careerGoal !== undefined && userProfile.careerGoal !== '' ? userProfile.careerGoal : prev.careerGoal,
+        location: userProfile.location !== undefined && userProfile.location !== '' ? userProfile.location : prev.location,
+        bio: userProfile.bio !== undefined && userProfile.bio !== '' ? userProfile.bio : prev.bio,
+        github: userProfile.github !== undefined && userProfile.github !== '' ? userProfile.github : prev.github,
+        linkedin: userProfile.linkedin !== undefined && userProfile.linkedin !== '' ? userProfile.linkedin : prev.linkedin,
       }));
+
+      // Sync skills from student onboarding
+      if (userProfile.skills && userProfile.skills.length > 0) {
+        setSkills((prevSkills) => {
+          const userSkillNames = userProfile.skills || [];
+          const icons = ['💻', '⚡', '🚀', '🧠', '🛠️', '🌐', '📊', '🔍', '⚙️', '📱'];
+          return userSkillNames.map((skillName, idx) => {
+            const existing = prevSkills.find((s) => s.name.toLowerCase() === skillName.toLowerCase());
+            if (existing) return existing;
+            return {
+              id: `skill-user-${idx}-${skillName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+              name: skillName,
+              tier: 'Intermediate' as const,
+              category: 'Technical',
+              icon: icons[idx % icons.length],
+              level: 'Intermediate',
+              progress: 60,
+              isVerified: false,
+              verifiedDate: undefined,
+              learningStatus: 'in_progress' as const,
+              assessmentStatus: 'ready' as const,
+              bestScore: undefined,
+              description: `Practical competency and applied proficiency in ${skillName}.`,
+              estimatedTime: '2-3 weeks',
+              learningObjectives: [
+                `Master foundational principles of ${skillName}`,
+                `Complete applied industry challenge tasks`,
+                `Pass verified proctored assessment`,
+              ],
+              resources: [
+                { id: `r-${idx}-1`, title: `${skillName} Applied Fundamentals`, type: 'doc' as const, duration: '45 mins', completed: true, url: '#' },
+                { id: `r-${idx}-2`, title: `Industry Projects with ${skillName}`, type: 'video' as const, duration: '1.5 hrs', completed: false, url: '#' },
+              ],
+              careerRoles: ['Full-Stack Developer', 'Software Engineer', 'Specialist'],
+              relatedOpportunityCount: 8,
+            };
+          });
+        });
+      }
     }
   }, [userProfile]);
 
@@ -423,8 +463,8 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setNotifications((prev) => [
         {
           id: `notif-badge-${Date.now()}`,
-          title: 'Skill Verified: Python Basic!',
-          message: 'Congratulations Aarav! You earned the official SkillSetu Verified Badge. Opportunity matches have been upgraded.',
+          title: 'Skill Assessment Verified!',
+          message: `Congratulations ${profile.name ? profile.name.split(' ')[0] : 'Student'}! You earned the official SkillSetu Verified Badge. Opportunity matches have been upgraded.`,
           time: 'Just now',
           read: false,
           type: 'badge',

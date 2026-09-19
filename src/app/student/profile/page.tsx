@@ -109,7 +109,11 @@ export default function StudentProfilePage() {
 
             <div className="text-right text-xs">
               <span className="text-slate-400 block text-[11px]">SkillSetu ID</span>
-              <strong className="text-slate-700 font-mono">GAT054-STD-2026</strong>
+              <strong className="text-slate-700 font-mono">
+                {profile.id && !profile.id.includes('aarav')
+                  ? profile.id.toUpperCase()
+                  : `STD-${(profile.name ? profile.name.slice(0, 3).toUpperCase() : 'GAT')}-${new Date().getFullYear()}`}
+              </strong>
             </div>
           </div>
         </div>
@@ -199,48 +203,65 @@ export default function StudentProfilePage() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {verifiedSkills.map((sk) => (
-                <div
-                  key={sk.id}
-                  className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50/70 to-teal-50/70 border border-emerald-300 flex items-center justify-between shadow-2xs"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{sk.icon}</span>
-                    <div>
-                      <span className="font-bold text-sm text-slate-900 block">{sk.name}</span>
-                      <span className="text-[11px] text-emerald-800 font-semibold flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                        {sk.level} &bull; Verified
-                      </span>
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    {sk.verifiedDate || 'Aug 2026'}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* In-Progress Competencies */}
-            <div className="pt-3 border-t border-slate-100">
-              <span className="text-xs font-semibold text-slate-500 block mb-2">
-                Additional In-Progress Skills:
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {unverifiedSkills.map((sk) => (
-                  <Link
+            {verifiedSkills.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {verifiedSkills.map((sk) => (
+                  <div
                     key={sk.id}
-                    href={`/student/skills/${sk.id}`}
-                    className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium transition-colors flex items-center gap-1.5"
+                    className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50/70 to-teal-50/70 border border-emerald-300 flex items-center justify-between shadow-2xs"
                   >
-                    <span>{sk.icon}</span>
-                    <span>{sk.name}</span>
-                    <span className="text-[10px] text-slate-400">({sk.progress}%)</span>
-                  </Link>
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{sk.icon}</span>
+                      <div>
+                        <span className="font-bold text-sm text-slate-900 block">{sk.name}</span>
+                        <span className="text-[11px] text-emerald-800 font-semibold flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          {sk.level} &bull; Verified
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {sk.verifiedDate || 'Verified'}
+                    </span>
+                  </div>
                 ))}
               </div>
-            </div>
+            ) : (
+              <div className="p-4 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center py-5">
+                <p className="text-xs text-slate-600 font-medium">
+                  Take your first skill assessment to earn your official verified badge!
+                </p>
+                <Link
+                  href="/student/skills"
+                  className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-1.5 bg-brand-teal text-white rounded-xl text-xs font-bold shadow-xs hover:bg-brand-dark transition-all"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Start Verification Quiz</span>
+                </Link>
+              </div>
+            )}
+
+            {/* In-Progress / Selected Competencies */}
+            {unverifiedSkills.length > 0 && (
+              <div className="pt-3 border-t border-slate-100">
+                <span className="text-xs font-semibold text-slate-500 block mb-2">
+                  Active Competencies &amp; Skills ({unverifiedSkills.length}):
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {unverifiedSkills.map((sk) => (
+                    <Link
+                      key={sk.id}
+                      href={`/student/skills`}
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium transition-colors flex items-center gap-1.5"
+                    >
+                      <span>{sk.icon}</span>
+                      <span>{sk.name}</span>
+                      <span className="text-[10px] text-brand-teal font-semibold">Verify &rarr;</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Projects Showcase */}
@@ -358,13 +379,17 @@ export default function StudentProfilePage() {
             <div className="space-y-2 text-xs">
               <div className="border-l-2 border-brand-teal pl-3 space-y-0.5">
                 <strong className="text-slate-900 block font-bold">
-                  RV College of Engineering, Bengaluru
+                  {profile.college || 'Institution In Progress'}
                 </strong>
-                <p className="text-slate-600">B.Tech &bull; Computer Science</p>
-                <p className="text-slate-400">2023 &ndash; 2027 (Expected)</p>
-                <span className="inline-block mt-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 text-[10px] font-bold">
-                  CGPA: 8.74 / 10
-                </span>
+                <p className="text-slate-600">{profile.degree || 'Degree Program'}</p>
+                <p className="text-slate-400">{profile.year || 'Academic Year'}</p>
+                {profile.gpa && (
+                  <span className="inline-block mt-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 text-[10px] font-bold">
+                    {profile.gpa.toLowerCase().includes('cgpa') || profile.gpa.includes('/')
+                      ? profile.gpa
+                      : `CGPA: ${profile.gpa} / 10`}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -378,23 +403,41 @@ export default function StudentProfilePage() {
             <div className="space-y-2 text-xs text-slate-600">
               <div className="flex items-center gap-2">
                 <Mail className="w-3.5 h-3.5 text-slate-400" />
-                <span className="truncate">{profile.email}</span>
+                <span className="truncate">{profile.email || 'No email provided'}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-3.5 h-3.5 text-slate-400" />
-                <span>{profile.phone}</span>
+                <span>{profile.phone || 'No phone provided'}</span>
               </div>
               <div className="flex items-center gap-2">
                 <GithubIcon className="w-3.5 h-3.5 text-slate-400" />
-                <a href={profile.github} target="_blank" rel="noreferrer" className="text-brand-teal hover:underline truncate">
-                  github.com/aarav-sharma-dev
-                </a>
+                {profile.github ? (
+                  <a
+                    href={profile.github.startsWith('http') ? profile.github : `https://${profile.github}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-brand-teal hover:underline truncate"
+                  >
+                    {profile.github.replace(/^https?:\/\//, '')}
+                  </a>
+                ) : (
+                  <span className="text-slate-400 italic">GitHub not linked</span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <LinkedinIcon className="w-3.5 h-3.5 text-slate-400" />
-                <a href={profile.linkedin} target="_blank" rel="noreferrer" className="text-brand-teal hover:underline truncate">
-                  linkedin.com/in/aarav-sharma-tech
-                </a>
+                {profile.linkedin ? (
+                  <a
+                    href={profile.linkedin.startsWith('http') ? profile.linkedin : `https://${profile.linkedin}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-brand-teal hover:underline truncate"
+                  >
+                    {profile.linkedin.replace(/^https?:\/\//, '')}
+                  </a>
+                ) : (
+                  <span className="text-slate-400 italic">LinkedIn not linked</span>
+                )}
               </div>
             </div>
           </div>

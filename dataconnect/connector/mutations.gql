@@ -1,5 +1,5 @@
 mutation UpsertStudentProfile($displayName: String!, $email: String!, $photoUrl: String, $college: String, $location: String, $phone: String)
-  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'STUDENT'", insecureReason: "Verified students can upsert their profile.") {
+  @auth(level: USER, insecureReason: "Authenticated students can upsert their profile.") {
   user_upsert(data: {
     uid_expr: "auth.uid",
     displayName: $displayName,
@@ -12,8 +12,22 @@ mutation UpsertStudentProfile($displayName: String!, $email: String!, $photoUrl:
   })
 }
 
+mutation UpsertUserProfile($displayName: String!, $email: String!, $role: UserRole!, $photoUrl: String, $college: String, $location: String, $phone: String)
+  @auth(level: USER, insecureReason: "Authenticated users can upsert their user profile.") {
+  user_upsert(data: {
+    uid_expr: "auth.uid",
+    displayName: $displayName,
+    email: $email,
+    role: $role,
+    photoUrl: $photoUrl,
+    college: $college,
+    location: $location,
+    phone: $phone
+  })
+}
+
 mutation UpsertCompany($name: String!, $type: String, $industry: String, $location: String, $coordinates: Any, $employees: String, $founded: Int, $website: String, $tagline: String, $about: String, $mission: String, $techStack: [String!], $departments: [String!], $hiringDomains: [String!], $benefits: [String!], $culture: [String!], $logo: String, $coverImage: String)
-  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'", insecureReason: "Verified industry users can create their company profile.") {
+  @auth(level: USER, insecureReason: "Authenticated industry users can create their company profile.") {
   company_insert(data: {
     ownerUid_expr: "auth.uid",
     name: $name,
@@ -38,7 +52,7 @@ mutation UpsertCompany($name: String!, $type: String, $industry: String, $locati
 }
 
 mutation UpsertCollege($name: String!, $location: String, $coordinates: Any, $studentsCount: Int, $verifiedStudentsCount: Int, $placementReadiness: Int, $contactPerson: String, $contactEmail: String)
-  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'COLLEGE'", insecureReason: "Verified college users can upsert their college profile.") {
+  @auth(level: USER, insecureReason: "Authenticated college users can upsert their college profile.") {
   college_insert(data: {
     name: $name,
     location: $location,
@@ -62,7 +76,7 @@ mutation CreateSkill($name: String!, $category: String, $description: String)
 }
 
 mutation UpsertUserSkill($skillId: UUID!, $level: SkillLevel!, $verified: Boolean, $score: Float, $badgeUrl: String)
-  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'STUDENT'", insecureReason: "Verified students can upsert their skills.") {
+  @auth(level: USER, insecureReason: "Authenticated students can upsert their skills.") {
   userSkill_upsert(data: {
     userUid_expr: "auth.uid",
     skillId: $skillId,
@@ -75,7 +89,7 @@ mutation UpsertUserSkill($skillId: UUID!, $level: SkillLevel!, $verified: Boolea
 }
 
 mutation CreateCandidateProject($title: String!, $description: String, $technologies: [String!], $githubUrl: String, $liveUrl: String)
-  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'STUDENT'", insecureReason: "Verified students can create projects.") {
+  @auth(level: USER, insecureReason: "Authenticated students can create projects.") {
   candidateProject_insert(data: {
     userUid_expr: "auth.uid",
     title: $title,
@@ -87,7 +101,7 @@ mutation CreateCandidateProject($title: String!, $description: String, $technolo
 }
 
 mutation CreateCandidateExperience($title: String!, $company: String!, $duration: String, $description: String, $location: String, $startDate: Timestamp, $endDate: Timestamp)
-  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'STUDENT'", insecureReason: "Verified students can add experience.") {
+  @auth(level: USER, insecureReason: "Authenticated students can add experience.") {
   candidateExperience_insert(data: {
     userUid_expr: "auth.uid",
     title: $title,
@@ -101,7 +115,7 @@ mutation CreateCandidateExperience($title: String!, $company: String!, $duration
 }
 
 mutation CreateCandidateEducation($degree: String!, $department: String!, $college: String!, $graduationYear: Int, $cgpa: Float, $currentYear: String)
-  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'STUDENT'", insecureReason: "Verified students can add education.") {
+  @auth(level: USER, insecureReason: "Authenticated students can add education.") {
   candidateEducation_insert(data: {
     userUid_expr: "auth.uid",
     degree: $degree,

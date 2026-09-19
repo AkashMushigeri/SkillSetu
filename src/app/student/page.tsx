@@ -154,7 +154,15 @@ export default function StudentDashboardPage() {
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3.5">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-teal to-brand-emerald text-white flex items-center justify-center font-extrabold text-lg shadow-sm">
-                AS
+                {profile.name
+                  ? profile.name
+                      .split(' ')
+                      .filter(Boolean)
+                      .map((n) => n[0])
+                      .join('')
+                      .slice(0, 2)
+                      .toUpperCase()
+                  : 'ST'}
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
