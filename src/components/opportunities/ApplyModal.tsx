@@ -23,6 +23,7 @@ interface ApplyModalProps {
 
 export const ApplyModal: React.FC<ApplyModalProps> = ({ opportunity, onClose }) => {
   const { profile, skills, submitApplication } = useStudent();
+  const resumeFileName = `${(profile?.name || 'Candidate').replace(/\s+/g, '_')}_Resume_2026.pdf`;
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [coverNote, setCoverNote] = useState(
     'I am excited to apply for this role. My verified skillset, engineering background, and hands-on projects match your requirements.'

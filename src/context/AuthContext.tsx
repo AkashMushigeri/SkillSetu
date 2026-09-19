@@ -316,6 +316,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const signOut = useCallback(async () => {
     await signOutFirebase();
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('skillsetu_student_profile');
+      localStorage.removeItem('skillsetu_student_skills');
+      localStorage.removeItem('skillsetu_applications');
+      localStorage.removeItem('skillsetu_saved_opps');
+      localStorage.removeItem('skillsetu_notifications');
+    }
     setUser(null);
     setRole(null);
     setUserProfile(null);

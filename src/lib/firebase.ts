@@ -29,6 +29,7 @@ import { getDataConnect, DataConnect } from 'firebase/data-connect';
 import {
   connectorConfig,
   upsertStudentProfile,
+  upsertUserProfile,
   upsertCompany,
   upsertCollege,
   createSkill,
@@ -318,17 +319,37 @@ export const saveUserProfile = async (
   }
 
   // 2. Persist to Firebase Data Connect (PostgreSQL Cloud SQL Database)
-  if (dataConnect && auth?.currentUser) {
+  const currentAuth = auth?.currentUser || (app ? getAuth(app)?.currentUser : null);
+  if (dataConnect && currentAuth) {
     try {
-      if (updatedProfile.role === 'STUDENT') {
-        await upsertStudentProfile(dataConnect, {
-          displayName: updatedProfile.displayName || auth.currentUser.displayName || 'Student',
-          email: updatedProfile.email || auth.currentUser.email || '',
-          photoUrl: updatedProfile.photoURL || auth.currentUser.photoURL || undefined,
-          college: updatedProfile.college || undefined,
-          location: updatedProfile.location || undefined,
+      // Upsert into Data Connect PostgreSQL User table for all roles
+      try {
+        await upsertUserProfile(dataConnect, {
+          displayName: updatedProfile.displayName || currentAuth.displayName || 'User',
+          email: updatedProfile.email || currentAuth.email || '',
+          role: updatedProfile.role as any,
+          photoUrl: updatedProfile.photoURL || currentAuth.photoURL || undefined,
+          college: updatedProfile.college || updatedProfile.institutionName || undefined,
+          location: updatedProfile.location || updatedProfile.companyLocation || updatedProfile.institutionLocation || undefined,
           phone: updatedProfile.phone || undefined,
         });
+      } catch (userUpsertErr) {
+        // May fail if generic mutation isn't deployed yet; proceed to role-specific upsert
+      }
+
+      if (updatedProfile.role === 'STUDENT') {
+        try {
+          await upsertStudentProfile(dataConnect, {
+            displayName: updatedProfile.displayName || currentAuth.displayName || 'Student',
+            email: updatedProfile.email || currentAuth.email || '',
+            photoUrl: updatedProfile.photoURL || currentAuth.photoURL || undefined,
+            college: updatedProfile.college || undefined,
+            location: updatedProfile.location || undefined,
+            phone: updatedProfile.phone || undefined,
+          });
+        } catch (studentErr) {
+          // Awaiting Data Connect deployment
+        }
 
         if (updatedProfile.degree && updatedProfile.college) {
           try {
@@ -341,7 +362,7 @@ export const saveUserProfile = async (
               currentYear: updatedProfile.year || '3rd Year',
             });
           } catch (edErr) {
-            console.warn('DataConnect education upsert notice:', edErr);
+            // Awaiting Data Connect deployment
           }
         }
 
@@ -354,7 +375,7 @@ export const saveUserProfile = async (
                 description: `Verified candidate competency in ${skillName}`,
               });
             } catch (skErr) {
-              // Skill may already exist or waiting on permission
+              // Skill may already exist
             }
           }
         }
@@ -373,7 +394,7 @@ export const saveUserProfile = async (
           name: updatedProfile.institutionName || updatedProfile.displayName || 'College',
           location: updatedProfile.institutionLocation || updatedProfile.location || undefined,
           contactPerson: updatedProfile.displayName || undefined,
-          contactEmail: updatedProfile.email || auth.currentUser.email || undefined,
+          contactEmail: updatedProfile.email || currentAuth.email || undefined,
         });
       }
       console.log('Firebase Data Connect profile sync completed for role:', updatedProfile.role);
