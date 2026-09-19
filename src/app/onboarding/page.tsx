@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth, getDashboardRoute } from '@/context/AuthContext';
 import { UserRole, UserProfileData } from '@/lib/firebase';
 import {
   Sparkles,
@@ -373,8 +373,17 @@ export default function OnboardingPage() {
         // ignore
       }
 
-      // Save to Firebase database & complete onboarding
-      await completeOnboarding(finalPayload);
+      // Save to Firebase database & complete onboarding (with safety timeout)
+      try {
+        await Promise.race([
+          completeOnboarding(finalPayload),
+          new Promise((resolve) => setTimeout(resolve, 2500)),
+        ]);
+      } catch (saveErr) {
+        console.warn('Onboarding sync note:', saveErr);
+      }
+
+      router.push(getDashboardRoute(role));
     } catch (err: any) {
       console.error('Onboarding save error:', err);
       setError(err.message || 'Failed to save profile. Please check connection and try again.');

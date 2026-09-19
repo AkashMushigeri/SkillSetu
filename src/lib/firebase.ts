@@ -403,26 +403,28 @@ export const saveUserProfile = async (
     }
   }
 
-  // 3. Persist to Firebase Firestore
+  // 3. Persist to Firebase Firestore (non-blocking async with timeout)
   if (db) {
-    try {
-      const userDocRef = doc(db, 'users', uid);
-      await setDoc(
-        userDocRef,
-        {
-          ...updatedProfile,
-          updatedAt: serverTimestamp(),
-          createdAt: existingLocal?.createdAt ? existingLocal.createdAt : serverTimestamp(),
-        },
-        { merge: true }
-      );
-    } catch (err: any) {
-      if (err?.code === 'unavailable' || err?.message?.includes('offline')) {
-        // Backend temporarily offline; profile successfully cached locally
-      } else {
-        console.warn('Firestore write notice (local cache updated):', err);
+    const firestoreWrite = async () => {
+      try {
+        const userDocRef = doc(db, 'users', uid);
+        await Promise.race([
+          setDoc(
+            userDocRef,
+            {
+              ...updatedProfile,
+              updatedAt: serverTimestamp(),
+              createdAt: existingLocal?.createdAt ? existingLocal.createdAt : serverTimestamp(),
+            },
+            { merge: true }
+          ),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Firestore timeout')), 1200)),
+        ]);
+      } catch (err: any) {
+        // Cloud SQL PostgreSQL via Data Connect is primary; Firestore is non-blocking fallback
       }
-    }
+    };
+    firestoreWrite();
   }
 
   return updatedProfile;
@@ -431,12 +433,24 @@ export const saveUserProfile = async (
 export const getUserProfile = async (uid: string): Promise<UserProfileData | null> => {
   if (!uid) return null;
 
-  // Try Firestore first if available
+  // 1. Check local cache first for zero-latency response
+  const cached = getLocalProfile(uid);
+  if (cached) {
+    if (cached.role) {
+      saveUserRole(cached.role);
+    }
+    return cached;
+  }
+
+  // 2. Try Firestore if available with a fast 1.5s timeout
   if (db) {
     try {
       const userDocRef = doc(db, 'users', uid);
-      const snapshot = await getDoc(userDocRef);
-      if (snapshot.exists()) {
+      const snapshot = await Promise.race([
+        getDoc(userDocRef),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Firestore timeout')), 1500)),
+      ]);
+      if (snapshot && snapshot.exists()) {
         const data = snapshot.data() as UserProfileData;
         setLocalProfile(uid, data);
         if (data.role) {
@@ -445,11 +459,7 @@ export const getUserProfile = async (uid: string): Promise<UserProfileData | nul
         return data;
       }
     } catch (err: any) {
-      if (err?.code === 'unavailable' || err?.message?.includes('offline')) {
-        // Reading from local cache while client is offline
-      } else {
-        console.warn('Firestore read notice (falling back to local cache):', err);
-      }
+      // Return cached fallback
     }
   }
 
