@@ -20,14 +20,46 @@ import {
   Sparkles,
   Rocket,
   Zap,
-  BookOpen
+  BookOpen,
+  Plus,
+  Trash2,
+  X,
 } from 'lucide-react';
 import { GithubIcon, LinkedinIcon } from '@/components/icons/BrandIcons';
 
 export default function StudentProfilePage() {
-  const { profile, skills, projects, updateProfile } = useStudent();
+  const { profile, skills, projects, updateProfile, addProject, deleteProject } = useStudent();
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [bioInput, setBioInput] = useState(profile.bio);
+
+  const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
+  const [newProject, setNewProject] = useState({
+    title: '',
+    description: '',
+    techStack: '',
+    githubUrl: '',
+    liveUrl: '',
+  });
+
+  const handleAddProjectSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProject.title.trim() || !newProject.description.trim()) return;
+    addProject({
+      title: newProject.title.trim(),
+      description: newProject.description.trim(),
+      techStack: newProject.techStack.split(',').map((s) => s.trim()).filter(Boolean),
+      githubUrl: newProject.githubUrl.trim() || 'https://github.com',
+      liveUrl: newProject.liveUrl.trim() || undefined,
+    });
+    setNewProject({
+      title: '',
+      description: '',
+      techStack: '',
+      githubUrl: '',
+      liveUrl: '',
+    });
+    setIsAddProjectOpen(false);
+  };
 
   const verifiedSkills = skills.filter((s) => s.isVerified);
   const unverifiedSkills = skills.filter((s) => !s.isVerified && s.progress > 0);
@@ -266,58 +298,100 @@ export default function StudentProfilePage() {
 
           {/* Projects Showcase */}
           <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-card space-y-4">
-            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <FolderKanban className="w-4 h-4 text-brand-teal" />
-              Academic &amp; Hackathon Projects ({projects.length})
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <FolderKanban className="w-4 h-4 text-brand-teal" />
+                Academic &amp; Hackathon Projects ({projects.length})
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsAddProjectOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-teal hover:bg-brand-dark text-white text-xs font-bold transition-all shadow-xs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Project</span>
+              </button>
+            </div>
 
-            <div className="space-y-3">
-              {projects.map((proj) => (
-                <div
-                  key={proj.id}
-                  className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2"
+            {projects.length === 0 ? (
+              <div className="p-8 rounded-2xl bg-slate-50 border border-dashed border-slate-300 text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-slate-200/60 text-slate-500 flex items-center justify-center mx-auto">
+                  <FolderKanban className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-sm text-slate-800">No projects added yet</h4>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+                    Upload your academic coursework, capstones, hackathon builds, or open-source repositories to showcase real proof-of-work to recruiters.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAddProjectOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-teal hover:bg-brand-dark text-white text-xs font-bold transition-all shadow-xs"
                 >
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-sm text-slate-900">{proj.title}</h4>
-                    <div className="flex items-center gap-2">
-                      <a
-                        href={proj.githubUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1"
-                      >
-                        <GithubIcon className="w-3.5 h-3.5" />
-                        Code
-                      </a>
-                      {proj.liveUrl && (
-                        <a
-                          href={proj.liveUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs font-semibold text-brand-teal hover:underline flex items-center gap-1"
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Upload Your First Project</span>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {projects.map((proj) => (
+                  <div
+                    key={proj.id}
+                    className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 relative group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-sm text-slate-900">{proj.title}</h4>
+                      <div className="flex items-center gap-2.5">
+                        {proj.githubUrl && (
+                          <a
+                            href={proj.githubUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1"
+                          >
+                            <GithubIcon className="w-3.5 h-3.5" />
+                            Code
+                          </a>
+                        )}
+                        {proj.liveUrl && (
+                          <a
+                            href={proj.liveUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs font-semibold text-brand-teal hover:underline flex items-center gap-1"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            Live Demo
+                          </a>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => deleteProject(proj.id)}
+                          className="text-slate-400 hover:text-red-600 p-1 rounded-lg hover:bg-red-50 transition-colors"
+                          title="Delete Project"
                         >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                          Live Demo
-                        </a>
-                      )}
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-slate-600 leading-relaxed">{proj.description}</p>
+
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {proj.techStack.map((tech) => (
+                        <span
+                          key={tech}
+                          className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 text-[10px] font-medium"
+                        >
+                          {tech}
+                        </span>
+                      ))}
                     </div>
                   </div>
-
-                  <p className="text-xs text-slate-600 leading-relaxed">{proj.description}</p>
-
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {proj.techStack.map((tech) => (
-                      <span
-                        key={tech}
-                        className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 text-[10px] font-medium"
-                      >
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Work Experience Section (Specific Demo Requirement) */}
@@ -465,6 +539,103 @@ export default function StudentProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Add Project Modal */}
+      {isAddProjectOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-3xl border border-slate-200 max-w-lg w-full p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <FolderKanban className="w-5 h-5 text-brand-teal" />
+                <h3 className="font-bold text-base text-slate-900">Add Academic / Industry Project</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddProjectOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddProjectSubmit} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Project Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={newProject.title}
+                  onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
+                  placeholder="e.g. AYUSH Healthcare Management System"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-teal/30 focus:border-brand-teal outline-none font-sans"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Description *</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={newProject.description}
+                  onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                  placeholder="Describe the problem, your implementation, libraries used, and key features..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-teal/30 focus:border-brand-teal outline-none font-sans"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Tech Stack (comma separated)</label>
+                <input
+                  type="text"
+                  value={newProject.techStack}
+                  onChange={(e) => setNewProject({ ...newProject, techStack: e.target.value })}
+                  placeholder="e.g. Next.js, Python, PostgreSQL, TailwindCSS"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-teal/30 focus:border-brand-teal outline-none font-sans"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">GitHub Code URL</label>
+                  <input
+                    type="url"
+                    value={newProject.githubUrl}
+                    onChange={(e) => setNewProject({ ...newProject, githubUrl: e.target.value })}
+                    placeholder="https://github.com/username/project"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-teal/30 focus:border-brand-teal outline-none font-sans"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Live Demo URL (Optional)</label>
+                  <input
+                    type="url"
+                    value={newProject.liveUrl}
+                    onChange={(e) => setNewProject({ ...newProject, liveUrl: e.target.value })}
+                    placeholder="https://myproject.vercel.app"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-teal/30 focus:border-brand-teal outline-none font-sans"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAddProjectOpen(false)}
+                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-brand-teal hover:bg-brand-dark text-white font-bold shadow-sm transition-colors"
+                >
+                  Save Project
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

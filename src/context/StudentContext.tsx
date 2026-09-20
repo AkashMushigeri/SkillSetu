@@ -52,6 +52,8 @@ interface StudentContextType {
   applications: Application[];
   submitApplication: (oppId: string) => boolean;
   projects: Project[];
+  addProject: (project: Omit<Project, 'id'>) => void;
+  deleteProject: (projectId: string) => void;
   notifications: NotificationItem[];
   unreadNotificationCount: number;
   markNotificationAsRead: (id: string) => void;
@@ -77,8 +79,33 @@ interface StudentContextType {
 
 const StudentContext = createContext<StudentContextType | undefined>(undefined);
 
+const calculateProfileCompletion = (
+  prof: Partial<StudentProfile>,
+  projectsCount: number,
+  skillsCount: number
+): number => {
+  let score = 0;
+  if (prof.name) score += 15;
+  if (prof.email) score += 10;
+  if (prof.phone) score += 10;
+  if (prof.college) score += 15;
+  if (prof.degree) score += 10;
+  if (prof.year) score += 10;
+  if (prof.careerGoal) score += 10;
+  if (prof.location) score += 10;
+  if (prof.bio) score += 10;
+  if (projectsCount > 0) score += 5;
+  if (skillsCount > 0) score += 5;
+  return Math.min(100, score);
+};
+
 export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, userProfile } = useAuth();
+
+  const isDemoUser =
+    userProfile?.email?.toLowerCase() === 'aarav.sharma@rvce.edu.in' ||
+    user?.email?.toLowerCase() === 'aarav.sharma@rvce.edu.in' ||
+    user?.uid === 'demo_student';
 
   // 1. Profile State
   const [profile, setProfile] = useState<StudentProfile>(() => {
@@ -90,93 +117,6 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
     return INITIAL_STUDENT_PROFILE;
   });
-
-  // Sync profile when authenticated userProfile changes from Firebase
-  useEffect(() => {
-    if (userProfile && userProfile.role === 'STUDENT') {
-      const isDemoUser = userProfile.email === 'aarav.sharma@rvce.edu.in';
-      const displayName = userProfile.displayName || user?.displayName || (userProfile.email ? userProfile.email.split('@')[0] : 'Student');
-
-      setProfile((prev) => {
-        const isDefaultMock = prev.name === 'Aarav Sharma' || prev.id === 'GAT054-STD-2026' || prev.email === 'aarav.sharma@rvce.edu.in';
-        const shouldResetMock = !isDemoUser && isDefaultMock;
-
-        return {
-          ...prev,
-          id: userProfile.uid || user?.uid || prev.id,
-          name: displayName,
-          email: userProfile.email || user?.email || (shouldResetMock ? '' : prev.email),
-          phone: userProfile.phone !== undefined && userProfile.phone !== '' ? userProfile.phone : (shouldResetMock ? '' : prev.phone),
-          college: userProfile.college !== undefined && userProfile.college !== '' ? userProfile.college : (shouldResetMock ? '' : prev.college),
-          degree: userProfile.degree !== undefined && userProfile.degree !== '' ? userProfile.degree : (shouldResetMock ? '' : prev.degree),
-          year: userProfile.year !== undefined && userProfile.year !== '' ? userProfile.year : (shouldResetMock ? '1st Year' : prev.year),
-          gpa: userProfile.gpa !== undefined && userProfile.gpa !== '' ? userProfile.gpa : (shouldResetMock ? '' : prev.gpa),
-          careerGoal: userProfile.careerGoal !== undefined && userProfile.careerGoal !== '' ? userProfile.careerGoal : (shouldResetMock ? 'Software Development' : prev.careerGoal),
-          location: userProfile.location !== undefined && userProfile.location !== '' ? userProfile.location : (shouldResetMock ? 'India' : prev.location),
-          bio: userProfile.bio !== undefined && userProfile.bio !== '' ? userProfile.bio : (shouldResetMock ? '' : prev.bio),
-          github: userProfile.github !== undefined && userProfile.github !== '' ? userProfile.github : (shouldResetMock ? '' : prev.github),
-          linkedin: userProfile.linkedin !== undefined && userProfile.linkedin !== '' ? userProfile.linkedin : (shouldResetMock ? '' : prev.linkedin),
-          avatar: userProfile.photoURL || user?.photoURL || (shouldResetMock ? '' : prev.avatar),
-        };
-      });
-
-      // Sync skills from student onboarding
-      if (userProfile.skills && userProfile.skills.length > 0) {
-        setSkills(() => {
-          const userSkillNames = userProfile.skills || [];
-          const icons = ['💻', '⚡', '🚀', '🧠', '🛠️', '🌐', '📊', '🔍', '⚙️', '📱'];
-          return userSkillNames.map((skillName, idx) => ({
-            id: `skill-user-${idx}-${skillName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
-            name: skillName,
-            tier: 'Intermediate' as const,
-            category: 'Technical',
-            icon: icons[idx % icons.length],
-            level: 'Intermediate',
-            progress: 50,
-            isVerified: false,
-            verifiedDate: undefined,
-            learningStatus: 'in_progress' as const,
-            assessmentStatus: 'ready' as const,
-            bestScore: undefined,
-            description: `Practical competency and applied proficiency in ${skillName}.`,
-            estimatedTime: '2-3 weeks',
-            learningObjectives: [
-              `Master foundational principles of ${skillName}`,
-              `Complete applied industry challenge tasks`,
-              `Pass verified proctored assessment`,
-            ],
-            resources: [
-              { id: `r-${idx}-1`, title: `${skillName} Applied Fundamentals`, type: 'doc' as const, duration: '45 mins', completed: true, url: '#' },
-              { id: `r-${idx}-2`, title: `Industry Projects with ${skillName}`, type: 'video' as const, duration: '1.5 hrs', completed: false, url: '#' },
-            ],
-            careerRoles: ['Software Engineer', 'Full-Stack Developer', 'Specialist'],
-            relatedOpportunityCount: 6,
-          }));
-        });
-      }
-
-      // If a real user signs in for the first time, clear mock applications and update notifications
-      if (!isDemoUser) {
-        setNotifications((prev) => {
-          const hasMock = prev.some((n) => n.title.includes('Aarav') || n.message.includes('Aarav'));
-          if (hasMock) {
-            return [
-              {
-                id: `notif-welcome-${Date.now()}`,
-                title: `Welcome to SkillSetu, ${displayName}!`,
-                message: 'Your profile has been connected. Start validating your skills to get verified by top employers.',
-                time: 'Just now',
-                type: 'system',
-                read: false,
-                link: '/student/skills',
-              },
-            ];
-          }
-          return prev;
-        });
-      }
-    }
-  }, [user, userProfile]);
 
   // 2. Skills State
   const [skills, setSkills] = useState<Skill[]>(() => {
@@ -197,7 +137,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         try { return JSON.parse(saved); } catch (e) { /* ignore */ }
       }
     }
-    return ['opp-1', 'opp-4'];
+    return [];
   });
 
   // 4. Applications State
@@ -208,11 +148,233 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         try { return JSON.parse(saved); } catch (e) { /* ignore */ }
       }
     }
-    return INITIAL_APPLICATIONS;
+    return [];
   });
 
-  // 5. Projects
-  const [projects] = useState<Project[]>(INITIAL_PROJECTS);
+  // 5. Projects State (empty by default for real students, loaded from user storage)
+  const [projects, setProjects] = useState<Project[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('skillsetu_student_projects');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+      }
+    }
+    return [];
+  });
+
+  // Sync profile & user data when authenticated userProfile changes from Firebase
+  useEffect(() => {
+    const isDemo =
+      userProfile?.email?.toLowerCase() === 'aarav.sharma@rvce.edu.in' ||
+      user?.email?.toLowerCase() === 'aarav.sharma@rvce.edu.in' ||
+      user?.uid === 'demo_student';
+
+    if (userProfile && userProfile.role === 'STUDENT') {
+      const displayName =
+        userProfile.displayName ||
+        user?.displayName ||
+        (userProfile.email ? userProfile.email.split('@')[0] : 'Student');
+
+      setProfile((prev) => {
+        const isDefaultMock =
+          prev.name === 'Aarav Sharma' ||
+          prev.id === 'GAT054-STD-2026' ||
+          prev.email === 'aarav.sharma@rvce.edu.in';
+        const shouldResetMock = !isDemo && isDefaultMock;
+
+        const updated: StudentProfile = {
+          ...prev,
+          id: userProfile.uid || user?.uid || prev.id,
+          name: displayName,
+          email: userProfile.email || user?.email || (shouldResetMock ? '' : prev.email),
+          phone:
+            userProfile.phone !== undefined && userProfile.phone !== ''
+              ? userProfile.phone
+              : shouldResetMock
+              ? ''
+              : prev.phone,
+          college:
+            userProfile.college !== undefined && userProfile.college !== ''
+              ? userProfile.college
+              : shouldResetMock
+              ? ''
+              : prev.college,
+          degree:
+            userProfile.degree !== undefined && userProfile.degree !== ''
+              ? userProfile.degree
+              : shouldResetMock
+              ? 'B.Tech'
+              : prev.degree,
+          year:
+            userProfile.year !== undefined && userProfile.year !== ''
+              ? userProfile.year
+              : shouldResetMock
+              ? '3rd Year'
+              : prev.year,
+          gpa:
+            userProfile.gpa !== undefined && userProfile.gpa !== ''
+              ? userProfile.gpa
+              : shouldResetMock
+              ? ''
+              : prev.gpa,
+          careerGoal:
+            userProfile.careerGoal !== undefined && userProfile.careerGoal !== ''
+              ? userProfile.careerGoal
+              : shouldResetMock
+              ? 'Software Development'
+              : prev.careerGoal,
+          location:
+            userProfile.location !== undefined && userProfile.location !== ''
+              ? userProfile.location
+              : shouldResetMock
+              ? 'Bengaluru'
+              : prev.location,
+          bio:
+            userProfile.bio !== undefined && userProfile.bio !== ''
+              ? userProfile.bio
+              : shouldResetMock
+              ? ''
+              : prev.bio,
+          github:
+            userProfile.github !== undefined && userProfile.github !== ''
+              ? userProfile.github
+              : shouldResetMock
+              ? ''
+              : prev.github,
+          linkedin:
+            userProfile.linkedin !== undefined && userProfile.linkedin !== ''
+              ? userProfile.linkedin
+              : shouldResetMock
+              ? ''
+              : prev.linkedin,
+          avatar: userProfile.photoURL || user?.photoURL || (shouldResetMock ? '' : prev.avatar),
+          profileCompletion: 0,
+        };
+
+        updated.profileCompletion = calculateProfileCompletion(
+          updated,
+          projects.length,
+          skills.filter((s) => s.isVerified).length
+        );
+
+        return updated;
+      });
+
+      // Sync skills from student onboarding
+      if (userProfile.skills && userProfile.skills.length > 0) {
+        setSkills(() => {
+          const userSkillNames = userProfile.skills || [];
+          const icons = ['💻', '⚡', '🚀', '🧠', '🛠️', '🌐', '📊', '🔍', '⚙️', '📱'];
+          return userSkillNames.map((skillName, idx) => ({
+            id: `skill-user-${idx}-${skillName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+            name: skillName,
+            tier: 'Intermediate' as const,
+            category: 'Technical',
+            icon: icons[idx % icons.length],
+            level: 'Intermediate',
+            progress: 0,
+            isVerified: false,
+            verifiedDate: undefined,
+            learningStatus: 'not_started' as const,
+            assessmentStatus: 'ready' as const,
+            bestScore: undefined,
+            description: `Practical competency and applied proficiency in ${skillName}.`,
+            estimatedTime: '2-3 weeks',
+            learningObjectives: [
+              `Master foundational principles of ${skillName}`,
+              `Complete applied industry challenge tasks`,
+              `Pass verified proctored assessment`,
+            ],
+            resources: [
+              { id: `r-${idx}-1`, title: `${skillName} Applied Fundamentals`, type: 'doc' as const, duration: '45 mins', completed: false, url: '#' },
+              { id: `r-${idx}-2`, title: `Industry Projects with ${skillName}`, type: 'video' as const, duration: '1.5 hrs', completed: false, url: '#' },
+            ],
+            careerRoles: ['Software Engineer', 'Full-Stack Developer', 'Specialist'],
+            relatedOpportunityCount: 6,
+          }));
+        });
+      }
+    }
+
+    if (isDemo) {
+      setProjects((prev) => (prev.length === 0 ? INITIAL_PROJECTS : prev));
+      setApplications((prev) => (prev.length === 0 ? INITIAL_APPLICATIONS : prev));
+      setSavedOpportunityIds((prev) => (prev.length === 0 ? ['opp-1', 'opp-4'] : prev));
+    } else if (user?.uid) {
+      // Real user: Load their specific data without Aarav's fake projects & applications
+      try {
+        const userProjectsKey = `skillsetu_student_projects_${user.uid}`;
+        const savedProjects = localStorage.getItem(userProjectsKey);
+        if (savedProjects) {
+          setProjects(JSON.parse(savedProjects));
+        } else {
+          setProjects([]);
+          localStorage.setItem(userProjectsKey, JSON.stringify([]));
+          localStorage.setItem('skillsetu_student_projects', JSON.stringify([]));
+        }
+
+        const userAppsKey = `skillsetu_applications_${user.uid}`;
+        const savedApps = localStorage.getItem(userAppsKey);
+        if (savedApps) {
+          setApplications(JSON.parse(savedApps));
+        } else {
+          setApplications([]);
+          localStorage.setItem(userAppsKey, JSON.stringify([]));
+          localStorage.setItem('skillsetu_applications', JSON.stringify([]));
+        }
+
+        const userSavedKey = `skillsetu_saved_opps_${user.uid}`;
+        const savedOpps = localStorage.getItem(userSavedKey);
+        if (savedOpps) {
+          setSavedOpportunityIds(JSON.parse(savedOpps));
+        } else {
+          setSavedOpportunityIds([]);
+          localStorage.setItem(userSavedKey, JSON.stringify([]));
+          localStorage.setItem('skillsetu_saved_opps', JSON.stringify([]));
+        }
+
+        const userSkillsKey = `skillsetu_student_skills_${user.uid}`;
+        const savedSkills = localStorage.getItem(userSkillsKey);
+        if (savedSkills) {
+          setSkills(JSON.parse(savedSkills));
+        } else if (!userProfile?.skills || userProfile.skills.length === 0) {
+          // Clean curriculum skills without fake 80% progress
+          setSkills(
+            INITIAL_SKILLS.map((s) => ({
+              ...s,
+              progress: 0,
+              isVerified: false,
+              verifiedDate: undefined,
+              learningStatus: 'not_started' as const,
+              assessmentStatus: 'ready' as const,
+              bestScore: undefined,
+              resources: s.resources.map((r) => ({ ...r, completed: false })),
+            }))
+          );
+        }
+
+        setNotifications((prev) => {
+          const hasMock = prev.some((n) => n.title.includes('Aarav') || n.message.includes('Aarav'));
+          if (hasMock || prev.length === 0) {
+            return [
+              {
+                id: `notif-welcome-${Date.now()}`,
+                title: 'Welcome to SkillSetu!',
+                message: 'Your student profile is active. Add your projects and take skill assessments to get verified by top employers.',
+                time: 'Just now',
+                type: 'system',
+                read: false,
+                link: '/student/skills',
+              },
+            ];
+          }
+          return prev;
+        });
+      } catch (e) {
+        console.warn('Error syncing real user isolated state:', e);
+      }
+    }
+  }, [user, userProfile]);
 
   // 6. Notifications
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
@@ -296,6 +458,27 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       localStorage.setItem('skillsetu_applications', JSON.stringify(applications));
     }
   }, [applications]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (user?.uid) {
+        localStorage.setItem(`skillsetu_student_projects_${user.uid}`, JSON.stringify(projects));
+      }
+      localStorage.setItem('skillsetu_student_projects', JSON.stringify(projects));
+    }
+  }, [projects, user?.uid]);
+
+  const addProject = useCallback((newProj: Omit<Project, 'id'>) => {
+    const proj: Project = {
+      ...newProj,
+      id: `proj-${Date.now()}`,
+    };
+    setProjects((prev) => [proj, ...prev]);
+  }, []);
+
+  const deleteProject = useCallback((projectId: string) => {
+    setProjects((prev) => prev.filter((p) => p.id !== projectId));
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -721,6 +904,8 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         applications,
         submitApplication,
         projects,
+        addProject,
+        deleteProject,
         notifications,
         unreadNotificationCount,
         markNotificationAsRead,

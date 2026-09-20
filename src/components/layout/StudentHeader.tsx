@@ -81,7 +81,9 @@ export const StudentHeader: React.FC = () => {
         </div>
         <div className="flex items-center gap-4 text-[11px] text-slate-400">
           <span>&ldquo;Learn. Connect. Grow Together.&rdquo;</span>
-          <span className="text-emerald-400 font-semibold">Demo Role: Student</span>
+          <span className="text-emerald-400 font-semibold">
+            {profile.name === 'Aarav Sharma' ? 'Demo Role: Student' : 'Role: Student'}
+          </span>
         </div>
       </div>
 

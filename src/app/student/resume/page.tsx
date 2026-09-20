@@ -181,17 +181,23 @@ export default function ResumePage() {
             Academic &amp; Industry Projects
           </h2>
           <div className="space-y-4 text-xs sm:text-sm">
-            {projects.map((proj) => (
-              <div key={proj.id} className="space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-slate-900">{proj.title}</span>
-                  <span className="text-xs text-slate-400 font-mono">
-                    {proj.techStack.join(', ')}
-                  </span>
+            {projects.length === 0 ? (
+              <p className="text-xs text-slate-400 italic">
+                No academic or industry projects added yet. Add projects in your profile to display them on your verified resume.
+              </p>
+            ) : (
+              projects.map((proj) => (
+                <div key={proj.id} className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-slate-900">{proj.title}</span>
+                    <span className="text-xs text-slate-400 font-mono">
+                      {proj.techStack.join(', ')}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed">{proj.description}</p>
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">{proj.description}</p>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -201,17 +207,23 @@ export default function ResumePage() {
             Experience &amp; Industry Engagements
           </h2>
           <div className="space-y-2 text-xs sm:text-sm">
-            <div>
-              <div className="flex justify-between">
-                <strong className="font-bold text-slate-900">
-                  Open Source Contributor &amp; Student Researcher
-                </strong>
-                <span className="text-slate-500">2025 &ndash; Present</span>
+            {profile.name === 'Aarav Sharma' ? (
+              <div>
+                <div className="flex justify-between">
+                  <strong className="font-bold text-slate-900">
+                    Open Source Contributor &amp; Student Researcher
+                  </strong>
+                  <span className="text-slate-500">2025 &ndash; Present</span>
+                </div>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  Contributed bug fixes and responsive layout patches to open healthcare repositories; participated in hackathon sprints focusing on AYUSH practitioner indexing.
+                </p>
               </div>
-              <p className="text-xs text-slate-600 mt-0.5">
-                Contributed bug fixes and responsive layout patches to open healthcare repositories; participated in hackathon sprints focusing on AYUSH practitioner indexing.
+            ) : (
+              <p className="text-xs text-slate-500 italic">
+                Verified candidate active on SkillSetu &bull; Ready for internships, industry tasks, and micro-sprints.
               </p>
-            </div>
+            )}
           </div>
         </div>
 
