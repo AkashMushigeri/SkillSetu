@@ -6,16 +6,21 @@ functions/node_modules/
 .next/
 out/
 build/
+tsconfig.tsbuildinfo
 
 # Firebase
 firebase-debug.log
 .firebase/
 .dataconnect/
 
-# Environment
+# Environment - all env files (never commit secrets)
+.env
 .env.local
+.env.development
 .env.development.local
+.env.test
 .env.test.local
+.env.production
 .env.production.local
 
 # OS
@@ -25,9 +30,13 @@ Thumbs.db
 # IDE
 .idea/
 .vscode/
+.kilo/
 
 # Logs
 *.log
 
 # Data Connect generated
 src/generated/dataconnect/
+
+# Server credentials
+.credentials/
