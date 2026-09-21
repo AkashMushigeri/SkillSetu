@@ -37,6 +37,11 @@ import {
 import { fetchVerifiedJobsNearCity } from '@/lib/jobsApi';
 import { useAuth } from '@/context/AuthContext';
 import { saveUserProfile } from '@/lib/firebase';
+import {
+  fetchRemoteJobs,
+  fetchRemoteInternships,
+  syncApplicationToDataConnect,
+} from '@/lib/dataConnectService';
 
 interface StudentContextType {
   profile: StudentProfile;
@@ -405,6 +410,24 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [liveApiJobs, setLiveApiJobs] = useState<Opportunity[]>([]);
   const [liveApiLoading, setLiveApiLoading] = useState<boolean>(false);
 
+  // 6d. Data Connect remote opportunities (PostgreSQL / PGlite)
+  const [dataConnectOpportunities, setDataConnectOpportunities] = useState<Opportunity[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([fetchRemoteJobs(), fetchRemoteInternships()]).then(([jobsRes, internsRes]) => {
+      if (isMounted) {
+        const combined = [...jobsRes.opportunities, ...internsRes.opportunities];
+        if (combined.length > 0) {
+          setDataConnectOpportunities(combined);
+        }
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   useEffect(() => {
     const loadLiveJobs = async () => {
       setLiveApiLoading(true);
@@ -758,6 +781,17 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         console.warn('[Sync] Failed to publish application:', e);
       }
 
+      // Sync application to Firebase Data Connect in background
+      syncApplicationToDataConnect({
+        title: opp.title,
+        jobType: opp.type,
+        matchScore: match.matchScore,
+        matchedSkills: match.matchedSkills,
+        missingSkills: match.missingSkills,
+        jobId: opp.id.startsWith('dc-') ? opp.id.replace('dc-', '') : undefined,
+        internshipId: opp.id.startsWith('dc-int-') ? opp.id.replace('dc-int-', '') : undefined,
+      });
+
       // Add notification
       setNotifications((prev) => [
         {
@@ -862,8 +896,33 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         };
       });
 
-    return [...local, ...synced, ...apiJobs];
-  }, [userCoords, skills, syncedOpportunities, liveApiJobs]);
+    // Data Connect remote opportunities (PostgreSQL / PGlite)
+    const remoteOpps = dataConnectOpportunities
+      .filter((o) => !local.some((loc) => loc.id === o.id))
+      .filter((o) => !synced.some((s) => s.id === o.id))
+      .filter((o) => !apiJobs.some((a) => a.id === o.id))
+      .map((opp) => {
+        const distance = calculateHaversineDistance(
+          userCoords.lat,
+          userCoords.lng,
+          opp.coordinates?.lat || 12.9716,
+          opp.coordinates?.lng || 77.5946
+        );
+
+        const match = computeOpportunityMatch(opp, skills);
+
+        return {
+          ...opp,
+          distanceKm: distance,
+          matchScore: match.matchScore,
+          matchedSkills: match.matchedSkills,
+          missingSkills: match.missingSkills,
+          isMatchBoosted: match.isMatchBoosted,
+        };
+      });
+
+    return [...local, ...synced, ...remoteOpps, ...apiJobs];
+  }, [userCoords, skills, syncedOpportunities, dataConnectOpportunities, liveApiJobs]);
 
   // Reset demo state
   const resetToDemo = useCallback(() => {

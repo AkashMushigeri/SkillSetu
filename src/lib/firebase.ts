@@ -12,6 +12,7 @@ import {
   onAuthStateChanged,
   signOut as firebaseSignOutFn,
   User as FirebaseUser,
+  connectAuthEmulator,
 } from 'firebase/auth';
 import {
   initializeFirestore,
@@ -24,8 +25,9 @@ import {
   setDoc,
   updateDoc,
   serverTimestamp,
+  connectFirestoreEmulator,
 } from 'firebase/firestore';
-import { getDataConnect, DataConnect } from 'firebase/data-connect';
+import { getDataConnect, DataConnect, connectDataConnectEmulator } from 'firebase/data-connect';
 import {
   connectorConfig,
   upsertStudentProfile,
@@ -48,6 +50,40 @@ let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
 let dataConnect: DataConnect | null = null;
+
+const isLocalhost =
+  typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+export const shouldConnectEmulator =
+  process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === 'true' ||
+  (isLocalhost && typeof window !== 'undefined' && localStorage.getItem('skillsetu_use_emulator') === 'true');
+
+function initEmulators(authInstance: Auth, dbInstance: Firestore, dcInstance: DataConnect | null) {
+  if (!shouldConnectEmulator) return;
+
+  try {
+    connectAuthEmulator(authInstance, 'http://127.0.0.1:9099', { disableWarnings: true });
+  } catch {
+    // ignore if already connected
+  }
+
+  try {
+    connectFirestoreEmulator(dbInstance, '127.0.0.1', 8080);
+  } catch {
+    // ignore if already connected
+  }
+
+  if (dcInstance) {
+    try {
+      connectDataConnectEmulator(dcInstance, '127.0.0.1', 9399);
+    } catch {
+      // ignore if already connected
+    }
+  }
+
+  console.info('⚡ [Firebase] Connected to local Emulators (Auth: 9099, Firestore: 8080, Data Connect: 9399)');
+}
 
 if (typeof window !== 'undefined') {
   if (!getApps().length) {
@@ -80,6 +116,19 @@ if (typeof window !== 'undefined') {
     } catch (e) {
       console.warn('DataConnect init notice:', e);
     }
+  }
+
+  if (auth && db) {
+    initEmulators(auth, db, dataConnect);
+  }
+
+  // Developer utility exposed on window in development
+  if (isLocalhost) {
+    (window as any).toggleSkillSetuEmulator = (enable: boolean) => {
+      localStorage.setItem('skillsetu_use_emulator', enable ? 'true' : 'false');
+      console.log(`Emulator mode set to ${enable}. Reloading page...`);
+      window.location.reload();
+    };
   }
 }
 

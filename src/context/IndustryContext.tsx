@@ -43,6 +43,13 @@ import {
 } from '@/lib/syncConverters';
 import { useAuth } from '@/context/AuthContext';
 import { saveUserProfile } from '@/lib/firebase';
+import {
+  fetchRemoteJobs,
+  fetchRemoteInternships,
+  syncNewJobToDataConnect,
+  syncNewInternshipToDataConnect,
+  syncApplicationStageToDataConnect,
+} from '@/lib/dataConnectService';
 
 export interface ToastMessage {
   id: string;
@@ -243,6 +250,36 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch (e) {
       console.warn('LocalStorage error:', e);
     }
+  }, []);
+
+  // Fetch live jobs & internships from Firebase Data Connect
+  useEffect(() => {
+    let isMounted = true;
+    fetchRemoteJobs().then(({ industryJobs }) => {
+      if (isMounted && industryJobs.length > 0) {
+        setJobs((prev) => {
+          const map = new Map<string, IndustryJob>();
+          prev.forEach((j) => map.set(j.id, j));
+          industryJobs.forEach((j) => map.set(j.id, j));
+          return Array.from(map.values());
+        });
+      }
+    });
+
+    fetchRemoteInternships().then(({ industryInternships }) => {
+      if (isMounted && industryInternships.length > 0) {
+        setInternships((prev) => {
+          const map = new Map<string, IndustryInternship>();
+          prev.forEach((i) => map.set(i.id, i));
+          industryInternships.forEach((i) => map.set(i.id, i));
+          return Array.from(map.values());
+        });
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // ------------------------------------------------------------------
@@ -470,6 +507,8 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         } catch (e) {
           console.warn('[Sync] Failed to publish stage update:', e);
         }
+        // Sync stage update to Firebase Data Connect in background
+        syncApplicationStageToDataConnect(applicationId, nextStage, note);
       }
       return updated;
     });
@@ -498,6 +537,8 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.warn('[Sync] Failed to publish job:', e);
     }
     showToast(`Job "${newJob.title}" published successfully!`, 'success');
+    // Sync newly created job to Firebase Data Connect in background
+    syncNewJobToDataConnect(newJobData);
     return newJob;
   };
 
@@ -519,6 +560,8 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.warn('[Sync] Failed to publish internship:', e);
     }
     showToast(`Internship "${newInternship.title}" published successfully!`, 'success');
+    // Sync newly created internship to Firebase Data Connect in background
+    syncNewInternshipToDataConnect(newInternData);
     return newInternship;
   };
 

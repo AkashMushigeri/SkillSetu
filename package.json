@@ -14,7 +14,13 @@
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",
     "deploy": "firebase deploy --only apphosting",
-    "deploy:preview": "firebase apphosting:channels:deploy live"
+    "deploy:preview": "firebase apphosting:channels:deploy live",
+    "db:seed": "npx tsx scripts/seed.ts",
+    "emulators": "npx -y firebase-tools emulators:start --only dataconnect,auth,firestore",
+    "emulators:export": "npx -y firebase-tools emulators:start --only dataconnect,auth,firestore --export-on-exit=./emulator-data",
+    "deploy:dataconnect": "npx -y firebase-tools deploy --only dataconnect",
+    "deploy:firestore": "npx -y firebase-tools deploy --only firestore",
+    "deploy:database": "npx -y firebase-tools deploy --only dataconnect,firestore"
   },
   "dependencies": {
     "@skillsetu/dataconnect": "file:src/generated/dataconnect",
