@@ -12,6 +12,7 @@ tsconfig.tsbuildinfo
 firebase-debug.log
 .firebase/
 .dataconnect/
+.credentials/
 
 # Environment - all env files (never commit secrets)
 .env
@@ -37,9 +38,6 @@ Thumbs.db
 
 # Data Connect generated
 src/generated/dataconnect/
-
-# Server credentials
-.credentials/
 
 # Build cache
 *.tsbuildinfo
