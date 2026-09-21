@@ -1,0 +1,27 @@
+runtime: nodejs20
+
+# Firebase App Hosting automatically detects Next.js 14 and handles
+# static generation, SSR, ISR, and API routes.
+# Node.js 20+ is required for Next.js 14 support on App Hosting.
+# See: https://firebase.google.com/docs/app-hosting
+
+env:
+  # Frontend-safe Firebase config (not a secret — Firebase web API keys are public)
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyBYafwhkKarQs36-GehGM50b1QqZKTvzPk
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: skillsetu-6e06a.firebaseapp.com
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: skillsetu-6e06a
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: skillsetu-6e06a.firebasestorage.app
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: 251000743509
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: 1:251000743509:web:b120001a772e2ca85096dc
+
+  # Server-only secret — must be stored in Secret Manager
+  # 1. gcloud secrets create gemini-api-key --data-file=<(echo -n "YOUR_KEY")
+  # 2. firebase apphosting:secrets:link gemini-api-key
+  - variable: GEMINI_API_KEY
+    secret: gemini-api-key

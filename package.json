@@ -2,11 +2,19 @@
   "name": "skillsetu-ayush-career-bridge",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=9.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "deploy": "firebase deploy --only apphosting",
+    "deploy:preview": "firebase apphosting:channels:deploy live"
   },
   "dependencies": {
     "@skillsetu/dataconnect": "file:src/generated/dataconnect",

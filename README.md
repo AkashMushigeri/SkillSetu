@@ -110,6 +110,43 @@ npm run build
 npm run start
 ```
 
+### 5. Deploy to Firebase App Hosting
+
+SkillSetu uses **Firebase App Hosting** — the recommended deployment model for Next.js 14 App Router. App Hosting automatically handles static generation, SSR, ISR, and API routes without manual server configuration.
+
+```bash
+# Build locally first to verify
+npm run build
+
+# Deploy (creates a live channel preview first)
+npm run deploy:preview
+
+# Promote to production
+npm run deploy
+```
+
+#### Environment Variables
+
+Environment variables are configured in `apphosting.yaml`:
+- **Frontend-safe** (`NEXT_PUBLIC_*`): Firebase Web SDK config — safe to expose in browser bundles
+- **Server-only**: `GEMINI_API_KEY` is read from Secret Manager, never exposed to the browser
+- Local development: copy `.env.example` to `.env.local`
+
+#### Setting Up the Gemini API Key (Server-Only)
+
+```bash
+# 1. Create the secret in Secret Manager
+gcloud secrets create gemini-api-key --data-file=<(echo -n "YOUR_GEMINI_API_KEY")
+
+# 2. Link the secret to App Hosting
+firebase apphosting:secrets:link gemini-api-key
+
+# 3. Deploy
+npm run deploy
+```
+
+> **Security**: The AI interview API route (`src/app/api/ai-interview/route.ts`) reads `GEMINI_API_KEY` via the server service at `src/server/ai/interviewService.ts`. This code is server-side only and cannot be bundled into client-side JavaScript.
+
 ---
 
 ## 🔑 Demo Access Credentials
@@ -129,40 +166,57 @@ The platform includes 1-click demo login buttons for seamless hackathon presenta
 ```
 SkillSetu/
 ├── src/
-│   ├── app/
-│   │   ├── industry/             # Industry Portal (Jobs, Pipeline, MoUs, Offers, Map)
-│   │   │   ├── analytics/        # Recruitment funnel & hiring performance
-│   │   │   ├── applications/     # Candidate application management
-│   │   │   ├── candidates/       # Skill-first talent search & candidate profiles
-│   │   │   ├── challenges/       # Hackathons, benchmarks & submission leaderboard
-│   │   │   ├── colleges/         # Academia collaboration & Bilateral MoU studio
-│   │   │   ├── dashboard/        # Executive hiring KPI dashboard
-│   │   │   ├── internships/      # Startup-friendly student opportunities
-│   │   │   ├── interviews/       # Scheduling center with Google Meet
-│   │   │   ├── jobs/             # Job creation with Required Skills Builder
-│   │   │   ├── offers/           # Digital offer letter generator & letterhead
-│   │   │   ├── pipeline/         # 8-stage interactive Kanban board
-│   │   │   ├── profile/          # TechNova Labs company branding
-│   │   │   └── settings/         # Hiring thresholds & preferences
-│   │   ├── student/              # Student Portal (Skills, Learning, Opportunities)
-│   │   ├── college/              # College Portal (Analytics, Students, Placements)
-│   │   └── login/                # Streamlined multi-role portal authentication
-│   ├── components/
-│   │   ├── industry/             # Industry cards, modals, tables, and Leaflet maps
-│   │   ├── student/              # Student UI widgets and opportunity cards
-│   │   └── college/              # College analytics charts and modals
-│   ├── context/
-│   │   ├── IndustryContext.tsx   # Centralized store with localStorage persistence
-│   │   ├── StudentContext.tsx    # Student state provider
-│   │   └── CollegeContext.tsx    # College institutional state provider
-│   ├── data/
-│   │   └── industry/             # Rich mock datasets (Jobs, Candidates, MoUs, Offers)
-│   ├── lib/
-│   │   └── industryMatching.ts   # 100-point skill match algorithm
-│   └── types/
-│       └── industry.ts           # Strict TypeScript schemas
-├── public/                       # Static assets & icons
+│   ├── app/                      # Next.js App Router (Frontend pages + Backend API)
+│   │   ├── api/                  # Backend: Server-side API routes
+│   │   │   └── ai-interview/     # AI interview processing endpoint
+│   │   ├── industry/             # Industry Portal pages
+│   │   ├── student/              # Student Portal pages
+│   │   ├── college/              # College Portal pages
+│   │   ├── login/                # Multi-role authentication
+│   │   ├── onboarding/           # First-time user onboarding
+│   │   ├── layout.tsx            # Root layout (AuthProvider, OnboardingGuard)
+│   │   └── page.tsx              # Root redirect
+│   ├── components/               # Frontend: Reusable UI components
+│   │   ├── auth/                 # Auth guard components
+│   │   ├── layout/               # Layout components (headers, navs)
+│   │   ├── opportunities/        # Opportunity cards & modals
+│   │   ├── map/                  # Leaflet map components
+│   │   ├── icons/                # Brand & icon components
+│   │   ├── industry/             # Industry portal UI
+│   │   └── college/              # College portal UI
+│   ├── contexts/                 # Frontend: React Context providers
+│   │   ├── AuthContext.tsx       # Auth state (Firebase + role-based)
+│   │   ├── StudentContext.tsx    # Student state (skills, opps, apps)
+│   │   ├── IndustryContext.tsx   # Industry state (jobs, candidates)
+│   │   └── CollegeContext.tsx    # College state (students, placement)
+│   ├── data/                     # Frontend: Mock & static data
+│   │   └── industry/             # Industry mock datasets
+│   ├── server/                   # Backend: Server-side business logic (NEW)
+│   │   └── ai/
+│   │       └── interviewService.ts # AI interview NLP & Gemini integration
+│   ├── lib/                      # Shared: Utilities & Firebase SDK
+│   │   ├── firebase.ts           # Firebase init & auth helpers
+│   │   ├── jobsApi.ts            # Verified jobs external API client
+│   │   ├── industryMatching.ts   # 100-point skill match algorithm
+│   │   ├── matchUtils.ts         # Haversine distance & opportunity matching
+│   │   ├── styleUtils.ts         # Style helper functions
+│   │   ├── syncBridge.ts         # Cross-sector localStorage sync bus
+│   │   └── syncConverters.ts     # Type-safe cross-sector type converters
+│   ├── styles/                   # Frontend: CSS (NEW - moved from app/)
+│   │   └── globals.css
+│   └── types/                    # Shared: TypeScript type definitions
+│       ├── student.ts
+│       ├── industry.ts
+│       └── college.ts
+├── public/                       # Static assets
+├── dataconnect/                  # Firebase Data Connect schema & connector
+├── firebase.json                 # Firebase config (hosting, dataconnect, emulators)
+├── .firebaserc                   # Firebase project association
+├── .env.example                  # Environment variable template
+├── .gitignore
+├── next.config.mjs
 ├── package.json
+├── postcss.config.mjs
 ├── tailwind.config.ts
 └── tsconfig.json
 ```

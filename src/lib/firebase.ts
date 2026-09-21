@@ -29,7 +29,6 @@ import { getDataConnect, DataConnect } from 'firebase/data-connect';
 import {
   connectorConfig,
   upsertStudentProfile,
-  upsertUserProfile,
   upsertCompany,
   upsertCollege,
   createSkill,
@@ -37,12 +36,12 @@ import {
 } from '@skillsetu/dataconnect';
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyBYafwhkKarQs36-GehGM50b1QqZKTvzPk',
-  authDomain: 'skillsetu-6e06a.firebaseapp.com',
-  projectId: 'skillsetu-6e06a',
-  storageBucket: 'skillsetu-6e06a.firebasestorage.app',
-  messagingSenderId: '251000743509',
-  appId: '1:251000743509:web:b120001a772e2ca85096dc',
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyBYafwhkKarQs36-GehGM50b1QqZKTvzPk',
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'skillsetu-6e06a.firebaseapp.com',
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'skillsetu-6e06a',
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'skillsetu-6e06a.firebasestorage.app',
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '251000743509',
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:251000743509:web:b120001a772e2ca85096dc',
 };
 
 let app: FirebaseApp;
@@ -322,21 +321,7 @@ export const saveUserProfile = async (
   const currentAuth = auth?.currentUser || (app ? getAuth(app)?.currentUser : null);
   if (dataConnect && currentAuth) {
     try {
-      // Upsert into Data Connect PostgreSQL User table for all roles
-      try {
-        await upsertUserProfile(dataConnect, {
-          displayName: updatedProfile.displayName || currentAuth.displayName || 'User',
-          email: updatedProfile.email || currentAuth.email || '',
-          role: updatedProfile.role as any,
-          photoUrl: updatedProfile.photoURL || currentAuth.photoURL || undefined,
-          college: updatedProfile.college || updatedProfile.institutionName || undefined,
-          location: updatedProfile.location || updatedProfile.companyLocation || updatedProfile.institutionLocation || undefined,
-          phone: updatedProfile.phone || undefined,
-        });
-      } catch (userUpsertErr) {
-        // May fail if generic mutation isn't deployed yet; proceed to role-specific upsert
-      }
-
+      // Generic user upsert not available in current SDK; role-specific upserts below handle persistence
       if (updatedProfile.role === 'STUDENT') {
         try {
           await upsertStudentProfile(dataConnect, {
