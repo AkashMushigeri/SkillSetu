@@ -297,6 +297,8 @@ export interface UserProfileData {
   role: UserRole;
   displayName: string;
   phone: string;
+  countryCode?: string;
+  phoneNumber?: string;
   photoURL?: string;
   onboardingCompleted: boolean;
   createdAt?: any;
@@ -311,6 +313,14 @@ export interface UserProfileData {
   careerGoal?: string;
   skills?: string[];
   location?: string;
+  locationDetails?: {
+    city?: string;
+    state?: string;
+    country?: string;
+    displayName?: string;
+    latitude?: number;
+    longitude?: number;
+  };
   bio?: string;
   github?: string;
   linkedin?: string;
@@ -442,16 +452,18 @@ export const saveUserProfile = async (
     const firestoreWrite = async () => {
       try {
         const userDocRef = doc(db, 'users', uid);
+        const firestoreData: Record<string, any> = {
+          ...updatedProfile,
+          updatedAt: serverTimestamp(),
+          createdAt: existingLocal?.createdAt ? existingLocal.createdAt : serverTimestamp(),
+        };
+        Object.keys(firestoreData).forEach((k) => {
+          if (firestoreData[k] === undefined) {
+            delete firestoreData[k];
+          }
+        });
         await Promise.race([
-          setDoc(
-            userDocRef,
-            {
-              ...updatedProfile,
-              updatedAt: serverTimestamp(),
-              createdAt: existingLocal?.createdAt ? existingLocal.createdAt : serverTimestamp(),
-            },
-            { merge: true }
-          ),
+          setDoc(userDocRef, firestoreData, { merge: true }),
           new Promise((_, reject) => setTimeout(() => reject(new Error('Firestore timeout')), 1200)),
         ]);
       } catch (err: any) {

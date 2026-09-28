@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, getDashboardRoute } from '@/context/AuthContext';
 import { UserRole, UserProfileData } from '@/lib/firebase';
@@ -28,8 +28,12 @@ import {
   Linkedin,
   Github,
   Check,
+  ChevronDown,
+  Search,
+  AlertCircle,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { LocationSuggestion } from '@/app/api/locations/autocomplete/route';
 
 const POPULAR_STUDENT_SKILLS = [
   'React',
@@ -73,17 +77,86 @@ const POPULAR_DEPARTMENTS = [
   'Mechanical Engineering',
 ];
 
-const POPULAR_CITIES = [
-  'Bengaluru, Karnataka',
-  'Delhi NCR',
-  'Mumbai, Maharashtra',
-  'Hyderabad, Telangana',
-  'Pune, Maharashtra',
-  'Chennai, Tamil Nadu',
-  'Kolkata, West Bengal',
-  'Ahmedabad, Gujarat',
-  'Jaipur, Rajasthan',
+interface CountryOption {
+  code: string;
+  name: string;
+  flag: string;
+  iso: string;
+  minLength: number;
+  maxLength: number;
+  placeholder: string;
+}
+
+const COUNTRY_OPTIONS: CountryOption[] = [
+  { code: '+91', name: 'India', flag: '🇮🇳', iso: 'IN', minLength: 10, maxLength: 10, placeholder: '9876543210' },
+  { code: '+1', name: 'United States', flag: '🇺🇸', iso: 'US', minLength: 10, maxLength: 10, placeholder: '2025550143' },
+  { code: '+44', name: 'United Kingdom', flag: '🇬🇧', iso: 'GB', minLength: 10, maxLength: 10, placeholder: '7911123456' },
+  { code: '+61', name: 'Australia', flag: '🇦🇺', iso: 'AU', minLength: 9, maxLength: 9, placeholder: '412345678' },
+  { code: '+1', name: 'Canada', flag: '🇨🇦', iso: 'CA', minLength: 10, maxLength: 10, placeholder: '4165550198' },
+  { code: '+971', name: 'United Arab Emirates', flag: '🇦🇪', iso: 'AE', minLength: 9, maxLength: 9, placeholder: '501234567' },
+  { code: '+65', name: 'Singapore', flag: '🇸🇬', iso: 'SG', minLength: 8, maxLength: 8, placeholder: '81234567' },
+  { code: '+49', name: 'Germany', flag: '🇩🇪', iso: 'DE', minLength: 10, maxLength: 11, placeholder: '15123456789' },
+  { code: '+33', name: 'France', flag: '🇫🇷', iso: 'FR', minLength: 9, maxLength: 9, placeholder: '612345678' },
+  { code: '+81', name: 'Japan', flag: '🇯🇵', iso: 'JP', minLength: 10, maxLength: 10, placeholder: '9012345678' },
+  { code: '+966', name: 'Saudi Arabia', flag: '🇸🇦', iso: 'SA', minLength: 9, maxLength: 9, placeholder: '501234567' },
+  { code: '+974', name: 'Qatar', flag: '🇶🇦', iso: 'QA', minLength: 8, maxLength: 8, placeholder: '33123456' },
+  { code: '+60', name: 'Malaysia', flag: '🇲🇾', iso: 'MY', minLength: 9, maxLength: 10, placeholder: '123456789' },
+  { code: '+64', name: 'New Zealand', flag: '🇳🇿', iso: 'NZ', minLength: 9, maxLength: 10, placeholder: '211234567' },
+  { code: '+31', name: 'Netherlands', flag: '🇳🇱', iso: 'NL', minLength: 9, maxLength: 9, placeholder: '612345678' },
+  { code: '+41', name: 'Switzerland', flag: '🇨🇭', iso: 'CH', minLength: 9, maxLength: 9, placeholder: '781234567' },
+  { code: '+880', name: 'Bangladesh', flag: '🇧🇩', iso: 'BD', minLength: 10, maxLength: 10, placeholder: '1712345678' },
+  { code: '+977', name: 'Nepal', flag: '🇳🇵', iso: 'NP', minLength: 10, maxLength: 10, placeholder: '9841234567' },
+  { code: '+94', name: 'Sri Lanka', flag: '🇱🇰', iso: 'LK', minLength: 9, maxLength: 9, placeholder: '712345678' },
 ];
+
+function parseStoredPhone(phoneStr: string): { country: CountryOption; number: string } {
+  const clean = (phoneStr || '').trim();
+  if (!clean) {
+    return { country: COUNTRY_OPTIONS[0], number: '' };
+  }
+
+  for (const opt of COUNTRY_OPTIONS) {
+    if (clean.startsWith(opt.code)) {
+      const rest = clean.slice(opt.code.length).replace(/\D/g, '');
+      return { country: opt, number: rest.slice(0, opt.maxLength) };
+    }
+  }
+
+  const digitsOnly = clean.replace(/\D/g, '');
+  if (digitsOnly.length === 12 && digitsOnly.startsWith('91')) {
+    return { country: COUNTRY_OPTIONS[0], number: digitsOnly.slice(2) };
+  }
+  if (digitsOnly.length === 11 && digitsOnly.startsWith('0')) {
+    return { country: COUNTRY_OPTIONS[0], number: digitsOnly.slice(1) };
+  }
+
+  return { country: COUNTRY_OPTIONS[0], number: digitsOnly.slice(0, 10) };
+}
+
+function getPhoneValidationError(digits: string, country: CountryOption): string | null {
+  if (!digits || digits.trim() === '') {
+    return 'Please provide a contact phone number.';
+  }
+
+  if (country.code === '+91') {
+    if (digits.length !== 10) {
+      return 'Phone number must contain exactly 10 digits.';
+    }
+    return null;
+  }
+
+  if (country.minLength === country.maxLength) {
+    if (digits.length !== country.minLength) {
+      return `Phone number must contain exactly ${country.minLength} digits.`;
+    }
+  } else {
+    if (digits.length < country.minLength || digits.length > country.maxLength) {
+      return `Phone number must contain between ${country.minLength} and ${country.maxLength} digits.`;
+    }
+  }
+
+  return null;
+}
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -101,6 +174,35 @@ export default function OnboardingPage() {
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
   const [location, setLocation] = useState('');
+
+  // International Phone Input State
+  const [selectedCountry, setSelectedCountry] = useState<CountryOption>(COUNTRY_OPTIONS[0]);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
+  const [countrySearchQuery, setCountrySearchQuery] = useState('');
+  const countryDropdownRef = useRef<HTMLDivElement>(null);
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  const [step1Attempted, setStep1Attempted] = useState(false);
+
+  // Real City / Location Autocomplete State
+  const [locationTouched, setLocationTouched] = useState(false);
+  const [selectedLocationDetails, setSelectedLocationDetails] = useState<{
+    city?: string;
+    state?: string;
+    country?: string;
+    displayName?: string;
+    latitude?: number;
+    longitude?: number;
+  } | null>(null);
+  const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+  const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
+  const [highlightedLocationIndex, setHighlightedLocationIndex] = useState(-1);
+  const [locationSearchError, setLocationSearchError] = useState<string | null>(null);
+  const locationDropdownRef = useRef<HTMLDivElement>(null);
+  const locationInputRef = useRef<HTMLInputElement>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Student Fields
   const [college, setCollege] = useState('');
@@ -146,8 +248,32 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (userProfile) {
       if (userProfile.displayName) setDisplayName(userProfile.displayName);
-      if (userProfile.phone) setPhone(userProfile.phone);
+
+      // Handle Phone & Country Code
+      if (userProfile.countryCode) {
+        const found = COUNTRY_OPTIONS.find((c) => c.code === userProfile.countryCode);
+        if (found) setSelectedCountry(found);
+      }
+      if (userProfile.phoneNumber) {
+        setPhoneNumber(userProfile.phoneNumber);
+        setPhone(`${userProfile.countryCode || '+91'} ${userProfile.phoneNumber}`);
+      } else if (userProfile.phone) {
+        const parsed = parseStoredPhone(userProfile.phone);
+        setSelectedCountry(parsed.country);
+        setPhoneNumber(parsed.number);
+        setPhone(userProfile.phone);
+      }
+
+      // Handle Location & Structured Details
       if (userProfile.location) setLocation(userProfile.location);
+      if (userProfile.locationDetails) {
+        setSelectedLocationDetails(userProfile.locationDetails);
+      } else if (userProfile.location) {
+        setSelectedLocationDetails({
+          city: userProfile.location.split(',')[0]?.trim() || userProfile.location.trim(),
+          displayName: userProfile.location.trim(),
+        });
+      }
 
       // Student fields
       if (userProfile.college) setCollege(userProfile.college);
@@ -186,9 +312,37 @@ export default function OnboardingPage() {
       if (userProfile.naacGrade) setNaacGrade(userProfile.naacGrade);
     } else if (user) {
       if (user.displayName) setDisplayName(user.displayName);
-      if (user.phoneNumber) setPhone(user.phoneNumber);
+      if (user.phoneNumber) {
+        const parsed = parseStoredPhone(user.phoneNumber);
+        setSelectedCountry(parsed.country);
+        setPhoneNumber(parsed.number);
+        setPhone(user.phoneNumber);
+      }
     }
   }, [userProfile, user]);
+
+  // Click outside listener for country and location dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        countryDropdownRef.current &&
+        !countryDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsCountryDropdownOpen(false);
+      }
+      if (
+        locationDropdownRef.current &&
+        !locationDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsLocationDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Auth Guard
   useEffect(() => {
@@ -196,6 +350,169 @@ export default function OnboardingPage() {
       router.push('/login');
     }
   }, [loading, user, router]);
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/\D/g, '');
+    if (val.length > selectedCountry.maxLength) {
+      val = val.slice(0, selectedCountry.maxLength);
+    }
+    setPhoneNumber(val);
+    setPhone(`${selectedCountry.code} ${val}`);
+    if (error && (error.toLowerCase().includes('phone') || error.toLowerCase().includes('contact'))) {
+      setError(null);
+    }
+  };
+
+  const handlePhonePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text') || '';
+    let cleaned = pasted.replace(/\D/g, '');
+
+    if (selectedCountry.code === '+91') {
+      if (cleaned.length === 12 && cleaned.startsWith('91')) {
+        cleaned = cleaned.slice(2);
+      } else if (cleaned.length === 11 && cleaned.startsWith('0')) {
+        cleaned = cleaned.slice(1);
+      }
+      cleaned = cleaned.slice(0, 10);
+    } else {
+      cleaned = cleaned.slice(0, selectedCountry.maxLength);
+    }
+
+    setPhoneNumber(cleaned);
+    setPhone(`${selectedCountry.code} ${cleaned}`);
+    if (error && (error.toLowerCase().includes('phone') || error.toLowerCase().includes('contact'))) {
+      setError(null);
+    }
+  };
+
+  const fetchLocationSuggestions = useCallback((query: string) => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const trimmed = query.trim();
+    if (trimmed.length < 3) {
+      setLocationSuggestions([]);
+      setIsSearchingLocation(false);
+      setIsLocationDropdownOpen(false);
+      return;
+    }
+
+    setIsSearchingLocation(true);
+    setLocationSearchError(null);
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    fetch(`/api/locations/autocomplete?q=${encodeURIComponent(trimmed)}`, {
+      signal: controller.signal,
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to fetch locations');
+        return res.json();
+      })
+      .then((data) => {
+        const suggestions = (data.suggestions || []) as LocationSuggestion[];
+        setLocationSuggestions(suggestions);
+        setIsSearchingLocation(false);
+        setIsLocationDropdownOpen(true);
+        setHighlightedLocationIndex(-1);
+      })
+      .catch((err) => {
+        if (err.name === 'AbortError') return;
+        setIsSearchingLocation(false);
+        setLocationSearchError('Could not load suggestions. You can still type your city manually.');
+      });
+  }, []);
+
+  const handleLocationInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setLocation(val);
+    setSelectedLocationDetails({
+      city: val.split(',')[0]?.trim() || val.trim(),
+      displayName: val.trim(),
+    });
+
+    if (error && (error.toLowerCase().includes('location') || error.toLowerCase().includes('city'))) {
+      setError(null);
+    }
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    if (val.trim().length >= 3) {
+      setIsSearchingLocation(true);
+      debounceTimerRef.current = setTimeout(() => {
+        fetchLocationSuggestions(val);
+      }, 350);
+    } else {
+      setIsSearchingLocation(false);
+      setLocationSuggestions([]);
+      setIsLocationDropdownOpen(false);
+    }
+  };
+
+  const selectLocationSuggestion = (sug: LocationSuggestion) => {
+    setLocation(sug.displayName);
+    setSelectedLocationDetails({
+      city: sug.city,
+      state: sug.state,
+      country: sug.country,
+      displayName: sug.displayName,
+      latitude: sug.latitude,
+      longitude: sug.longitude,
+    });
+    setIsLocationDropdownOpen(false);
+    setLocationSuggestions([]);
+    if (error && (error.toLowerCase().includes('location') || error.toLowerCase().includes('city'))) {
+      setError(null);
+    }
+  };
+
+  const handleLocationKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!isLocationDropdownOpen || locationSuggestions.length === 0) {
+      if (e.key === 'ArrowDown' && location.trim().length >= 3) {
+        setIsLocationDropdownOpen(true);
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedLocationIndex((prev) =>
+        prev < locationSuggestions.length - 1 ? prev + 1 : 0
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedLocationIndex((prev) =>
+        prev > 0 ? prev - 1 : locationSuggestions.length - 1
+      );
+    } else if (e.key === 'Enter') {
+      if (highlightedLocationIndex >= 0 && locationSuggestions[highlightedLocationIndex]) {
+        e.preventDefault();
+        selectLocationSuggestion(locationSuggestions[highlightedLocationIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setIsLocationDropdownOpen(false);
+    }
+  };
+
+  const filteredCountries = COUNTRY_OPTIONS.filter((c) => {
+    const q = countrySearchQuery.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      c.name.toLowerCase().includes(q) ||
+      c.code.toLowerCase().includes(q) ||
+      c.iso.toLowerCase().includes(q)
+    );
+  });
+
+  const phoneError = getPhoneValidationError(phoneNumber, selectedCountry);
+  const showPhoneError = (phoneTouched || step1Attempted) && !!phoneError;
+  const showLocationError = (locationTouched || step1Attempted) && !location.trim();
 
   const toggleSkill = (skill: string) => {
     setSelectedSkills((prev) =>
@@ -227,12 +544,16 @@ export default function OnboardingPage() {
     setError(null);
 
     if (stepNumber === 1) {
+      setStep1Attempted(true);
+
       if (!displayName.trim()) {
         setError('Please enter your full name.');
         return false;
       }
-      if (!phone.trim()) {
-        setError('Please provide a contact phone number.');
+
+      const phoneErr = getPhoneValidationError(phoneNumber, selectedCountry);
+      if (phoneErr) {
+        setError(phoneErr);
         return false;
       }
 
@@ -243,6 +564,10 @@ export default function OnboardingPage() {
         }
         if (!department.trim()) {
           setError('Please enter your department or major.');
+          return false;
+        }
+        if (!location.trim()) {
+          setError('Please provide your base city / location.');
           return false;
         }
       } else if (role === 'INDUSTRY') {
@@ -261,6 +586,10 @@ export default function OnboardingPage() {
         }
         if (!collegeCode.trim()) {
           setError('Please provide your AISHE or College Code.');
+          return false;
+        }
+        if (!location.trim()) {
+          setError('Please provide your campus location or city.');
           return false;
         }
       }
@@ -303,6 +632,109 @@ export default function OnboardingPage() {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
+  const renderLocationAutocomplete = (
+    label: string,
+    placeholder = 'e.g. Bengaluru, Karnataka',
+    required = true
+  ) => {
+    return (
+      <div className="relative" ref={locationDropdownRef}>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="block text-xs font-semibold text-slate-300">
+            {label} {required && <span className="text-emerald-400">*</span>}
+          </label>
+          {selectedLocationDetails?.state && (
+            <span className="text-[10px] text-emerald-400 font-medium truncate max-w-[200px]">
+              {[selectedLocationDetails.city, selectedLocationDetails.state, selectedLocationDetails.country]
+                .filter(Boolean)
+                .join(', ')}
+            </span>
+          )}
+        </div>
+        <div className="relative">
+          <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
+          <input
+            ref={locationInputRef}
+            type="text"
+            required={required}
+            value={location}
+            onChange={handleLocationInputChange}
+            onFocus={() => {
+              if (locationSuggestions.length > 0) setIsLocationDropdownOpen(true);
+            }}
+            onBlur={() => setLocationTouched(true)}
+            onKeyDown={handleLocationKeyDown}
+            placeholder={placeholder}
+            autoComplete="off"
+            className={`w-full pl-10 pr-9 py-2.5 bg-slate-800/80 border rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 transition-all ${
+              showLocationError
+                ? 'border-red-500/80 focus:ring-red-500/40 focus:border-red-500'
+                : 'border-slate-700 focus:ring-emerald-500/50 focus:border-emerald-500'
+            }`}
+          />
+          {isSearchingLocation && (
+            <div className="absolute right-3 top-3">
+              <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
+            </div>
+          )}
+        </div>
+
+        {/* Location Suggestions Dropdown */}
+        {isLocationDropdownOpen && (
+          <div className="absolute top-full left-0 right-0 mt-1.5 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl max-h-60 overflow-y-auto divide-y divide-slate-800">
+            {locationSuggestions.length > 0 ? (
+              locationSuggestions.map((sug, idx) => {
+                const isHighlighted = idx === highlightedLocationIndex;
+                return (
+                  <button
+                    key={`${sug.displayName}-${idx}`}
+                    type="button"
+                    onClick={() => selectLocationSuggestion(sug)}
+                    onMouseEnter={() => setHighlightedLocationIndex(idx)}
+                    className={`w-full text-left px-3.5 py-2.5 flex items-start gap-2.5 transition-colors ${
+                      isHighlighted
+                        ? 'bg-slate-800 text-white'
+                        : 'hover:bg-slate-800/60 text-slate-200'
+                    }`}
+                  >
+                    <MapPin
+                      className={`w-4 h-4 mt-0.5 shrink-0 ${
+                        isHighlighted ? 'text-emerald-400' : 'text-slate-400'
+                      }`}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs sm:text-sm font-medium text-white truncate">
+                        {sug.city || sug.displayName.split(',')[0]}
+                      </div>
+                      <div className="text-[11px] text-slate-400 truncate">
+                        {[sug.state, sug.country].filter(Boolean).join(', ') || sug.displayName}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })
+            ) : (
+              <div className="p-3 text-xs text-slate-400 text-center">
+                {locationSearchError || 'No verified locations found. You can keep typing manually.'}
+              </div>
+            )}
+          </div>
+        )}
+
+        {showLocationError ? (
+          <p className="text-[11px] text-red-400 mt-1.5 flex items-center gap-1.5 animate-in fade-in duration-200">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            <span>Please provide your {label.toLowerCase()}.</span>
+          </p>
+        ) : (
+          <p className="text-[10px] text-slate-400 mt-1">
+            Type 3+ letters to search real verified cities
+          </p>
+        )}
+      </div>
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateStep(currentStep)) return;
@@ -311,10 +743,17 @@ export default function OnboardingPage() {
     setError(null);
 
     try {
+      const fullNormalizedPhone = `${selectedCountry.code} ${phoneNumber.trim()}`;
       const baseData: Partial<UserProfileData> = {
         displayName: displayName.trim(),
-        phone: phone.trim(),
+        countryCode: selectedCountry.code,
+        phoneNumber: phoneNumber.trim(),
+        phone: fullNormalizedPhone,
         location: location.trim() || 'Bengaluru, Karnataka',
+        locationDetails: selectedLocationDetails || {
+          city: location.trim().split(',')[0]?.trim() || location.trim(),
+          displayName: location.trim() || 'Bengaluru, Karnataka',
+        },
         role,
         email: user?.email || '',
         onboardingCompleted: true,
@@ -525,7 +964,10 @@ export default function OnboardingPage() {
                       type="text"
                       required
                       value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
+                      onChange={(e) => {
+                        setDisplayName(e.target.value);
+                        if (error && error.toLowerCase().includes('name')) setError(null);
+                      }}
                       placeholder="e.g. Aarav Sharma"
                       className="w-full pl-10 pr-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
                     />
@@ -533,20 +975,131 @@ export default function OnboardingPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Phone / WhatsApp Number <span className="text-emerald-400">*</span>
-                  </label>
-                  <div className="relative">
-                    <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                    <input
-                      type="tel"
-                      required
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+91 98765 43210"
-                      className="w-full pl-10 pr-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
-                    />
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-300">
+                      Phone / WhatsApp Number <span className="text-emerald-400">*</span>
+                    </label>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {selectedCountry.code === '+91'
+                        ? `${phoneNumber.length}/10 digits`
+                        : `${phoneNumber.length} digits`}
+                    </span>
                   </div>
+
+                  <div className="relative" ref={countryDropdownRef}>
+                    <div className="flex rounded-xl shadow-sm">
+                      {/* Country Code Trigger Button */}
+                      <button
+                        type="button"
+                        onClick={() => setIsCountryDropdownOpen((prev) => !prev)}
+                        className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 border border-r-0 border-slate-700 rounded-l-xl text-sm font-medium text-white hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/50 select-none shrink-0"
+                        title={`Current: ${selectedCountry.name} (${selectedCountry.code})`}
+                      >
+                        <span className="text-base leading-none">{selectedCountry.flag}</span>
+                        <span className="text-xs font-semibold text-slate-200">{selectedCountry.code}</span>
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                      </button>
+
+                      {/* Phone Digits Input */}
+                      <div className="relative flex-1">
+                        <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+                        <input
+                          type="tel"
+                          required
+                          value={phoneNumber}
+                          onChange={handlePhoneChange}
+                          onPaste={handlePhonePaste}
+                          onBlur={() => setPhoneTouched(true)}
+                          maxLength={selectedCountry.maxLength}
+                          placeholder={selectedCountry.placeholder}
+                          className={`w-full pl-9 pr-3.5 py-2.5 bg-slate-800/80 border rounded-r-xl text-sm text-white font-mono tracking-wider placeholder-slate-500 focus:outline-none focus:ring-2 transition-all ${
+                            showPhoneError
+                              ? 'border-red-500/80 focus:ring-red-500/40 focus:border-red-500'
+                              : 'border-slate-700 focus:ring-emerald-500/50 focus:border-emerald-500'
+                          }`}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Country Selector Dropdown */}
+                    {isCountryDropdownOpen && (
+                      <div className="absolute top-full left-0 mt-1.5 w-72 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 p-2 space-y-1 backdrop-blur-xl max-h-64 flex flex-col">
+                        <div className="relative mb-1">
+                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                          <input
+                            type="text"
+                            value={countrySearchQuery}
+                            onChange={(e) => setCountrySearchQuery(e.target.value)}
+                            placeholder="Search country or code..."
+                            autoFocus
+                            className="w-full pl-8 pr-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                          />
+                        </div>
+                        <div className="overflow-y-auto space-y-0.5 flex-1 pr-1">
+                          {filteredCountries.map((c) => {
+                            const isSelected =
+                              c.code === selectedCountry.code && c.iso === selectedCountry.iso;
+                            return (
+                              <button
+                                key={`${c.iso}-${c.code}`}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedCountry(c);
+                                  setIsCountryDropdownOpen(false);
+                                  setCountrySearchQuery('');
+                                  let updated = phoneNumber;
+                                  if (updated.length > c.maxLength) {
+                                    updated = updated.slice(0, c.maxLength);
+                                    setPhoneNumber(updated);
+                                  }
+                                  setPhone(`${c.code} ${updated}`);
+                                  if (
+                                    error &&
+                                    (error.toLowerCase().includes('phone') ||
+                                      error.toLowerCase().includes('contact'))
+                                  ) {
+                                    setError(null);
+                                  }
+                                }}
+                                className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between text-xs transition-colors ${
+                                  isSelected
+                                    ? 'bg-emerald-500/20 text-emerald-300 font-semibold'
+                                    : 'hover:bg-slate-800 text-slate-300'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 truncate">
+                                  <span className="text-sm leading-none">{c.flag}</span>
+                                  <span className="truncate">{c.name}</span>
+                                </div>
+                                <span className="font-mono text-slate-400 ml-2 text-[11px] shrink-0">
+                                  {c.code}
+                                </span>
+                              </button>
+                            );
+                          })}
+                          {filteredCountries.length === 0 && (
+                            <div className="p-3 text-center text-xs text-slate-400">
+                              No country found
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Inline Error or Helper */}
+                  {showPhoneError ? (
+                    <p className="text-[11px] text-red-400 mt-1.5 flex items-center gap-1.5 animate-in fade-in duration-200">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{phoneError}</span>
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-slate-400 mt-1.5">
+                      {selectedCountry.code === '+91'
+                        ? '10-digit mobile number for SMS & WhatsApp updates'
+                        : `Enter standard ${selectedCountry.name} mobile/contact number`}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -563,7 +1116,10 @@ export default function OnboardingPage() {
                         type="text"
                         required
                         value={college}
-                        onChange={(e) => setCollege(e.target.value)}
+                        onChange={(e) => {
+                          setCollege(e.target.value);
+                          if (error && error.toLowerCase().includes('college')) setError(null);
+                        }}
                         placeholder="e.g. RV College of Engineering, Bengaluru"
                         className="w-full pl-10 pr-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
                       />
@@ -599,7 +1155,10 @@ export default function OnboardingPage() {
                         type="text"
                         required
                         value={department}
-                        onChange={(e) => setDepartment(e.target.value)}
+                        onChange={(e) => {
+                          setDepartment(e.target.value);
+                          if (error && error.toLowerCase().includes('department')) setError(null);
+                        }}
                         placeholder="e.g. CSE / AIML / Ayurveda"
                         className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
                       />
@@ -638,19 +1197,7 @@ export default function OnboardingPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                        Base City / Location
-                      </label>
-                      <div className="relative">
-                        <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                        <input
-                          type="text"
-                          value={location}
-                          onChange={(e) => setLocation(e.target.value)}
-                          placeholder="e.g. Bengaluru, Karnataka"
-                          className="w-full pl-10 pr-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
-                        />
-                      </div>
+                      {renderLocationAutocomplete('Base City / Location', 'e.g. Bengaluru, Karnataka', true)}
                     </div>
                   </div>
                 </>
@@ -670,7 +1217,10 @@ export default function OnboardingPage() {
                           type="text"
                           required
                           value={companyName}
-                          onChange={(e) => setCompanyName(e.target.value)}
+                          onChange={(e) => {
+                            setCompanyName(e.target.value);
+                            if (error && error.toLowerCase().includes('company')) setError(null);
+                          }}
                           placeholder="e.g. TechNova Labs"
                           className="w-full pl-10 pr-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
                         />
@@ -729,17 +1279,7 @@ export default function OnboardingPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                        Office Location / City <span className="text-emerald-400">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        placeholder="e.g. Indiranagar, Bengaluru"
-                        className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
-                      />
+                      {renderLocationAutocomplete('Office Location / City', 'e.g. Indiranagar, Bengaluru', true)}
                     </div>
                   </div>
 
@@ -775,7 +1315,10 @@ export default function OnboardingPage() {
                           type="text"
                           required
                           value={institutionName}
-                          onChange={(e) => setInstitutionName(e.target.value)}
+                          onChange={(e) => {
+                            setInstitutionName(e.target.value);
+                            if (error && error.toLowerCase().includes('institution')) setError(null);
+                          }}
                           placeholder="e.g. AYUSH Institute of Technology"
                           className="w-full pl-10 pr-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
                         />
@@ -790,7 +1333,10 @@ export default function OnboardingPage() {
                         type="text"
                         required
                         value={collegeCode}
-                        onChange={(e) => setCollegeCode(e.target.value)}
+                        onChange={(e) => {
+                          setCollegeCode(e.target.value);
+                          if (error && error.toLowerCase().includes('code')) setError(null);
+                        }}
                         placeholder="e.g. C-12894 / KA-BLR-054"
                         className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
                       />
@@ -813,17 +1359,7 @@ export default function OnboardingPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                        Campus Location / City <span className="text-emerald-400">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        placeholder="e.g. Bengaluru, Karnataka"
-                        className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
-                      />
+                      {renderLocationAutocomplete('Campus Location / City', 'e.g. Bengaluru, Karnataka', true)}
                     </div>
 
                     <div>
