@@ -92,10 +92,15 @@ export default function ResumePage() {
             <span className="flex items-center gap-1">
               <Phone className="w-3.5 h-3.5 text-slate-400" /> {profile.phone}
             </span>
-            <span>&bull;</span>
-            <span className="flex items-center gap-1">
-              <GithubIcon className="w-3.5 h-3.5 text-slate-400" /> github.com/aarav-sharma-dev
-            </span>
+            {profile.github && (
+              <>
+                <span>&bull;</span>
+                <span className="flex items-center gap-1">
+                  <GithubIcon className="w-3.5 h-3.5 text-slate-400" />
+                  {profile.github.replace(/^https?:\/\//, '')}
+                </span>
+              </>
+            )}
           </div>
         </div>
 
@@ -105,7 +110,7 @@ export default function ResumePage() {
             Career Objective &amp; Summary
           </h2>
           <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
-            {profile.bio} Specializing in software development, data analytics, and full-stack engineering with an emphasis on building high-reliability digital solutions for healthcare and the AYUSH domain.
+            {profile.bio || 'Motivated professional focused on software engineering, technology innovation, and applied technical solutions.'}
           </p>
         </div>
 
@@ -117,15 +122,21 @@ export default function ResumePage() {
           <div className="flex justify-between items-start text-xs sm:text-sm">
             <div>
               <strong className="font-bold text-slate-900 block">
-                RV College of Engineering (RVCE), Bengaluru
+                {profile.college || 'Institution'}
               </strong>
               <span className="text-slate-600">
-                Bachelor of Technology (B.Tech) in Computer Science &amp; Engineering
+                {profile.degree || 'Degree Program'}
               </span>
             </div>
             <div className="text-right">
-              <span className="font-bold text-slate-800 block">2023 &ndash; 2027</span>
-              <span className="text-emerald-700 font-bold">CGPA: 8.74 / 10</span>
+              <span className="font-bold text-slate-800 block">{profile.year || 'Academic Year'}</span>
+              {profile.gpa && (
+                <span className="text-emerald-700 font-bold">
+                  {profile.gpa.toLowerCase().includes('cgpa') || profile.gpa.includes('/')
+                    ? profile.gpa
+                    : `CGPA: ${profile.gpa} / 10`}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -170,17 +181,23 @@ export default function ResumePage() {
             Academic &amp; Industry Projects
           </h2>
           <div className="space-y-4 text-xs sm:text-sm">
-            {projects.map((proj) => (
-              <div key={proj.id} className="space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-slate-900">{proj.title}</span>
-                  <span className="text-xs text-slate-400 font-mono">
-                    {proj.techStack.join(', ')}
-                  </span>
+            {projects.length === 0 ? (
+              <p className="text-xs text-slate-400 italic">
+                No academic or industry projects added yet. Add projects in your profile to display them on your verified resume.
+              </p>
+            ) : (
+              projects.map((proj) => (
+                <div key={proj.id} className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-slate-900">{proj.title}</span>
+                    <span className="text-xs text-slate-400 font-mono">
+                      {proj.techStack.join(', ')}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed">{proj.description}</p>
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">{proj.description}</p>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -190,17 +207,23 @@ export default function ResumePage() {
             Experience &amp; Industry Engagements
           </h2>
           <div className="space-y-2 text-xs sm:text-sm">
-            <div>
-              <div className="flex justify-between">
-                <strong className="font-bold text-slate-900">
-                  Open Source Contributor &amp; Student Researcher
-                </strong>
-                <span className="text-slate-500">2025 &ndash; Present</span>
+            {profile.name === 'Aarav Sharma' ? (
+              <div>
+                <div className="flex justify-between">
+                  <strong className="font-bold text-slate-900">
+                    Open Source Contributor &amp; Student Researcher
+                  </strong>
+                  <span className="text-slate-500">2025 &ndash; Present</span>
+                </div>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  Contributed bug fixes and responsive layout patches to open healthcare repositories; participated in hackathon sprints focusing on AYUSH practitioner indexing.
+                </p>
               </div>
-              <p className="text-xs text-slate-600 mt-0.5">
-                Contributed bug fixes and responsive layout patches to open healthcare repositories; participated in hackathon sprints focusing on AYUSH practitioner indexing.
+            ) : (
+              <p className="text-xs text-slate-500 italic">
+                Verified candidate active on SkillSetu &bull; Ready for internships, industry tasks, and micro-sprints.
               </p>
-            </div>
+            )}
           </div>
         </div>
 

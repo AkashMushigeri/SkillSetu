@@ -1,0 +1,77 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------
+    // Security Helper Functions
+    // ------------------------------------------------------------------
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getUserRole() {
+      return request.auth.token.role;
+    }
+
+    function isIndustry() {
+      return isAuthenticated() && getUserRole() == 'INDUSTRY';
+    }
+
+    function isCollege() {
+      return isAuthenticated() && getUserRole() == 'COLLEGE';
+    }
+
+    function isValidRole(role) {
+      return role in ['STUDENT', 'INDUSTRY', 'COLLEGE'];
+    }
+
+    // ------------------------------------------------------------------
+    // Users Collection: Profiles for Students, Industry Recruiters, Colleges
+    // ------------------------------------------------------------------
+    match /users/{userId} {
+      // 1. A user can read their own profile
+      // 2. Verified Industry recruiters and College placement officers can read Student profiles
+      allow get: if isOwner(userId)
+        || (isAuthenticated() && (isIndustry() || isCollege()) && resource.data.role == 'STUDENT');
+
+      // Allow Industry & College to search/list student talent pools
+      allow list: if isAuthenticated() && (isIndustry() || isCollege());
+
+      // Create: Users can only provision their own profile with a recognized role
+      allow create: if isOwner(userId)
+        && request.resource.data.uid == userId
+        && isValidRole(request.resource.data.role);
+
+      // Update: Users can update their own profile; UID cannot be changed
+      allow update: if isOwner(userId)
+        && request.resource.data.uid == userId
+        && isValidRole(request.resource.data.role);
+
+      // Delete: Users can delete their own profile
+      allow delete: if isOwner(userId);
+    }
+
+    // ------------------------------------------------------------------
+    // User Roles Collection (Managed by backend Cloud Functions & Admin SDK)
+    // ------------------------------------------------------------------
+    match /userRoles/{userId} {
+      allow read: if isOwner(userId);
+      // Client-side writes disallowed; only Admin SDK / Cloud Functions can assign roles
+      allow write: if false;
+    }
+
+    // ------------------------------------------------------------------
+    // Pending Registrations (Queued for verification by Cloud Functions)
+    // ------------------------------------------------------------------
+    match /pendingRegistrations/{userId} {
+      allow read: if isOwner(userId);
+      // Client-side direct writes disallowed; handled via registerUserWithRole callable function
+      allow write: if false;
+    }
+  }
+}

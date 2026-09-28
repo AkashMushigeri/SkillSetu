@@ -1,0 +1,12 @@
+specVersion: "v1"
+serviceId: "sih-gat054akash3sectors"
+location: "us-east4"
+schemas:
+  - source: "./schema"
+    datasource:
+      postgresql:
+        database: "fdcdb"
+        cloudSql:
+          instanceId: "sih-gat054akash3sectors-fdc"
+        schemaValidation: "STRICT"
+connectorDirs: ["./connector"]

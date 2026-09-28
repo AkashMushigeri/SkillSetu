@@ -39,6 +39,8 @@ export default function StudentDashboardPage() {
 
   const verifiedSkillsCount = skills.filter((s) => s.isVerified).length;
   const inProgressSkillsCount = skills.filter((s) => s.learningStatus === 'in_progress' && !s.isVerified).length;
+  const inProgressSkill = skills.find((s) => !s.isVerified && s.progress > 0);
+  const targetSkill = inProgressSkill || skills.find((s) => !s.isVerified) || skills[0];
 
   const handleCategoryClick = (category: OpportunityType) => {
     setSelectedOpportunityType(category);
@@ -154,7 +156,15 @@ export default function StudentDashboardPage() {
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3.5">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-teal to-brand-emerald text-white flex items-center justify-center font-extrabold text-lg shadow-sm">
-                AS
+                {profile.name
+                  ? profile.name
+                      .split(' ')
+                      .filter(Boolean)
+                      .map((n) => n[0])
+                      .join('')
+                      .slice(0, 2)
+                      .toUpperCase()
+                  : 'ST'}
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
@@ -213,20 +223,30 @@ export default function StudentDashboardPage() {
             </div>
 
             <h4 className="font-bold text-slate-900 text-sm sm:text-base">
-              Complete your Python Assessment
+              {inProgressSkill
+                ? `Complete your ${inProgressSkill.name} Assessment`
+                : `Verify your ${targetSkill?.name || 'Core'} Skills`}
             </h4>
             <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
-              <strong>Reason:</strong> You completed 80% of curriculum. Passing this assessment unlocks verified skill status and boosts your local internship match from <strong>62% to 87%</strong>.
+              {inProgressSkill ? (
+                <>
+                  <strong>Reason:</strong> You completed {inProgressSkill.progress}% of curriculum. Passing this assessment unlocks verified skill status and boosts your local internship match from <strong>62% to 87%</strong>.
+                </>
+              ) : (
+                <>
+                  <strong>Reason:</strong> Take a 10-question skill benchmark in {targetSkill?.name || 'your core area'} to unlock your verified badge and boost your employer match score up to <strong>+25%</strong>.
+                </>
+              )}
             </p>
           </div>
 
           <div className="mt-4 pt-3 border-t border-emerald-200/60 flex items-center justify-between">
             <span className="text-xs text-slate-500 font-medium">10 Questions &bull; 15 mins</span>
             <Link
-              href="/student/skills/python-basic"
+              href={targetSkill ? `/student/skills/${targetSkill.id}` : '/student/skills'}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-teal hover:bg-brand-dark text-white font-bold text-xs shadow-sm transition-all"
             >
-              <span>Continue Learning</span>
+              <span>{inProgressSkill ? 'Continue Learning' : 'Start Assessment'}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>

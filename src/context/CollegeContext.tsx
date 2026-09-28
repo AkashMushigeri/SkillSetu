@@ -19,6 +19,20 @@ import {
   MOCK_INTERNSHIPS,
   MOCK_PLACEMENT_DRIVES
 } from '@/data/collegeData';
+import {
+  subscribeToSync,
+  readNotificationsFor,
+  consumeNotification,
+} from '@/lib/syncBridge';
+import {
+  readCollegeInternshipsFromIndustry,
+  readPlacementsFromIndustry,
+  applyPlacementsToCollegeStudents,
+  collegeTrainingToSignal,
+} from '@/lib/syncConverters';
+import { writeSyncRecord, SYNC_DOMAINS } from '@/lib/syncBridge';
+import { useAuth } from '@/context/AuthContext';
+import { saveUserProfile } from '@/lib/firebase';
 
 interface ToastState {
   message: string;
@@ -52,8 +66,34 @@ interface CollegeContextType {
 const CollegeContext = createContext<CollegeContextType | undefined>(undefined);
 
 export const CollegeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user, userProfile } = useAuth();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
   const [profile, setProfile] = useState<CollegeProfileInfo>(INITIAL_COLLEGE_PROFILE);
+
+  // Sync with Firebase Firestore profile
+  useEffect(() => {
+    if (userProfile && userProfile.role === 'COLLEGE') {
+      setProfile((prev) => ({
+        ...prev,
+        institutionName: userProfile.institutionName || prev.institutionName,
+        collegeId: userProfile.collegeCode || prev.collegeId,
+        location: userProfile.institutionLocation || userProfile.location || prev.location,
+        website: userProfile.institutionWebsite || prev.website,
+        email: userProfile.email || prev.email,
+        phone: userProfile.phone || prev.phone,
+        totalStudents: userProfile.totalStudents || prev.totalStudents,
+        naacGrade: userProfile.naacGrade || prev.naacGrade,
+        placementOfficer: {
+          ...prev.placementOfficer,
+          name: userProfile.displayName || prev.placementOfficer.name,
+          title: userProfile.designation || prev.placementOfficer.title,
+          email: userProfile.email || prev.placementOfficer.email,
+          phone: userProfile.phone || prev.placementOfficer.phone,
+        },
+      }));
+    }
+  }, [userProfile]);
+
   const [trainingPrograms, setTrainingPrograms] = useState<TrainingProgram[]>(INITIAL_TRAINING_PROGRAMS);
   const [announcements, setAnnouncements] = useState<CampusAnnouncement[]>(INITIAL_ANNOUNCEMENTS);
   const [students, setStudents] = useState<CollegeStudent[]>(MOCK_STUDENTS);
@@ -74,6 +114,67 @@ export const CollegeProvider: React.FC<{ children: ReactNode }> = ({ children })
       console.error(e);
     }
   }, []);
+
+  // ------------------------------------------------------------------
+  // Cross-sector sync (Industry -> College)
+  // ------------------------------------------------------------------
+  const syncRefresh = React.useCallback(() => {
+    try {
+      // 1. Pull internships published by the Industry portal
+      const inboundInternships = readCollegeInternshipsFromIndustry();
+      if (inboundInternships.length) {
+        setInternships((prev) => {
+          const ids = new Set(prev.map((i) => i.id));
+          const fresh = inboundInternships.filter((i) => i && typeof i === 'object' && i.id && !ids.has(i.id));
+          return fresh.length ? [...fresh, ...prev] : prev;
+        });
+      }
+
+      // 2. Pull placements (accepted offers) from the Industry portal
+      const inboundPlacements = readPlacementsFromIndustry();
+      if (inboundPlacements.length) {
+        setPlacements((prev) => {
+          const ids = new Set(prev.map((p) => p.id));
+          const fresh = inboundPlacements.filter((p) => p && typeof p === 'object' && p.id && !ids.has(p.id));
+          return fresh.length ? [...fresh, ...prev] : prev;
+        });
+        // 3. Reflect placements on matching college students
+        setStudents((prev) => applyPlacementsToCollegeStudents(prev, inboundPlacements));
+      }
+
+      // 4. Merge cross-sector notifications (new placement / MoU etc.)
+      const inboundNotifs = readNotificationsFor('college');
+      if (inboundNotifs.length) {
+        setNotifications((prev) => {
+          const existingIds = new Set(prev.map((n) => n.id));
+          const fresh = inboundNotifs
+            .filter((n) => !existingIds.has(n.id))
+            .map((n) => ({
+              id: n.id,
+              title: n.title,
+              message: n.message,
+              time: n.time,
+              read: !!n.read,
+              type: 'internship' as const,
+              link: n.link,
+              targetRoute: n.link || '/college/dashboard',
+            }));
+          if (!fresh.length) return prev;
+          const merged = [...fresh, ...prev];
+          return merged;
+        });
+        inboundNotifs.forEach((n) => consumeNotification(n.id));
+      }
+    } catch (e) {
+      console.warn('[Sync] College refresh failed safely:', e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    syncRefresh();
+    return subscribeToSync(syncRefresh);
+  }, [syncRefresh]);
 
   const showToast = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
     setToast({ message, type });
@@ -114,6 +215,16 @@ export const CollegeProvider: React.FC<{ children: ReactNode }> = ({ children })
       status: 'Active',
     };
     setTrainingPrograms((prev) => [newProgram, ...prev]);
+    // Publish training signal to Industry portal (curriculum readiness)
+    try {
+      const signal = collegeTrainingToSignal(newProgram);
+      writeSyncRecord(SYNC_DOMAINS.COLLEGE_TRAINING, signal, {
+        from: 'college',
+        correlationId: `training-${newProgram.id}`,
+      });
+    } catch (e) {
+      console.warn('[Sync] Failed to publish training signal:', e);
+    }
     showToast(`Training Program "${newProgram.name}" created successfully!`, 'success');
   };
 
@@ -155,6 +266,19 @@ export const CollegeProvider: React.FC<{ children: ReactNode }> = ({ children })
         localStorage.setItem('skillsetu_college_profile', JSON.stringify(next));
       } catch (e) {
         console.error(e);
+      }
+      if (user?.uid) {
+        saveUserProfile(user.uid, {
+          institutionName: next.institutionName,
+          collegeCode: next.collegeId,
+          institutionLocation: next.location,
+          institutionWebsite: next.website,
+          totalStudents: next.totalStudents,
+          naacGrade: next.naacGrade,
+          displayName: next.placementOfficer.name,
+          designation: next.placementOfficer.title,
+          phone: next.placementOfficer.phone,
+        }).catch((err) => console.warn('Background Firestore profile sync error:', err));
       }
       return next;
     });

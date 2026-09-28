@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import {
   StudentProfile,
@@ -22,6 +22,26 @@ import {
   CITIES_LIST,
 } from '@/data/mockStudentData';
 import { calculateHaversineDistance, computeOpportunityMatch } from '@/lib/matchUtils';
+import {
+  subscribeToSync,
+  readNotificationsFor,
+  consumeNotification,
+} from '@/lib/syncBridge';
+import {
+  readStudentOpportunitiesFromIndustry,
+  readApplicationUpdatesFromIndustry,
+  mergeSyncNotifications,
+  publishStudentApplication,
+  industryStageToStudentStatus,
+} from '@/lib/syncConverters';
+import { fetchVerifiedJobsNearCity } from '@/lib/jobsApi';
+import { useAuth } from '@/context/AuthContext';
+import { saveUserProfile } from '@/lib/firebase';
+import {
+  fetchRemoteJobs,
+  fetchRemoteInternships,
+  syncApplicationToDataConnect,
+} from '@/lib/dataConnectService';
 
 interface StudentContextType {
   profile: StudentProfile;
@@ -37,6 +57,8 @@ interface StudentContextType {
   applications: Application[];
   submitApplication: (oppId: string) => boolean;
   projects: Project[];
+  addProject: (project: Omit<Project, 'id'>) => void;
+  deleteProject: (projectId: string) => void;
   notifications: NotificationItem[];
   unreadNotificationCount: number;
   markNotificationAsRead: (id: string) => void;
@@ -57,30 +79,371 @@ interface StudentContextType {
   workModeFilter: 'All' | 'Remote' | 'Hybrid' | 'On-site';
   setWorkModeFilter: (mode: 'All' | 'Remote' | 'Hybrid' | 'On-site') => void;
   resetToDemo: () => void;
+  liveApiLoading: boolean;
 }
 
 const StudentContext = createContext<StudentContextType | undefined>(undefined);
 
+const calculateProfileCompletion = (
+  prof: Partial<StudentProfile>,
+  projectsCount: number,
+  skillsCount: number
+): number => {
+  let score = 0;
+  if (prof.name) score += 15;
+  if (prof.email) score += 10;
+  if (prof.phone) score += 10;
+  if (prof.college) score += 15;
+  if (prof.degree) score += 10;
+  if (prof.year) score += 10;
+  if (prof.careerGoal) score += 10;
+  if (prof.location) score += 10;
+  if (prof.bio) score += 10;
+  if (projectsCount > 0) score += 5;
+  if (skillsCount > 0) score += 5;
+  return Math.min(100, score);
+};
+
 export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const isLoaded = useRef(false);
+  const { user, userProfile } = useAuth();
+
+  const isDemoUser =
+    userProfile?.email?.toLowerCase() === 'aarav.sharma@rvce.edu.in' ||
+    user?.email?.toLowerCase() === 'aarav.sharma@rvce.edu.in' ||
+    user?.uid === 'demo_student';
 
   // 1. Profile State
-  const [profile, setProfile] = useState<StudentProfile>(INITIAL_STUDENT_PROFILE);
+  const [profile, setProfile] = useState<StudentProfile>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('skillsetu_student_profile');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+      }
+    }
+    return INITIAL_STUDENT_PROFILE;
+  });
 
   // 2. Skills State
-  const [skills, setSkills] = useState<Skill[]>(INITIAL_SKILLS);
+  const [skills, setSkills] = useState<Skill[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('skillsetu_student_skills');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+      }
+    }
+    return INITIAL_SKILLS;
+  });
 
   // 3. Saved Opportunities IDs
-  const [savedOpportunityIds, setSavedOpportunityIds] = useState<string[]>(['opp-1', 'opp-4']);
+  const [savedOpportunityIds, setSavedOpportunityIds] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('skillsetu_saved_opps');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+      }
+    }
+    return [];
+  });
 
   // 4. Applications State
-  const [applications, setApplications] = useState<Application[]>(INITIAL_APPLICATIONS);
+  const [applications, setApplications] = useState<Application[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('skillsetu_applications');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+      }
+    }
+    return [];
+  });
 
-  // 5. Projects
-  const [projects] = useState<Project[]>(INITIAL_PROJECTS);
+  // 5. Projects State (empty by default for real students, loaded from user storage)
+  const [projects, setProjects] = useState<Project[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('skillsetu_student_projects');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+      }
+    }
+    return [];
+  });
+
+  // Sync profile & user data when authenticated userProfile changes from Firebase
+  useEffect(() => {
+    const isDemo =
+      userProfile?.email?.toLowerCase() === 'aarav.sharma@rvce.edu.in' ||
+      user?.email?.toLowerCase() === 'aarav.sharma@rvce.edu.in' ||
+      user?.uid === 'demo_student';
+
+    if (userProfile && userProfile.role === 'STUDENT') {
+      const displayName =
+        userProfile.displayName ||
+        user?.displayName ||
+        (userProfile.email ? userProfile.email.split('@')[0] : 'Student');
+
+      setProfile((prev) => {
+        const isDefaultMock =
+          prev.name === 'Aarav Sharma' ||
+          prev.id === 'GAT054-STD-2026' ||
+          prev.email === 'aarav.sharma@rvce.edu.in';
+        const shouldResetMock = !isDemo && isDefaultMock;
+
+        const updated: StudentProfile = {
+          ...prev,
+          id: userProfile.uid || user?.uid || prev.id,
+          name: displayName,
+          email: userProfile.email || user?.email || (shouldResetMock ? '' : prev.email),
+          phone:
+            userProfile.phone !== undefined && userProfile.phone !== ''
+              ? userProfile.phone
+              : shouldResetMock
+              ? ''
+              : prev.phone,
+          college:
+            userProfile.college !== undefined && userProfile.college !== ''
+              ? userProfile.college
+              : shouldResetMock
+              ? ''
+              : prev.college,
+          degree:
+            userProfile.degree !== undefined && userProfile.degree !== ''
+              ? userProfile.degree
+              : shouldResetMock
+              ? 'B.Tech'
+              : prev.degree,
+          year:
+            userProfile.year !== undefined && userProfile.year !== ''
+              ? userProfile.year
+              : shouldResetMock
+              ? '3rd Year'
+              : prev.year,
+          gpa:
+            userProfile.gpa !== undefined && userProfile.gpa !== ''
+              ? userProfile.gpa
+              : shouldResetMock
+              ? ''
+              : prev.gpa,
+          careerGoal:
+            userProfile.careerGoal !== undefined && userProfile.careerGoal !== ''
+              ? userProfile.careerGoal
+              : shouldResetMock
+              ? 'Software Development'
+              : prev.careerGoal,
+          location:
+            userProfile.location !== undefined && userProfile.location !== ''
+              ? userProfile.location
+              : shouldResetMock
+              ? 'Bengaluru'
+              : prev.location,
+          bio:
+            userProfile.bio !== undefined && userProfile.bio !== ''
+              ? userProfile.bio
+              : shouldResetMock
+              ? ''
+              : prev.bio,
+          github:
+            userProfile.github !== undefined && userProfile.github !== ''
+              ? userProfile.github
+              : shouldResetMock
+              ? ''
+              : prev.github,
+          linkedin:
+            userProfile.linkedin !== undefined && userProfile.linkedin !== ''
+              ? userProfile.linkedin
+              : shouldResetMock
+              ? ''
+              : prev.linkedin,
+          avatar: userProfile.photoURL || user?.photoURL || (shouldResetMock ? '' : prev.avatar),
+          profileCompletion: 0,
+        };
+
+        updated.profileCompletion = calculateProfileCompletion(
+          updated,
+          projects.length,
+          skills.filter((s) => s.isVerified).length
+        );
+
+        return updated;
+      });
+
+      // Sync skills from student onboarding
+      if (userProfile.skills && userProfile.skills.length > 0) {
+        setSkills(() => {
+          const userSkillNames = userProfile.skills || [];
+          const icons = ['💻', '⚡', '🚀', '🧠', '🛠️', '🌐', '📊', '🔍', '⚙️', '📱'];
+          return userSkillNames.map((skillName, idx) => ({
+            id: `skill-user-${idx}-${skillName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+            name: skillName,
+            tier: 'Intermediate' as const,
+            category: 'Technical',
+            icon: icons[idx % icons.length],
+            level: 'Intermediate',
+            progress: 0,
+            isVerified: false,
+            verifiedDate: undefined,
+            learningStatus: 'not_started' as const,
+            assessmentStatus: 'ready' as const,
+            bestScore: undefined,
+            description: `Practical competency and applied proficiency in ${skillName}.`,
+            estimatedTime: '2-3 weeks',
+            learningObjectives: [
+              `Master foundational principles of ${skillName}`,
+              `Complete applied industry challenge tasks`,
+              `Pass verified proctored assessment`,
+            ],
+            resources: [
+              { id: `r-${idx}-1`, title: `${skillName} Applied Fundamentals`, type: 'doc' as const, duration: '45 mins', completed: false, url: '#' },
+              { id: `r-${idx}-2`, title: `Industry Projects with ${skillName}`, type: 'video' as const, duration: '1.5 hrs', completed: false, url: '#' },
+            ],
+            careerRoles: ['Software Engineer', 'Full-Stack Developer', 'Specialist'],
+            relatedOpportunityCount: 6,
+          }));
+        });
+      }
+    }
+
+    if (isDemo) {
+      setProjects((prev) => (prev.length === 0 ? INITIAL_PROJECTS : prev));
+      setApplications((prev) => (prev.length === 0 ? INITIAL_APPLICATIONS : prev));
+      setSavedOpportunityIds((prev) => (prev.length === 0 ? ['opp-1', 'opp-4'] : prev));
+    } else if (user?.uid) {
+      // Real user: Load their specific data without Aarav's fake projects & applications
+      try {
+        const userProjectsKey = `skillsetu_student_projects_${user.uid}`;
+        const savedProjects = localStorage.getItem(userProjectsKey);
+        if (savedProjects) {
+          setProjects(JSON.parse(savedProjects));
+        } else {
+          setProjects([]);
+          localStorage.setItem(userProjectsKey, JSON.stringify([]));
+          localStorage.setItem('skillsetu_student_projects', JSON.stringify([]));
+        }
+
+        const userAppsKey = `skillsetu_applications_${user.uid}`;
+        const savedApps = localStorage.getItem(userAppsKey);
+        if (savedApps) {
+          setApplications(JSON.parse(savedApps));
+        } else {
+          setApplications([]);
+          localStorage.setItem(userAppsKey, JSON.stringify([]));
+          localStorage.setItem('skillsetu_applications', JSON.stringify([]));
+        }
+
+        const userSavedKey = `skillsetu_saved_opps_${user.uid}`;
+        const savedOpps = localStorage.getItem(userSavedKey);
+        if (savedOpps) {
+          setSavedOpportunityIds(JSON.parse(savedOpps));
+        } else {
+          setSavedOpportunityIds([]);
+          localStorage.setItem(userSavedKey, JSON.stringify([]));
+          localStorage.setItem('skillsetu_saved_opps', JSON.stringify([]));
+        }
+
+        const userSkillsKey = `skillsetu_student_skills_${user.uid}`;
+        const savedSkills = localStorage.getItem(userSkillsKey);
+        if (savedSkills) {
+          setSkills(JSON.parse(savedSkills));
+        } else if (!userProfile?.skills || userProfile.skills.length === 0) {
+          // Clean curriculum skills without fake 80% progress
+          setSkills(
+            INITIAL_SKILLS.map((s) => ({
+              ...s,
+              progress: 0,
+              isVerified: false,
+              verifiedDate: undefined,
+              learningStatus: 'not_started' as const,
+              assessmentStatus: 'ready' as const,
+              bestScore: undefined,
+              resources: s.resources.map((r) => ({ ...r, completed: false })),
+            }))
+          );
+        }
+
+        setNotifications((prev) => {
+          const hasMock = prev.some((n) => n.title.includes('Aarav') || n.message.includes('Aarav'));
+          if (hasMock || prev.length === 0) {
+            return [
+              {
+                id: `notif-welcome-${Date.now()}`,
+                title: 'Welcome to SkillSetu!',
+                message: 'Your student profile is active. Add your projects and take skill assessments to get verified by top employers.',
+                time: 'Just now',
+                type: 'system',
+                read: false,
+                link: '/student/skills',
+              },
+            ];
+          }
+          return prev;
+        });
+      } catch (e) {
+        console.warn('Error syncing real user isolated state:', e);
+      }
+    }
+  }, [user, userProfile]);
 
   // 6. Notifications
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('skillsetu_notifications');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+      }
+    }
+    return INITIAL_NOTIFICATIONS;
+  });
+
+  // Mirror of `notifications` for imperative access inside sync handlers.
+  const notificationsRef = React.useRef<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  useEffect(() => {
+    notificationsRef.current = notifications;
+  }, [notifications]);
+
+   // 6b. Cross-sector synced opportunities (published by the Industry portal)
+  const [syncedOpportunities, setSyncedOpportunities] = useState<Opportunity[]>(() => {
+    if (typeof window !== 'undefined') {
+      return readStudentOpportunitiesFromIndustry();
+    }
+    return [];
+  });
+
+  // 6c. Live API-fetched verified jobs
+  const [liveApiJobs, setLiveApiJobs] = useState<Opportunity[]>([]);
+  const [liveApiLoading, setLiveApiLoading] = useState<boolean>(false);
+
+  // 6d. Data Connect remote opportunities (PostgreSQL / PGlite)
+  const [dataConnectOpportunities, setDataConnectOpportunities] = useState<Opportunity[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([fetchRemoteJobs(), fetchRemoteInternships()]).then(([jobsRes, internsRes]) => {
+      if (isMounted) {
+        const combined = [...jobsRes.opportunities, ...internsRes.opportunities];
+        if (combined.length > 0) {
+          setDataConnectOpportunities(combined);
+        }
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const loadLiveJobs = async () => {
+      setLiveApiLoading(true);
+      try {
+        const city = CITIES_LIST[0].name;
+        const jobs = await fetchVerifiedJobsNearCity(city, 20);
+        setLiveApiJobs(jobs);
+      } catch (e) {
+        console.warn('[API] Failed to load verified jobs:', e);
+        setLiveApiJobs([]);
+      } finally {
+        setLiveApiLoading(false);
+      }
+    };
+    loadLiveJobs();
+  }, []);
 
   // 7. Geolocation & City
   const [selectedCity, setSelectedCity] = useState<CityLocation>(CITIES_LIST[0]); // Bengaluru
@@ -94,125 +457,106 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [workModeFilter, setWorkModeFilter] = useState<'All' | 'Remote' | 'Hybrid' | 'On-site'>('All');
 
-  // Load from localStorage on client mount (prevents SSR hydration mismatch)
+  // Persistence effects
   useEffect(() => {
-    try {
-      const savedProfile = localStorage.getItem('skillsetu_student_profile');
-      if (savedProfile) setProfile(JSON.parse(savedProfile));
-
-      const savedSkills = localStorage.getItem('skillsetu_student_skills');
-      if (savedSkills) {
-        try {
-          const parsed = JSON.parse(savedSkills) as Skill[];
-          const mergedSkills = INITIAL_SKILLS.map((initSkill) => {
-            const saved = parsed.find((s) => s.id === initSkill.id);
-            if (!saved) return initSkill;
-
-            const savedResources = saved.resources || [];
-            const savedCompletedMap = new Map(savedResources.map((r) => [r.id, r.completed]));
-
-            const updatedResources = initSkill.resources.map((res) => ({
-              ...res,
-              completed: savedCompletedMap.has(res.id)
-                ? Boolean(savedCompletedMap.get(res.id))
-                : res.completed,
-            }));
-
-            const completedCount = updatedResources.filter((r) => r.completed).length;
-            const total = updatedResources.length || 1;
-            const calculatedProgress = updatedResources.length > 0
-              ? Math.min(100, Math.round((completedCount / total) * 100))
-              : 0;
-
-            const isVerified = saved.isVerified ?? initSkill.isVerified;
-
-            return {
-              ...initSkill,
-              isVerified,
-              verifiedDate: saved.verifiedDate ?? initSkill.verifiedDate,
-              bestScore: saved.bestScore ?? initSkill.bestScore,
-              resources: updatedResources,
-              progress: isVerified ? 100 : (saved.resources && saved.resources.length > 0 ? calculatedProgress : initSkill.progress),
-              learningStatus: isVerified
-                ? 'completed'
-                : calculatedProgress === 100
-                ? 'completed'
-                : calculatedProgress > 0
-                ? 'in_progress'
-                : initSkill.learningStatus,
-              assessmentStatus: isVerified
-                ? 'passed'
-                : calculatedProgress >= 80
-                ? 'ready'
-                : initSkill.assessmentStatus,
-            };
-          });
-          setSkills(mergedSkills);
-        } catch {
-          setSkills(INITIAL_SKILLS);
-        }
-      }
-
-      const savedOpps = localStorage.getItem('skillsetu_saved_opps');
-      if (savedOpps) setSavedOpportunityIds(JSON.parse(savedOpps));
-
-      const savedApps = localStorage.getItem('skillsetu_applications');
-      if (savedApps) setApplications(JSON.parse(savedApps));
-
-      const savedNotifs = localStorage.getItem('skillsetu_notifications');
-      if (savedNotifs) setNotifications(JSON.parse(savedNotifs));
-    } catch (e) {
-      console.warn('LocalStorage error:', e);
-    } finally {
-      isLoaded.current = true;
-    }
-  }, []);
-
-  // Persistence effects - only save after initial client hydration
-  useEffect(() => {
-    if (!isLoaded.current) return;
-    try {
+    if (typeof window !== 'undefined') {
       localStorage.setItem('skillsetu_student_profile', JSON.stringify(profile));
-    } catch (e) {
-      console.warn('LocalStorage save error:', e);
     }
   }, [profile]);
 
   useEffect(() => {
-    if (!isLoaded.current) return;
-    try {
+    if (typeof window !== 'undefined') {
       localStorage.setItem('skillsetu_student_skills', JSON.stringify(skills));
-    } catch (e) {
-      console.warn('LocalStorage save error:', e);
     }
   }, [skills]);
 
   useEffect(() => {
-    if (!isLoaded.current) return;
-    try {
+    if (typeof window !== 'undefined') {
       localStorage.setItem('skillsetu_saved_opps', JSON.stringify(savedOpportunityIds));
-    } catch (e) {
-      console.warn('LocalStorage save error:', e);
     }
   }, [savedOpportunityIds]);
 
   useEffect(() => {
-    if (!isLoaded.current) return;
-    try {
+    if (typeof window !== 'undefined') {
       localStorage.setItem('skillsetu_applications', JSON.stringify(applications));
-    } catch (e) {
-      console.warn('LocalStorage save error:', e);
     }
   }, [applications]);
 
   useEffect(() => {
-    if (!isLoaded.current) return;
-    try {
+    if (typeof window !== 'undefined') {
+      if (user?.uid) {
+        localStorage.setItem(`skillsetu_student_projects_${user.uid}`, JSON.stringify(projects));
+      }
+      localStorage.setItem('skillsetu_student_projects', JSON.stringify(projects));
+    }
+  }, [projects, user?.uid]);
+
+  const addProject = useCallback((newProj: Omit<Project, 'id'>) => {
+    const proj: Project = {
+      ...newProj,
+      id: `proj-${Date.now()}`,
+    };
+    setProjects((prev) => [proj, ...prev]);
+  }, []);
+
+  const deleteProject = useCallback((projectId: string) => {
+    setProjects((prev) => prev.filter((p) => p.id !== projectId));
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
       localStorage.setItem('skillsetu_notifications', JSON.stringify(notifications));
-    } catch (e) {
-      console.warn('LocalStorage save error:', e);
     }
   }, [notifications]);
+
+  // ------------------------------------------------------------------
+  // Cross-sector sync subscription (Industry -> Student)
+  // ------------------------------------------------------------------
+  useEffect(() => {
+    const refresh = () => {
+      try {
+        // 1. Pull fresh opportunities published by the Industry portal
+        setSyncedOpportunities(readStudentOpportunitiesFromIndustry());
+
+        // 2. Pull application stage updates (shortlist / reject / offer)
+        const updates = readApplicationUpdatesFromIndustry();
+        if (updates.length) {
+          setApplications((prev) => {
+            let changed = false;
+            const next = prev.map((app) => {
+              const update = updates.find(
+                (u) => app.opportunityTitle.toLowerCase() === (u.jobTitle || '').toLowerCase()
+              );
+              if (!update) return app;
+              const localStatus = industryStageToStudentStatus(update.stage);
+              if (localStatus !== app.status) {
+                changed = true;
+                return { ...app, status: localStatus };
+              }
+              return app;
+            });
+            return changed ? next : prev;
+          });
+        }
+
+        // 3. Merge cross-sector notifications (shortlist / offer / interview)
+        const inboundNotifs = readNotificationsFor('student');
+        if (inboundNotifs.length) {
+          // Merge outside the state updater (avoids side-effects under StrictMode)
+          const merged = mergeSyncNotifications(notificationsRef.current, inboundNotifs);
+          notificationsRef.current = merged;
+          setNotifications(merged);
+          inboundNotifs.forEach((n) => consumeNotification(n.id));
+        }
+      } catch (e) {
+        console.warn('[Sync] Student refresh failed safely:', e);
+      }
+    };
+
+    refresh();
+    return subscribeToSync(refresh);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Request browser geolocation
   const requestUserLocation = useCallback(async (): Promise<boolean> => {
@@ -253,9 +597,30 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   // Update profile
-  const updateProfile = useCallback((updates: Partial<StudentProfile>) => {
-    setProfile((prev) => ({ ...prev, ...updates }));
-  }, []);
+  const updateProfile = useCallback(
+    (updates: Partial<StudentProfile>) => {
+      setProfile((prev) => {
+        const next = { ...prev, ...updates };
+        if (user?.uid) {
+          saveUserProfile(user.uid, {
+            displayName: next.name,
+            phone: next.phone,
+            college: next.college,
+            degree: next.degree,
+            year: next.year,
+            gpa: next.gpa,
+            careerGoal: next.careerGoal,
+            location: next.location,
+            bio: next.bio,
+            github: next.github,
+            linkedin: next.linkedin,
+          }).catch((err) => console.warn('Background Firestore profile sync error:', err));
+        }
+        return next;
+      });
+    },
+    [user]
+  );
 
   // Toggle resource completion for a skill
   const toggleResourceCompletion = useCallback((skillId: string, resourceId: string) => {
@@ -326,16 +691,12 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         profileCompletion: Math.min(100, prev.profileCompletion + 7),
       }));
 
-      const targetSkill = skills.find((s) => s.id === skillId);
-      const skillName = targetSkill ? targetSkill.name : 'Skill';
-      const skillLevel = targetSkill ? targetSkill.level : '';
-
       // Add celebratory notification
       setNotifications((prev) => [
         {
           id: `notif-badge-${Date.now()}`,
-          title: `Skill Verified: ${skillName} ${skillLevel}!`,
-          message: `Congratulations Aarav! You earned the official SkillSetu Verified Badge in ${skillName}. Opportunity matches have been upgraded.`,
+          title: 'Skill Assessment Verified!',
+          message: `Congratulations ${profile.name ? profile.name.split(' ')[0] : 'Student'}! You earned the official SkillSetu Verified Badge. Opportunity matches have been upgraded.`,
           time: 'Just now',
           read: false,
           type: 'badge',
@@ -382,10 +743,12 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Submit Application
   const submitApplication = useCallback(
     (oppId: string): boolean => {
-      const opp = INITIAL_OPPORTUNITIES.find((o) => o.id === oppId);
+      const opp =
+        INITIAL_OPPORTUNITIES.find((o) => o.id === oppId) ||
+        syncedOpportunities.find((o) => o.id === oppId);
       if (!opp) return false;
 
-      // Check if already applied
+      // Check if already applied (across both local & synced ids)
       const existing = applications.find((a) => a.opportunityId === oppId);
       if (existing) return true;
 
@@ -404,12 +767,30 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
           year: 'numeric',
         }),
         status: 'Under Review',
-        resumeUsed: 'Aarav_Sharma_Resume_2026.pdf',
+        resumeUsed: `${(profile?.name || 'Candidate').replace(/\s+/g, '_')}_Resume_2026.pdf`,
         matchScoreAtApply: match.matchScore,
         stipend: opp.stipend,
       };
 
       setApplications((prev) => [newApp, ...prev]);
+
+      // Publish to the Industry portal through the sync bridge
+      try {
+        publishStudentApplication(newApp, opp);
+      } catch (e) {
+        console.warn('[Sync] Failed to publish application:', e);
+      }
+
+      // Sync application to Firebase Data Connect in background
+      syncApplicationToDataConnect({
+        title: opp.title,
+        jobType: opp.type,
+        matchScore: match.matchScore,
+        matchedSkills: match.matchedSkills,
+        missingSkills: match.missingSkills,
+        jobId: opp.id.startsWith('dc-') ? opp.id.replace('dc-', '') : undefined,
+        internshipId: opp.id.startsWith('dc-int-') ? opp.id.replace('dc-int-', '') : undefined,
+      });
 
       // Add notification
       setNotifications((prev) => [
@@ -427,7 +808,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       return true;
     },
-    [applications, skills]
+    [applications, skills, syncedOpportunities]
   );
 
   // Notifications helpers
@@ -448,7 +829,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Compute live opportunities with distances, skill match, and match boost
   const opportunities = useMemo(() => {
-    return INITIAL_OPPORTUNITIES.map((opp) => {
+    const local = INITIAL_OPPORTUNITIES.map((opp) => {
       const distance = calculateHaversineDistance(
         userCoords.lat,
         userCoords.lng,
@@ -467,7 +848,81 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         isMatchBoosted: match.isMatchBoosted,
       };
     });
-  }, [userCoords, skills]);
+
+    // Cross-sector opportunities published by the Industry portal.
+    const synced = syncedOpportunities
+      .filter((o) => !local.some((loc) => loc.id === o.id))
+      .map((opp) => {
+        const distance = calculateHaversineDistance(
+          userCoords.lat,
+          userCoords.lng,
+          opp.coordinates.lat,
+          opp.coordinates.lng
+        );
+
+        const match = computeOpportunityMatch(opp, skills);
+
+        return {
+          ...opp,
+          distanceKm: distance,
+          matchScore: match.matchScore,
+          matchedSkills: match.matchedSkills,
+          missingSkills: match.missingSkills,
+          isMatchBoosted: match.isMatchBoosted,
+        };
+      });
+
+    // Live API-fetched verified jobs
+    const apiJobs = liveApiJobs
+      .filter((o) => !local.some((loc) => loc.id === o.id))
+      .filter((o) => !synced.some((s) => s.id === o.id))
+      .map((opp) => {
+        const distance = calculateHaversineDistance(
+          userCoords.lat,
+          userCoords.lng,
+          opp.coordinates.lat,
+          opp.coordinates.lng
+        );
+
+        const match = computeOpportunityMatch(opp, skills);
+
+        return {
+          ...opp,
+          distanceKm: distance,
+          matchScore: match.matchScore !== undefined && match.matchScore > 0 ? match.matchScore : opp.matchScore,
+          matchedSkills: match.matchedSkills,
+          missingSkills: match.missingSkills,
+          isMatchBoosted: match.isMatchBoosted ?? opp.isMatchBoosted,
+        };
+      });
+
+    // Data Connect remote opportunities (PostgreSQL / PGlite)
+    const remoteOpps = dataConnectOpportunities
+      .filter((o) => !local.some((loc) => loc.id === o.id))
+      .filter((o) => !synced.some((s) => s.id === o.id))
+      .filter((o) => !apiJobs.some((a) => a.id === o.id))
+      .map((opp) => {
+        const distance = calculateHaversineDistance(
+          userCoords.lat,
+          userCoords.lng,
+          opp.coordinates?.lat || 12.9716,
+          opp.coordinates?.lng || 77.5946
+        );
+
+        const match = computeOpportunityMatch(opp, skills);
+
+        return {
+          ...opp,
+          distanceKm: distance,
+          matchScore: match.matchScore,
+          matchedSkills: match.matchedSkills,
+          missingSkills: match.missingSkills,
+          isMatchBoosted: match.isMatchBoosted,
+        };
+      });
+
+    return [...local, ...synced, ...remoteOpps, ...apiJobs];
+  }, [userCoords, skills, syncedOpportunities, dataConnectOpportunities, liveApiJobs]);
 
   // Reset demo state
   const resetToDemo = useCallback(() => {
@@ -508,6 +963,8 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         applications,
         submitApplication,
         projects,
+        addProject,
+        deleteProject,
         notifications,
         unreadNotificationCount,
         markNotificationAsRead,
@@ -528,6 +985,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         workModeFilter,
         setWorkModeFilter,
         resetToDemo,
+        liveApiLoading,
       }}
     >
       {children}

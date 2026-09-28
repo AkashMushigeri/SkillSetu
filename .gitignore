@@ -1,27 +1,48 @@
-# dependencies
-/node_modules
-/.pnpm
-/.yarn
+# Dependencies
+node_modules/
+functions/node_modules/
+.pnpm/
+.yarn/
 
-# next.js
-/.next/
-/out/
+# Build outputs
+.next/
+out/
+build/
+tsconfig.tsbuildinfo
 
-# production
-/build
+# Firebase
+firebase-debug.log
+.firebase/
+.dataconnect/
+.credentials/
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# local env files
-.env*.local
+# Environment - all env files (never commit secrets)
 .env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
 
-# vercel
-.vercel
+# Vercel
+.vercel/
 
-# typescript
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+.kilo/
+
+# Logs
+*.log
+
+# Data Connect generated
+src/generated/dataconnect/
+
+# Build cache
 *.tsbuildinfo
-next-env.d.ts

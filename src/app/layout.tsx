@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
-import './globals.css';
+import '@/styles/globals.css';
+import { AuthProvider } from '@/context/AuthContext';
+import { OnboardingGuard } from '@/components/auth/OnboardingGuard';
 
 export const metadata: Metadata = {
   title: 'SkillSetu — AYUSH Career Bridge | Academia–Industry Collaboration',
@@ -14,6 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <link rel="icon" href="/favicon.svg" sizes="any" />
         <link
           rel="stylesheet"
           href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -22,7 +25,9 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-slate-50 text-slate-900 min-h-screen antialiased">
-        {children}
+        <AuthProvider>
+          <OnboardingGuard>{children}</OnboardingGuard>
+        </AuthProvider>
       </body>
     </html>
   );

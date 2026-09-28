@@ -1,0 +1,356 @@
+enum UserRole {
+  STUDENT
+  INDUSTRY
+  COLLEGE
+}
+
+enum SkillLevel {
+  BASIC
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum SkillImportance {
+  REQUIRED
+  PREFERRED
+}
+
+enum ApplicationStage {
+  NEW_APPLICATION
+  SCREENING
+  SHORTLISTED
+  TECHNICAL_INTERVIEW
+  HR_INTERVIEW
+  SELECTED
+  OFFER_SENT
+  HIRED
+  REJECTED
+}
+
+enum ChallengeStatus {
+  ACTIVE
+  UPCOMING
+  CLOSED
+}
+
+enum OfferStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  DECLINED
+}
+
+enum MouStatus {
+  DRAFT
+  UNDER_REVIEW
+  ACTIVE
+  RENEWED
+}
+
+enum CurriculumStatus {
+  PENDING_SENATE_APPROVAL
+  IN_REVIEW
+  ADOPTED
+}
+
+enum CollegePartnershipStatus {
+  POTENTIAL
+  ACTIVE
+  INACTIVE
+}
+
+type User @table(key: "uid") {
+  uid: String! @default(expr: "auth.uid")
+  email: String! @unique
+  displayName: String!
+  role: UserRole!
+  photoUrl: String
+  college: String
+  location: String
+  phone: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+type Company @table {
+  name: String!
+  type: String
+  industry: String
+  location: String
+  coordinates: Any
+  employees: String
+  founded: Int
+  website: String
+  tagline: String
+  about: String @col(dataType: "text")
+  mission: String @col(dataType: "text")
+  techStack: [String]
+  departments: [String]
+  hiringDomains: [String]
+  benefits: [String]
+  culture: [String]
+  logo: String
+  coverImage: String
+  ownerUid: String! @unique
+}
+
+type College @table @index(fields: ["partnershipStatus"]) {
+  name: String!
+  location: String
+  coordinates: Any
+  studentsCount: Int
+  verifiedStudentsCount: Int
+  placementReadiness: Int
+  partnershipStatus: CollegePartnershipStatus
+  contactPerson: String
+  contactEmail: String
+}
+
+type CollegeCompany @table(key: ["college", "company"]) {
+  college: College!
+  company: Company!
+  studentsCount: Int
+  internshipsOffered: Int
+  studentsHired: Int
+  activePrograms: Int
+  industryChallengesActive: Int
+  mouStatus: MouStatus
+}
+
+type Skill @table {
+  name: String! @unique
+  category: String
+  description: String
+}
+
+type UserSkill @table(key: ["user", "skill"]) {
+  user: User!
+  skill: Skill!
+  level: SkillLevel!
+  verified: Boolean! @default(value: false)
+  score: Float
+  verificationDate: Timestamp
+  verifiedBy: String
+  badgeUrl: String
+}
+
+type CandidateProject @table {
+  user: User!
+  title: String!
+  description: String
+  technologies: [String]
+  githubUrl: String
+  liveUrl: String
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+type CandidateExperience @table {
+  user: User!
+  title: String!
+  company: String!
+  duration: String
+  description: String
+  location: String
+  startDate: Timestamp
+  endDate: Timestamp
+}
+
+type CandidateEducation @table {
+  user: User!
+  degree: String!
+  department: String!
+  college: String!
+  graduationYear: Int
+  cgpa: Float
+  currentYear: String
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+type Job @table {
+  title: String!
+  company: Company!
+  department: String
+  location: String
+  workMode: String
+  jobType: String
+  salaryRange: String
+  experienceRequired: String @col(dataType: "text")
+  education: String
+  graduationYear: String
+  minimumCgpa: Float
+  description: String @col(dataType: "text")
+  responsibilities: [String]
+  qualifications: [String]
+  deadline: Timestamp
+  openings: Int
+  applicationsCount: Int @default(value: 0)
+  shortlistedCount: Int @default(value: 0)
+  strongMatchesCount: Int @default(value: 0)
+  status: String
+  postedDate: Timestamp! @default(expr: "request.time")
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+type JobRequiredSkill @table(key: ["job", "skill"]) {
+  job: Job!
+  skill: Skill!
+  level: SkillLevel!
+  importance: SkillImportance!
+  minScore: Float
+}
+
+type Internship @table {
+  title: String!
+  company: Company!
+  department: String
+  location: String
+  workMode: String
+  duration: String
+  stipend: String
+  eligibility: String @col(dataType: "text")
+  startDate: Timestamp
+  applicationDeadline: Timestamp
+  description: String @col(dataType: "text")
+  learningOutcomes: [String]
+  mentor: String
+  openings: Int
+  isStartupFriendly: Boolean
+  targetAudience: String
+  eligibleForConversion: Boolean
+  status: String
+  applicationsCount: Int @default(value: 0)
+  shortlistedCount: Int @default(value: 0)
+  postedDate: Timestamp! @default(expr: "request.time")
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+type InternshipRequiredSkill @table(key: ["internship", "skill"]) {
+  internship: Internship!
+  skill: Skill!
+  level: SkillLevel!
+  importance: SkillImportance!
+  minScore: Float
+}
+
+type Application @table {
+  candidate: User!
+  jobId: String
+  internshipId: String
+  company: Company!
+  title: String!
+  jobType: String!
+  matchScore: Int
+  appliedDate: Timestamp! @default(expr: "request.time")
+  stage: ApplicationStage! @default(value: NEW_APPLICATION)
+  recruiterNotes: String @col(dataType: "text")
+  matchedSkills: [String]
+  missingSkills: [String]
+  interviewId: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+type Interview @table {
+  candidate: User!
+  application: Application
+  applicationStringId: String
+  company: Company!
+  title: String!
+  round: String!
+  date: Timestamp!
+  time: String!
+  mode: String
+  meetingLink: String
+  interviewers: [String]
+  notes: String @col(dataType: "text")
+  status: String @default(value: "Scheduled")
+  score: Int
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+type Challenge @table {
+  title: String!
+  description: String @col(dataType: "text")
+  problemStatement: String @col(dataType: "text")
+  requiredSkills: [String]
+  difficulty: String
+  deadline: Timestamp!
+  teamSize: String
+  prize: String
+  submissionRequirements: String @col(dataType: "text")
+  collegeParticipation: String
+  participantsCount: Int @default(value: 0)
+  submissionsCount: Int @default(value: 0)
+  status: ChallengeStatus!
+  company: Company!
+  createdDate: Timestamp! @default(expr: "request.time")
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+type ChallengeSubmission @table {
+  challenge: Challenge!
+  teamName: String!
+  teamLeadUid: String!
+  college: String
+  submissionDate: Timestamp! @default(expr: "request.time")
+  githubUrl: String!
+  liveDemoUrl: String
+  videoUrl: String
+  score: Int
+  testPassRate: String
+  aiSummary: String @col(dataType: "text")
+  status: String @default(value: "Under Review")
+  skillsDemonstrated: [String]
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+type Offer @table {
+  candidate: User!
+  jobOrInternshipId: String
+  roleTitle: String!
+  type: String!
+  department: String
+  location: String
+  workMode: String
+  compensation: String
+  baseFixed: String
+  variableBonus: String
+  retentionJoiningBonus: String
+  benefitsSummary: String @col(dataType: "text")
+  joiningDate: Timestamp
+  validUntil: Timestamp
+  status: OfferStatus
+  generatedDate: Timestamp! @default(expr: "request.time")
+  authorizedSignatory: String
+  signatoryTitle: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+type CurriculumModule @table {
+  collegeCompany: CollegeCompany! @ref(constraintName: "curriculum_module_cc_fkey")
+  semester: String!
+  currentSubject: String!
+  industryRecommendation: String @col(dataType: "text")
+  recommendedTechnologies: [String]
+  rationale: String @col(dataType: "text")
+  status: CurriculumStatus
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+type HiringPreferences @table(key: "company") {
+  company: Company! @unique
+  preferredDepartments: [String]
+  preferredDegrees: [String]
+  preferredGraduationYears: [String]
+  preferredLocations: [String]
+  workModes: [String]
+  minimumCgpa: Float
+  prioritizeVerifiedSkills: Boolean
+  prioritizeStartupExperience: Boolean
+  searchRadiusKm: Int
+}

@@ -42,10 +42,7 @@ export const MobileBottomNav: React.FC = () => {
               <div className="relative">
                 <Icon className={`w-5 h-5 ${active ? 'stroke-[2.5px] scale-110' : 'stroke-[1.75px]'}`} />
                 {item.badge !== undefined && item.badge > 0 && (
-                  <span
-                    suppressHydrationWarning
-                    className="absolute -top-1 -right-2 bg-brand-orange text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center"
-                  >
+                  <span className="absolute -top-1 -right-2 bg-brand-orange text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
                     {item.badge}
                   </span>
                 )}

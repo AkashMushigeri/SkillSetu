@@ -57,6 +57,7 @@ export const StudentHeader: React.FC = () => {
     { name: 'Home', href: '/student', icon: GraduationCap },
     { name: 'Explore Opportunities', href: '/student/opportunities', icon: Compass },
     { name: 'Skills', href: '/student/skills', icon: Award },
+    { name: 'AI Interview', href: '/student/ai-interview', icon: Sparkles },
     { name: 'Learning', href: '/student/learning', icon: BookOpen },
     { name: 'Saved', href: '/student/saved', icon: Bookmark },
     { name: 'Applications', href: '/student/applications', icon: FileCheck2 },
@@ -80,7 +81,9 @@ export const StudentHeader: React.FC = () => {
         </div>
         <div className="flex items-center gap-4 text-[11px] text-slate-400">
           <span>&ldquo;Learn. Connect. Grow Together.&rdquo;</span>
-          <span className="text-emerald-400 font-semibold">Demo Role: Student</span>
+          <span className="text-emerald-400 font-semibold">
+            {profile.name === 'Aarav Sharma' ? 'Demo Role: Student' : 'Role: Student'}
+          </span>
         </div>
       </div>
 
@@ -138,10 +141,7 @@ export const StudentHeader: React.FC = () => {
               >
                 <Bell className="w-5 h-5" />
                 {unreadNotificationCount > 0 && (
-                  <span
-                    suppressHydrationWarning
-                    className="absolute top-1.5 right-1.5 w-4 h-4 bg-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white animate-bounce"
-                  >
+                  <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white animate-bounce">
                     {unreadNotificationCount}
                   </span>
                 )}
@@ -154,10 +154,7 @@ export const StudentHeader: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-slate-900 text-sm">Notifications</span>
                       {unreadNotificationCount > 0 && (
-                        <span
-                          suppressHydrationWarning
-                          className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold"
-                        >
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold">
                           {unreadNotificationCount} new
                         </span>
                       )}
@@ -227,15 +224,23 @@ export const StudentHeader: React.FC = () => {
                 className="flex items-center gap-2 p-1.5 pl-2 rounded-xl hover:bg-slate-100 transition-colors border border-slate-200"
               >
                 <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-teal to-brand-emerald text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                  AS
+                  {profile.name
+                    ? profile.name
+                        .split(' ')
+                        .filter(Boolean)
+                        .map((n) => n[0])
+                        .join('')
+                        .slice(0, 2)
+                        .toUpperCase()
+                    : 'ST'}
                 </div>
                 <div className="hidden sm:block text-left pr-1">
                   <div className="text-xs font-semibold text-slate-900 flex items-center gap-1">
                     {profile.name}
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   </div>
-                  <div className="text-[10px] text-slate-500 truncate max-w-[110px]">
-                    {profile.year} &bull; RVCE
+                  <div className="text-[10px] text-slate-500 truncate max-w-[120px]">
+                    {profile.year} &bull; {profile.college?.split(' ')[0] || 'Student'}
                   </div>
                 </div>
               </button>
@@ -245,7 +250,7 @@ export const StudentHeader: React.FC = () => {
                 <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50">
                   <div className="px-4 py-2 border-b border-slate-100">
                     <p className="text-sm font-bold text-slate-900">{profile.name}</p>
-                    <p className="text-xs text-slate-500">{profile.degree}</p>
+                    <p className="text-xs text-slate-500">{profile.degree} &bull; {profile.college}</p>
                     <div className="mt-2 bg-emerald-50 rounded-lg p-2 border border-emerald-100">
                       <div className="flex justify-between text-xs text-emerald-800 font-medium">
                         <span>Profile Completion</span>
@@ -270,12 +275,20 @@ export const StudentHeader: React.FC = () => {
                       View Full Profile
                     </Link>
                     <Link
+                      href="/onboarding"
+                      onClick={() => setIsProfileMenuOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      <Sparkles className="w-4 h-4 text-emerald-600" />
+                      Edit Profile &amp; Preferences
+                    </Link>
+                    <Link
                       href="/student/resume"
                       onClick={() => setIsProfileMenuOpen(false)}
                       className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
                     >
                       <FileCheck2 className="w-4 h-4 text-slate-500" />
-                      Preview & Download Resume
+                      Preview &amp; Download Resume
                     </Link>
                   </div>
 
