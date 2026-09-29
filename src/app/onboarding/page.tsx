@@ -562,8 +562,16 @@ export default function OnboardingPage() {
           setError('Please provide your college or university name.');
           return false;
         }
+        if (!degree.trim()) {
+          setError('Please select your degree or program.');
+          return false;
+        }
         if (!department.trim()) {
           setError('Please enter your department or major.');
+          return false;
+        }
+        if (!year.trim()) {
+          setError('Please select your current academic year.');
           return false;
         }
         if (!location.trim()) {
@@ -656,6 +664,16 @@ export default function OnboardingPage() {
           <input
             ref={locationInputRef}
             type="text"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={isLocationDropdownOpen}
+            aria-haspopup="listbox"
+            aria-controls="location-suggestions-listbox"
+            aria-activedescendant={
+              highlightedLocationIndex >= 0 ? `location-opt-${highlightedLocationIndex}` : undefined
+            }
+            aria-invalid={showLocationError}
+            aria-describedby={showLocationError ? 'location-error-msg' : 'location-help-msg'}
             required={required}
             value={location}
             onChange={handleLocationInputChange}
@@ -681,13 +699,21 @@ export default function OnboardingPage() {
 
         {/* Location Suggestions Dropdown */}
         {isLocationDropdownOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1.5 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl max-h-60 overflow-y-auto divide-y divide-slate-800">
+          <div
+            id="location-suggestions-listbox"
+            role="listbox"
+            aria-label="Location suggestions"
+            className="absolute top-full left-0 right-0 mt-1.5 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl max-h-60 overflow-y-auto divide-y divide-slate-800"
+          >
             {locationSuggestions.length > 0 ? (
               locationSuggestions.map((sug, idx) => {
                 const isHighlighted = idx === highlightedLocationIndex;
                 return (
                   <button
                     key={`${sug.displayName}-${idx}`}
+                    id={`location-opt-${idx}`}
+                    role="option"
+                    aria-selected={isHighlighted}
                     type="button"
                     onClick={() => selectLocationSuggestion(sug)}
                     onMouseEnter={() => setHighlightedLocationIndex(idx)}
@@ -715,19 +741,19 @@ export default function OnboardingPage() {
               })
             ) : (
               <div className="p-3 text-xs text-slate-400 text-center">
-                {locationSearchError || 'No verified locations found. You can keep typing manually.'}
+                {locationSearchError || 'No matching locations found. You can keep your manually entered city.'}
               </div>
             )}
           </div>
         )}
 
         {showLocationError ? (
-          <p className="text-[11px] text-red-400 mt-1.5 flex items-center gap-1.5 animate-in fade-in duration-200">
+          <p id="location-error-msg" className="text-[11px] text-red-400 mt-1.5 flex items-center gap-1.5 animate-in fade-in duration-200">
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             <span>Please provide your {label.toLowerCase()}.</span>
           </p>
         ) : (
-          <p className="text-[10px] text-slate-400 mt-1">
+          <p id="location-help-msg" className="text-[10px] text-slate-400 mt-1">
             Type 3+ letters to search real verified cities
           </p>
         )}
@@ -992,6 +1018,9 @@ export default function OnboardingPage() {
                       <button
                         type="button"
                         onClick={() => setIsCountryDropdownOpen((prev) => !prev)}
+                        aria-haspopup="listbox"
+                        aria-expanded={isCountryDropdownOpen}
+                        aria-label={`Country calling code: ${selectedCountry.name} ${selectedCountry.code}`}
                         className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 border border-r-0 border-slate-700 rounded-l-xl text-sm font-medium text-white hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/50 select-none shrink-0"
                         title={`Current: ${selectedCountry.name} (${selectedCountry.code})`}
                       >
@@ -1012,6 +1041,9 @@ export default function OnboardingPage() {
                           onBlur={() => setPhoneTouched(true)}
                           maxLength={selectedCountry.maxLength}
                           placeholder={selectedCountry.placeholder}
+                          aria-label="Phone / WhatsApp Number"
+                          aria-invalid={showPhoneError}
+                          aria-describedby={showPhoneError ? 'phone-error-msg' : 'phone-help-msg'}
                           className={`w-full pl-9 pr-3.5 py-2.5 bg-slate-800/80 border rounded-r-xl text-sm text-white font-mono tracking-wider placeholder-slate-500 focus:outline-none focus:ring-2 transition-all ${
                             showPhoneError
                               ? 'border-red-500/80 focus:ring-red-500/40 focus:border-red-500'
@@ -1023,7 +1055,11 @@ export default function OnboardingPage() {
 
                     {/* Country Selector Dropdown */}
                     {isCountryDropdownOpen && (
-                      <div className="absolute top-full left-0 mt-1.5 w-72 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 p-2 space-y-1 backdrop-blur-xl max-h-64 flex flex-col">
+                      <div
+                        role="listbox"
+                        aria-label="Country calling codes"
+                        className="absolute top-full left-0 mt-1.5 w-72 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 p-2 space-y-1 backdrop-blur-xl max-h-64 flex flex-col"
+                      >
                         <div className="relative mb-1">
                           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
                           <input
@@ -1032,6 +1068,7 @@ export default function OnboardingPage() {
                             onChange={(e) => setCountrySearchQuery(e.target.value)}
                             placeholder="Search country or code..."
                             autoFocus
+                            aria-label="Search countries"
                             className="w-full pl-8 pr-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                           />
                         </div>
@@ -1042,6 +1079,8 @@ export default function OnboardingPage() {
                             return (
                               <button
                                 key={`${c.iso}-${c.code}`}
+                                role="option"
+                                aria-selected={isSelected}
                                 type="button"
                                 onClick={() => {
                                   setSelectedCountry(c);
@@ -1089,12 +1128,12 @@ export default function OnboardingPage() {
 
                   {/* Inline Error or Helper */}
                   {showPhoneError ? (
-                    <p className="text-[11px] text-red-400 mt-1.5 flex items-center gap-1.5 animate-in fade-in duration-200">
+                    <p id="phone-error-msg" className="text-[11px] text-red-400 mt-1.5 flex items-center gap-1.5 animate-in fade-in duration-200">
                       <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                       <span>{phoneError}</span>
                     </p>
                   ) : (
-                    <p className="text-[11px] text-slate-400 mt-1.5">
+                    <p id="phone-help-msg" className="text-[11px] text-slate-400 mt-1.5">
                       {selectedCountry.code === '+91'
                         ? '10-digit mobile number for SMS & WhatsApp updates'
                         : `Enter standard ${selectedCountry.name} mobile/contact number`}
