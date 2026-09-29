@@ -40,19 +40,23 @@ export const PortalSelector: React.FC<PortalSelectorProps> = ({
             onClick={() => onRoleChange(role.id)}
             className={`flex flex-col items-center justify-center p-3 rounded-2xl text-center border text-xs font-semibold transition-all ${
               isSelected
-                ? 'bg-emerald-500/15 border-emerald-500/60 text-white shadow-lg shadow-emerald-950/40 ring-1 ring-emerald-500/30'
-                : 'bg-slate-800/40 border-slate-700/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                ? 'bg-emerald-50/90 border-2 border-emerald-600 text-slate-900 shadow-sm ring-1 ring-emerald-600/20'
+                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 shadow-xs'
             }`}
           >
             <Icon
               className={`w-5 h-5 mb-1.5 transition-colors ${
-                isSelected ? 'text-emerald-400' : 'text-slate-500'
+                isSelected ? 'text-emerald-700' : 'text-slate-400'
               }`}
             />
-            <div className="font-bold text-slate-100">{role.label}</div>
+            <div className={`font-bold transition-colors ${isSelected ? 'text-slate-900' : 'text-slate-700'}`}>
+              {role.label}
+            </div>
             <span
-              className={`text-[10px] font-medium mt-0.5 transition-colors ${
-                isSelected ? 'text-emerald-400' : 'text-slate-500'
+              className={`text-[10px] font-semibold mt-1 px-1.5 py-0.5 rounded-full transition-colors ${
+                isSelected
+                  ? 'text-emerald-800 bg-emerald-100/80 border border-emerald-200'
+                  : 'text-slate-400'
               }`}
             >
               {isSelected ? 'Active Portal' : 'Portal'}

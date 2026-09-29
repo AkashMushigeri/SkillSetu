@@ -25,6 +25,7 @@ import {
   UserRole,
   ExtendedUser,
   UserProfileData,
+  sendPasswordReset as sendPasswordResetFirebase,
 } from '@/lib/firebase';
 
 interface AuthContextType {
@@ -43,6 +44,7 @@ interface AuthContextType {
     college?: string
   ) => Promise<void>;
   signUpWithGoogle: (role: UserRole, displayName?: string, phone?: string, college?: string) => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
   completeOnboarding: (details: Partial<UserProfileData>) => Promise<void>;
   refreshUserProfile: () => Promise<UserProfileData | null>;
   signOut: () => Promise<void>;
@@ -330,6 +332,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     router.push('/login');
   }, [router]);
 
+  const sendPasswordReset = useCallback(async (email: string) => {
+    await sendPasswordResetFirebase(email);
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -341,6 +347,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         signInWithEmailPassword,
         signUpWithEmailPassword,
         signUpWithGoogle,
+        sendPasswordReset,
         completeOnboarding,
         refreshUserProfile,
         signOut,

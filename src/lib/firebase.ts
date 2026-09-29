@@ -13,6 +13,7 @@ import {
   signOut as firebaseSignOutFn,
   User as FirebaseUser,
   connectAuthEmulator,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
 import {
   initializeFirestore,
@@ -267,6 +268,21 @@ export const signOutFirebase = async (): Promise<void> => {
   if (!auth) return;
   await firebaseSignOutFn(auth);
   clearUserRole();
+};
+
+export const sendPasswordReset = async (email: string): Promise<void> => {
+  if (!auth) throw new Error('Auth not initialized');
+  try {
+    await sendPasswordResetEmail(auth, email.trim());
+  } catch (err: any) {
+    if (isNetworkError(err)) {
+      console.warn('Network error during sendPasswordResetEmail, retrying in 1.2s...');
+      await new Promise((r) => setTimeout(r, 1200));
+      await sendPasswordResetEmail(auth, email.trim());
+      return;
+    }
+    throw err;
+  }
 };
 
 export const getUserRole = (user: FirebaseUser | null): UserRole | null => {
