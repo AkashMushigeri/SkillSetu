@@ -112,60 +112,61 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     user?.email?.toLowerCase() === 'aarav.sharma@rvce.edu.in' ||
     user?.uid === 'demo_student';
 
-  // 1. Profile State
-  const [profile, setProfile] = useState<StudentProfile>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('skillsetu_student_profile');
-      if (saved) {
-        try { return JSON.parse(saved); } catch (e) { /* ignore */ }
-      }
-    }
-    return INITIAL_STUDENT_PROFILE;
-  });
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // 1. Profile State - deterministic initial state for SSR / hydration match
+  const [profile, setProfile] = useState<StudentProfile>(INITIAL_STUDENT_PROFILE);
 
   // 2. Skills State
-  const [skills, setSkills] = useState<Skill[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('skillsetu_student_skills');
-      if (saved) {
-        try { return JSON.parse(saved); } catch (e) { /* ignore */ }
-      }
-    }
-    return INITIAL_SKILLS;
-  });
+  const [skills, setSkills] = useState<Skill[]>(INITIAL_SKILLS);
 
   // 3. Saved Opportunities IDs
-  const [savedOpportunityIds, setSavedOpportunityIds] = useState<string[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('skillsetu_saved_opps');
-      if (saved) {
-        try { return JSON.parse(saved); } catch (e) { /* ignore */ }
-      }
-    }
-    return [];
-  });
+  const [savedOpportunityIds, setSavedOpportunityIds] = useState<string[]>([]);
 
   // 4. Applications State
-  const [applications, setApplications] = useState<Application[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('skillsetu_applications');
-      if (saved) {
-        try { return JSON.parse(saved); } catch (e) { /* ignore */ }
-      }
-    }
-    return [];
-  });
+  const [applications, setApplications] = useState<Application[]>([]);
 
   // 5. Projects State (empty by default for real students, loaded from user storage)
-  const [projects, setProjects] = useState<Project[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('skillsetu_student_projects');
-      if (saved) {
-        try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+  const [projects, setProjects] = useState<Project[]>([]);
+
+  // Hydrate stored user data safely on client mount after SSR
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const savedProfile = localStorage.getItem('skillsetu_student_profile');
+      if (savedProfile) {
+        setProfile(JSON.parse(savedProfile));
       }
+      const savedSkills = localStorage.getItem('skillsetu_student_skills');
+      if (savedSkills) {
+        setSkills(JSON.parse(savedSkills));
+      }
+      const savedOpps = localStorage.getItem('skillsetu_saved_opps');
+      if (savedOpps) {
+        setSavedOpportunityIds(JSON.parse(savedOpps));
+      }
+      const savedApps = localStorage.getItem('skillsetu_applications');
+      if (savedApps) {
+        setApplications(JSON.parse(savedApps));
+      }
+      const savedProjects = localStorage.getItem('skillsetu_student_projects');
+      if (savedProjects) {
+        setProjects(JSON.parse(savedProjects));
+      }
+      const savedNotifs = localStorage.getItem('skillsetu_notifications');
+      if (savedNotifs) {
+        setNotifications(JSON.parse(savedNotifs));
+      }
+      const synced = readStudentOpportunitiesFromIndustry();
+      if (synced && synced.length > 0) {
+        setSyncedOpportunities(synced);
+      }
+    } catch (e) {
+      console.warn('Error hydrating student state from localStorage:', e);
+    } finally {
+      setIsHydrated(true);
     }
-    return [];
-  });
+  }, []);
 
   // Sync profile & user data when authenticated userProfile changes from Firebase
   useEffect(() => {
@@ -382,15 +383,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [user, userProfile]);
 
   // 6. Notifications
-  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('skillsetu_notifications');
-      if (saved) {
-        try { return JSON.parse(saved); } catch (e) { /* ignore */ }
-      }
-    }
-    return INITIAL_NOTIFICATIONS;
-  });
+  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
 
   // Mirror of `notifications` for imperative access inside sync handlers.
   const notificationsRef = React.useRef<NotificationItem[]>(INITIAL_NOTIFICATIONS);
@@ -398,13 +391,8 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     notificationsRef.current = notifications;
   }, [notifications]);
 
-   // 6b. Cross-sector synced opportunities (published by the Industry portal)
-  const [syncedOpportunities, setSyncedOpportunities] = useState<Opportunity[]>(() => {
-    if (typeof window !== 'undefined') {
-      return readStudentOpportunitiesFromIndustry();
-    }
-    return [];
-  });
+  // 6b. Cross-sector synced opportunities (published by the Industry portal)
+  const [syncedOpportunities, setSyncedOpportunities] = useState<Opportunity[]>([]);
 
   // 6c. Live API-fetched verified jobs
   const [liveApiJobs, setLiveApiJobs] = useState<Opportunity[]>([]);
@@ -457,39 +445,34 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [workModeFilter, setWorkModeFilter] = useState<'All' | 'Remote' | 'Hybrid' | 'On-site'>('All');
 
-  // Persistence effects
+  // Persistence effects - only persist to localStorage after initial client hydration completes
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('skillsetu_student_profile', JSON.stringify(profile));
-    }
-  }, [profile]);
+    if (!isHydrated || typeof window === 'undefined') return;
+    localStorage.setItem('skillsetu_student_profile', JSON.stringify(profile));
+  }, [profile, isHydrated]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('skillsetu_student_skills', JSON.stringify(skills));
-    }
-  }, [skills]);
+    if (!isHydrated || typeof window === 'undefined') return;
+    localStorage.setItem('skillsetu_student_skills', JSON.stringify(skills));
+  }, [skills, isHydrated]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('skillsetu_saved_opps', JSON.stringify(savedOpportunityIds));
-    }
-  }, [savedOpportunityIds]);
+    if (!isHydrated || typeof window === 'undefined') return;
+    localStorage.setItem('skillsetu_saved_opps', JSON.stringify(savedOpportunityIds));
+  }, [savedOpportunityIds, isHydrated]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('skillsetu_applications', JSON.stringify(applications));
-    }
-  }, [applications]);
+    if (!isHydrated || typeof window === 'undefined') return;
+    localStorage.setItem('skillsetu_applications', JSON.stringify(applications));
+  }, [applications, isHydrated]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (user?.uid) {
-        localStorage.setItem(`skillsetu_student_projects_${user.uid}`, JSON.stringify(projects));
-      }
-      localStorage.setItem('skillsetu_student_projects', JSON.stringify(projects));
+    if (!isHydrated || typeof window === 'undefined') return;
+    if (user?.uid) {
+      localStorage.setItem(`skillsetu_student_projects_${user.uid}`, JSON.stringify(projects));
     }
-  }, [projects, user?.uid]);
+    localStorage.setItem('skillsetu_student_projects', JSON.stringify(projects));
+  }, [projects, user?.uid, isHydrated]);
 
   const addProject = useCallback((newProj: Omit<Project, 'id'>) => {
     const proj: Project = {
@@ -504,10 +487,9 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('skillsetu_notifications', JSON.stringify(notifications));
-    }
-  }, [notifications]);
+    if (!isHydrated || typeof window === 'undefined') return;
+    localStorage.setItem('skillsetu_notifications', JSON.stringify(notifications));
+  }, [notifications, isHydrated]);
 
   // ------------------------------------------------------------------
   // Cross-sector sync subscription (Industry -> Student)

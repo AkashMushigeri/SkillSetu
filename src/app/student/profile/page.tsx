@@ -76,7 +76,10 @@ export default function StudentProfilePage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-5">
             {/* Avatar */}
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-tr from-brand-teal to-brand-emerald text-white flex items-center justify-center font-black text-2xl sm:text-3xl shadow-md shrink-0">
+            <div
+              suppressHydrationWarning
+              className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-tr from-brand-teal to-brand-emerald text-white flex items-center justify-center font-black text-2xl sm:text-3xl shadow-md shrink-0"
+            >
               {profile.name
                 ? profile.name
                     .split(' ')
@@ -90,7 +93,7 @@ export default function StudentProfilePage() {
 
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+                <h1 suppressHydrationWarning className="text-2xl sm:text-3xl font-extrabold text-slate-900">
                   {profile.name}
                 </h1>
                 <span className="p-1 rounded-full bg-emerald-100 text-emerald-700" title="Verified Student">
@@ -98,16 +101,16 @@ export default function StudentProfilePage() {
                 </span>
               </div>
 
-              <p className="text-xs sm:text-sm font-semibold text-slate-700">
+              <p suppressHydrationWarning className="text-xs sm:text-sm font-semibold text-slate-700">
                 {profile.degree} &bull; {profile.year} ({profile.gpa})
               </p>
 
               <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-500 pt-0.5">
-                <span className="flex items-center gap-1">
+                <span suppressHydrationWarning className="flex items-center gap-1">
                   <GraduationCap className="w-3.5 h-3.5 text-brand-teal" />
                   {profile.college}
                 </span>
-                <span className="flex items-center gap-1">
+                <span suppressHydrationWarning className="flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-slate-400" />
                   {profile.location}
                 </span>

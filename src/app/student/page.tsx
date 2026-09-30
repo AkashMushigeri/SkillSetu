@@ -115,9 +115,9 @@ export default function StudentDashboardPage() {
       <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-brand-dark via-brand-teal to-teal-900 text-white p-6 sm:p-8 lg:p-10 xl:p-12 min-h-[340px] lg:min-h-[380px] xl:min-h-[400px] flex items-center shadow-xl">
         <HeroMapAnimation />
         <div className="relative z-10 max-w-xl lg:max-w-xl xl:max-w-2xl space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-emerald-300 text-xs font-semibold">
+          <div suppressHydrationWarning className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-emerald-300 text-xs font-semibold">
             <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
-            Good morning, {profile.name.split(' ')[0]} 👋
+            Good morning, {profile.name ? profile.name.split(' ')[0] : 'Student'} 👋
           </div>
 
           <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
@@ -155,7 +155,10 @@ export default function StudentDashboardPage() {
         <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 xl:p-7 shadow-card hover:shadow-cardHover transition-shadow flex flex-col justify-between">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3.5">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-teal to-brand-emerald text-white flex items-center justify-center font-extrabold text-lg shadow-sm">
+              <div
+                suppressHydrationWarning
+                className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-teal to-brand-emerald text-white flex items-center justify-center font-extrabold text-lg shadow-sm"
+              >
                 {profile.name
                   ? profile.name
                       .split(' ')
@@ -168,11 +171,11 @@ export default function StudentDashboardPage() {
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-bold text-slate-900 text-base sm:text-lg">{profile.name}</h3>
+                  <h3 suppressHydrationWarning className="font-bold text-slate-900 text-base sm:text-lg">{profile.name}</h3>
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 </div>
-                <p className="text-xs font-medium text-slate-600">{profile.degree} &bull; {profile.year}</p>
-                <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                <p suppressHydrationWarning className="text-xs font-medium text-slate-600">{profile.degree} &bull; {profile.year}</p>
+                <p suppressHydrationWarning className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
                   <MapPin className="w-3.5 h-3.5 text-slate-400" /> {profile.location}
                 </p>
               </div>

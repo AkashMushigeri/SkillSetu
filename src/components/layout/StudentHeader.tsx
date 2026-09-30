@@ -225,7 +225,10 @@ export const StudentHeader: React.FC = () => {
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                 className="flex items-center gap-2 p-1.5 pl-2 rounded-xl hover:bg-slate-100 transition-colors border border-slate-200"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-teal to-brand-emerald text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                <div
+                  suppressHydrationWarning
+                  className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-teal to-brand-emerald text-white flex items-center justify-center font-bold text-xs shadow-xs"
+                >
                   {profile.name
                     ? profile.name
                         .split(' ')
@@ -237,11 +240,11 @@ export const StudentHeader: React.FC = () => {
                     : 'ST'}
                 </div>
                 <div className="hidden sm:block text-left pr-1">
-                  <div className="text-xs font-semibold text-slate-900 flex items-center gap-1">
+                  <div suppressHydrationWarning className="text-xs font-semibold text-slate-900 flex items-center gap-1">
                     {profile.name}
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   </div>
-                  <div className="text-[10px] text-slate-500 truncate max-w-[120px]">
+                  <div suppressHydrationWarning className="text-[10px] text-slate-500 truncate max-w-[120px]">
                     {profile.year} &bull; {profile.college?.split(' ')[0] || 'Student'}
                   </div>
                 </div>
@@ -251,8 +254,8 @@ export const StudentHeader: React.FC = () => {
               {isProfileMenuOpen && (
                 <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50">
                   <div className="px-4 py-2 border-b border-slate-100">
-                    <p className="text-sm font-bold text-slate-900">{profile.name}</p>
-                    <p className="text-xs text-slate-500">{profile.degree} &bull; {profile.college}</p>
+                    <p suppressHydrationWarning className="text-sm font-bold text-slate-900">{profile.name}</p>
+                    <p suppressHydrationWarning className="text-xs text-slate-500">{profile.degree} &bull; {profile.college}</p>
                     <div className="mt-2 bg-emerald-50 rounded-lg p-2 border border-emerald-100">
                       <div className="flex justify-between text-xs text-emerald-800 font-medium">
                         <span>Profile Completion</span>
