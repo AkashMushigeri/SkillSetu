@@ -51,55 +51,55 @@ export default function StudentDashboardPage() {
     {
       title: 'Internship' as OpportunityType,
       count: '14 live',
-      color: 'border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 text-emerald-900',
-      badgeBg: 'bg-emerald-100 text-emerald-800',
+      color: 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100',
+      badgeBg: 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300',
       icon: Briefcase,
-      iconColor: 'text-emerald-600',
+      iconColor: 'text-emerald-600 dark:text-emerald-400',
       description: 'Classic 4–24 week guided programs with mentors and PPO tracks.',
     },
     {
       title: 'Micro-Internship' as OpportunityType,
       count: '23 live',
-      color: 'border-blue-200 bg-blue-50/50 hover:bg-blue-50 text-blue-900',
-      badgeBg: 'bg-blue-100 text-blue-800',
+      color: 'border-blue-200 dark:border-blue-800/60 bg-blue-50/50 dark:bg-blue-950/20 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-blue-900 dark:text-blue-100',
+      badgeBg: 'bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300',
       icon: Zap,
-      iconColor: 'text-blue-600',
+      iconColor: 'text-blue-600 dark:text-blue-400',
       description: '1–4 week outcome-based sprints.',
     },
     {
       title: 'Same-Day Task' as OpportunityType,
       count: '19 live',
-      color: 'border-orange-200 bg-orange-50/50 hover:bg-orange-50 text-orange-900',
-      badgeBg: 'bg-orange-100 text-orange-800',
+      color: 'border-orange-200 dark:border-orange-800/60 bg-orange-50/50 dark:bg-orange-950/20 hover:bg-orange-50 dark:hover:bg-orange-950/40 text-orange-900 dark:text-orange-100',
+      badgeBg: 'bg-orange-100 dark:bg-orange-900/60 text-orange-800 dark:text-orange-300',
       icon: Clock,
-      iconColor: 'text-orange-600',
+      iconColor: 'text-orange-600 dark:text-orange-400',
       description: 'Short real-world company tasks such as landing pages, bug fixes and design tasks.',
     },
     {
       title: 'Part-Time Job' as OpportunityType,
       count: '10 live',
-      color: 'border-purple-200 bg-purple-50/50 hover:bg-purple-50 text-purple-900',
-      badgeBg: 'bg-purple-100 text-purple-800',
+      color: 'border-purple-200 dark:border-purple-800/60 bg-purple-50/50 dark:bg-purple-950/20 hover:bg-purple-50 dark:hover:bg-purple-950/40 text-purple-900 dark:text-purple-100',
+      badgeBg: 'bg-purple-100 dark:bg-purple-900/60 text-purple-800 dark:text-purple-300',
       icon: TrendingUp,
-      iconColor: 'text-purple-600',
+      iconColor: 'text-purple-600 dark:text-purple-400',
       description: 'Async-friendly paid work alongside classes.',
     },
     {
       title: 'Full-Time Job' as OpportunityType,
       count: '5 live',
-      color: 'border-teal-200 bg-teal-50/50 hover:bg-teal-50 text-teal-900',
-      badgeBg: 'bg-teal-100 text-teal-800',
+      color: 'border-teal-200 dark:border-teal-800/60 bg-teal-50/50 dark:bg-teal-950/20 hover:bg-teal-50 dark:hover:bg-teal-950/40 text-teal-900 dark:text-teal-100',
+      badgeBg: 'bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300',
       icon: Target,
-      iconColor: 'text-teal-600',
+      iconColor: 'text-teal-600 dark:text-teal-400',
       description: 'Graduate placements and associate roles.',
     },
     {
       title: 'Industry Challenge' as OpportunityType,
       count: '6 live',
-      color: 'border-rose-200 bg-rose-50/50 hover:bg-rose-50 text-rose-900',
-      badgeBg: 'bg-rose-100 text-rose-800',
+      color: 'border-rose-200 dark:border-rose-800/60 bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-900 dark:text-rose-100',
+      badgeBg: 'bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300',
       icon: Rocket,
-      iconColor: 'text-rose-600',
+      iconColor: 'text-rose-600 dark:text-rose-400',
       description: 'Real-world competitions and industry challenges.',
     },
   ];
@@ -152,7 +152,7 @@ export default function StudentDashboardPage() {
       {/* 2. Profile Summary & Next Best Step (2-Column Grid) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 xl:gap-6">
         {/* Profile Summary Card */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 xl:p-7 shadow-card hover:shadow-cardHover transition-shadow flex flex-col justify-between">
+        <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 xl:p-7 shadow-card hover:shadow-cardHover transition-all flex flex-col justify-between">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3.5">
               <div
@@ -171,11 +171,11 @@ export default function StudentDashboardPage() {
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h3 suppressHydrationWarning className="font-bold text-slate-900 text-base sm:text-lg">{profile.name}</h3>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <h3 suppressHydrationWarning className="font-bold text-slate-900 dark:text-white text-base sm:text-lg">{profile.name}</h3>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 </div>
-                <p suppressHydrationWarning className="text-xs font-medium text-slate-600">{profile.degree} &bull; {profile.year}</p>
-                <p suppressHydrationWarning className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                <p suppressHydrationWarning className="text-xs font-medium text-slate-600 dark:text-slate-300">{profile.degree} &bull; {profile.year}</p>
+                <p suppressHydrationWarning className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
                   <MapPin className="w-3.5 h-3.5 text-slate-400" /> {profile.location}
                 </p>
               </div>
@@ -183,61 +183,61 @@ export default function StudentDashboardPage() {
 
             <Link
               href="/student/profile"
-              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors shrink-0"
+              className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors shrink-0"
             >
               Complete Profile
             </Link>
           </div>
 
           {/* Quick Metrics Strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-4 p-3 rounded-xl bg-slate-50/80 border border-slate-100 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-4 p-3 rounded-xl bg-slate-50/80 dark:bg-slate-850/80 border border-slate-100 dark:border-slate-800 text-xs">
             <div className="space-y-0.5">
-              <span className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
-                <Briefcase className="w-3 h-3 text-brand-teal" />
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1">
+                <Briefcase className="w-3 h-3 text-brand-teal dark:text-teal-400" />
                 Career Goal
               </span>
-              <p className="font-bold text-slate-800 truncate" title={profile.careerGoal}>
+              <p className="font-bold text-slate-800 dark:text-slate-100 truncate" title={profile.careerGoal}>
                 {profile.careerGoal}
               </p>
             </div>
 
             <div className="space-y-0.5">
-              <span className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3 text-emerald-600" />
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                 Verified
               </span>
-              <p className="font-bold text-slate-800">
+              <p className="font-bold text-slate-800 dark:text-slate-100">
                 {verifiedSkillsCount} Badges
               </p>
             </div>
 
             <div className="space-y-0.5">
-              <span className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
-                <BookOpen className="w-3 h-3 text-blue-600" />
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1">
+                <BookOpen className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                 In Progress
               </span>
-              <p className="font-bold text-slate-800">
+              <p className="font-bold text-slate-800 dark:text-slate-100">
                 {inProgressSkillsCount} Skills
               </p>
             </div>
 
             <div className="space-y-0.5">
-              <span className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
-                <FolderKanban className="w-3 h-3 text-purple-600" />
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1">
+                <FolderKanban className="w-3 h-3 text-purple-600 dark:text-purple-400" />
                 Projects
               </span>
-              <p className="font-bold text-slate-800">
+              <p className="font-bold text-slate-800 dark:text-slate-100">
                 {projects.length} Built
               </p>
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-100">
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
             <div className="flex items-center justify-between text-xs mb-1.5">
-              <span className="font-semibold text-slate-700">Profile Completion</span>
-              <span className="font-bold text-brand-teal">{profile.profileCompletion}%</span>
+              <span className="font-semibold text-slate-700 dark:text-slate-300">Profile Completion</span>
+              <span className="font-bold text-brand-teal dark:text-teal-400">{profile.profileCompletion}%</span>
             </div>
-            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+            <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
               <div
                 className="bg-gradient-to-r from-brand-teal to-brand-emerald h-2.5 rounded-full transition-all duration-700"
                 style={{ width: `${profile.profileCompletion}%` }}
@@ -247,22 +247,22 @@ export default function StudentDashboardPage() {
         </div>
 
         {/* Next Best Action Card */}
-        <div className="lg:col-span-5 bg-gradient-to-br from-emerald-50 via-teal-50 to-white rounded-2xl border border-emerald-200/80 p-5 sm:p-6 xl:p-7 shadow-card flex flex-col justify-between">
+        <div className="lg:col-span-5 bg-gradient-to-br from-emerald-50 via-teal-50 to-white dark:from-slate-900 dark:via-teal-950/40 dark:to-slate-900 rounded-2xl border border-emerald-200/80 dark:border-emerald-800/60 p-5 sm:p-6 xl:p-7 shadow-card flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-3">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">
-                <Zap className="w-3 h-3 text-emerald-600" />
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 text-[11px] font-bold">
+                <Zap className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                 Your Next Best Step
               </span>
-              <span className="text-[11px] text-emerald-700 font-semibold">+25% Match Boost</span>
+              <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">+25% Match Boost</span>
             </div>
 
-            <h4 className="font-bold text-slate-900 text-sm sm:text-base">
+            <h4 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">
               {inProgressSkill
                 ? `Complete your ${inProgressSkill.name} Assessment`
                 : `Verify your ${targetSkill?.name || 'Core'} Skills`}
             </h4>
-            <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+            <p className="text-xs text-slate-600 dark:text-slate-300 mt-1.5 leading-relaxed">
               {inProgressSkill ? (
                 <>
                   <strong>Reason:</strong> You completed {inProgressSkill.progress}% of curriculum. Passing this assessment unlocks verified skill status and boosts your local internship match from <strong>62% to 87%</strong>.
@@ -275,8 +275,8 @@ export default function StudentDashboardPage() {
             </p>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-emerald-200/60 flex items-center justify-between">
-            <span className="text-xs text-slate-500 font-medium">10 Questions &bull; 15 mins</span>
+          <div className="mt-4 pt-3 border-t border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-between">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">10 Questions &bull; 15 mins</span>
             <Link
               href={targetSkill ? `/student/skills/${targetSkill.id}` : '/student/skills'}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-teal hover:bg-brand-dark text-white font-bold text-xs shadow-sm transition-all"
@@ -291,89 +291,89 @@ export default function StudentDashboardPage() {
       {/* 3. Career Progress Counters */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base sm:text-lg font-bold text-slate-900">Career Progress</h2>
-          <span className="text-xs text-slate-500">Live Student Metrics</span>
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">Career Progress</h2>
+          <span className="text-xs text-slate-500 dark:text-slate-400">Live Student Metrics</span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4 xl:gap-5">
           <Link
             href="/student/skills"
-            className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 xl:p-6 shadow-card hover:shadow-cardHover hover:border-emerald-300 transition-all text-left group"
+            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 xl:p-6 shadow-card hover:shadow-cardHover hover:border-emerald-300 dark:hover:border-emerald-700 transition-all text-left group"
           >
             <div className="flex items-center justify-between">
-              <span className="text-2xl sm:text-3xl xl:text-4xl font-extrabold text-emerald-600 group-hover:scale-105 transition-transform">
+              <span className="text-2xl sm:text-3xl xl:text-4xl font-extrabold text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform">
                 {verifiedSkillsCount}
               </span>
-              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                 <CheckCircle2 className="w-4 h-4" />
               </div>
             </div>
-            <p className="text-xs sm:text-sm font-semibold text-slate-800 mt-2">Skills Verified</p>
-            <p className="text-[11px] text-slate-500 mt-0.5">Badged on SkillSetu</p>
+            <p className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 mt-2">Skills Verified</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Badged on SkillSetu</p>
           </Link>
 
           <Link
             href="/student/learning"
-            className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 xl:p-6 shadow-card hover:shadow-cardHover hover:border-blue-300 transition-all text-left group"
+            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 xl:p-6 shadow-card hover:shadow-cardHover hover:border-blue-300 dark:hover:border-blue-700 transition-all text-left group"
           >
             <div className="flex items-center justify-between">
-              <span className="text-2xl sm:text-3xl xl:text-4xl font-extrabold text-blue-600 group-hover:scale-105 transition-transform">
+              <span className="text-2xl sm:text-3xl xl:text-4xl font-extrabold text-blue-600 dark:text-blue-400 group-hover:scale-105 transition-transform">
                 {inProgressSkillsCount}
               </span>
-              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
                 <BookOpen className="w-4 h-4" />
               </div>
             </div>
-            <p className="text-xs sm:text-sm font-semibold text-slate-800 mt-2">Skills Learning</p>
-            <p className="text-[11px] text-slate-500 mt-0.5">Active curriculum</p>
+            <p className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 mt-2">Skills Learning</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Active curriculum</p>
           </Link>
 
           <Link
             href="/student/profile"
-            className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 xl:p-6 shadow-card hover:shadow-cardHover hover:border-purple-300 transition-all text-left group"
+            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 xl:p-6 shadow-card hover:shadow-cardHover hover:border-purple-300 dark:hover:border-purple-700 transition-all text-left group"
           >
             <div className="flex items-center justify-between">
-              <span className="text-2xl sm:text-3xl xl:text-4xl font-extrabold text-purple-600 group-hover:scale-105 transition-transform">
+              <span className="text-2xl sm:text-3xl xl:text-4xl font-extrabold text-purple-600 dark:text-purple-400 group-hover:scale-105 transition-transform">
                 {projects.length}
               </span>
-              <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center">
                 <FolderKanban className="w-4 h-4" />
               </div>
             </div>
-            <p className="text-xs sm:text-sm font-semibold text-slate-800 mt-2">Projects</p>
-            <p className="text-[11px] text-slate-500 mt-0.5">Live GitHub demos</p>
+            <p className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 mt-2">Projects</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Live GitHub demos</p>
           </Link>
 
           <Link
             href="/student/applications"
-            className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 xl:p-6 shadow-card hover:shadow-cardHover hover:border-orange-300 transition-all text-left group"
+            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 xl:p-6 shadow-card hover:shadow-cardHover hover:border-orange-300 dark:hover:border-orange-700 transition-all text-left group"
           >
             <div className="flex items-center justify-between">
-              <span className="text-2xl sm:text-3xl xl:text-4xl font-extrabold text-orange-600 group-hover:scale-105 transition-transform">
+              <span className="text-2xl sm:text-3xl xl:text-4xl font-extrabold text-orange-600 dark:text-orange-400 group-hover:scale-105 transition-transform">
                 {applications.length}
               </span>
-              <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-orange-50 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center">
                 <FileCheck2 className="w-4 h-4" />
               </div>
             </div>
-            <p className="text-xs sm:text-sm font-semibold text-slate-800 mt-2">Applications</p>
-            <p className="text-[11px] text-slate-500 mt-0.5">Track pipeline status</p>
+            <p className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 mt-2">Applications</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Track pipeline status</p>
           </Link>
 
           <Link
             href="/student/opportunities"
-            className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 xl:p-6 shadow-card hover:shadow-cardHover hover:border-teal-300 transition-all text-left group col-span-2 sm:col-span-1"
+            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 xl:p-6 shadow-card hover:shadow-cardHover hover:border-teal-300 dark:hover:border-teal-700 transition-all text-left group col-span-2 sm:col-span-1"
           >
             <div className="flex items-center justify-between">
-              <span className="text-2xl sm:text-3xl xl:text-4xl font-extrabold text-brand-teal group-hover:scale-105 transition-transform">
+              <span className="text-2xl sm:text-3xl xl:text-4xl font-extrabold text-brand-teal dark:text-teal-400 group-hover:scale-105 transition-transform">
                 12
               </span>
-              <div className="w-8 h-8 rounded-xl bg-teal-50 text-brand-teal flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-brand-teal dark:text-teal-400 flex items-center justify-center">
                 <Compass className="w-4 h-4" />
               </div>
             </div>
-            <p className="text-xs sm:text-sm font-semibold text-slate-800 mt-2">Recommended</p>
-            <p className="text-[11px] text-slate-500 mt-0.5">Matching &gt; 60%</p>
+            <p className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 mt-2">Recommended</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Matching &gt; 60%</p>
           </Link>
         </div>
       </div>
@@ -381,10 +381,10 @@ export default function StudentDashboardPage() {
       {/* 4. Six Ways to Start Earning Experience */}
       <div className="space-y-4">
         <div>
-          <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tracking-tight">
             Six ways to start earning experience
           </h2>
-          <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-0.5">
             Not just 6-month internships &mdash; pick work that fits your timetable, from a task you finish tonight to a full-time placement.
           </p>
         </div>
@@ -401,7 +401,7 @@ export default function StudentDashboardPage() {
               >
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-white shadow-xs flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 shadow-xs flex items-center justify-center">
                       <Icon className={`w-5 h-5 ${item.iconColor}`} />
                     </div>
                     <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${item.badgeBg}`}>
@@ -409,13 +409,13 @@ export default function StudentDashboardPage() {
                     </span>
                   </div>
 
-                  <h3 className="font-bold text-base sm:text-lg text-slate-900">{item.title}</h3>
-                  <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
+                  <h3 className="font-bold text-base sm:text-lg text-slate-900 dark:text-white">{item.title}</h3>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
                     {item.description}
                   </p>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs font-semibold text-slate-700">
+                <div className="mt-4 pt-3 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-200">
                   <span>Browse live openings</span>
                   <ChevronRight className="w-4 h-4" />
                 </div>
@@ -426,48 +426,48 @@ export default function StudentDashboardPage() {
       </div>
 
       {/* 5. Startup-First Recommendations (Key Differentiator for 3rd Year) */}
-      <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 xl:p-10 shadow-card space-y-6">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 xl:p-10 shadow-card space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-orange/10 text-brand-orange text-xs font-bold mb-1.5">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-orange/10 dark:bg-brand-orange/20 text-brand-orange text-xs font-bold mb-1.5">
               <Rocket className="w-3.5 h-3.5" />
               Recommended for your career stage (3rd Year)
             </div>
-            <h3 className="text-lg sm:text-xl font-bold text-slate-900">
+            <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
               Start small. Build real industry experience before targeting larger companies.
             </h3>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Early career momentum starts with rapid micro-sprints and agile tasks.
             </p>
           </div>
 
           <Link
             href="/student/opportunities"
-            className="text-xs font-bold text-brand-teal hover:underline flex items-center gap-1 shrink-0"
+            className="text-xs font-bold text-brand-teal dark:text-teal-400 hover:underline flex items-center gap-1 shrink-0"
           >
             View all 25+ openings <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
         {/* Career Journey Flow Visualization */}
-        <div className="bg-slate-50 rounded-2xl p-4 sm:p-5 xl:p-6 border border-slate-200">
-          <p className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 text-center sm:text-left">
+        <div className="bg-slate-50 dark:bg-slate-850 rounded-2xl p-4 sm:p-5 xl:p-6 border border-slate-200 dark:border-slate-800">
+          <p className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3 text-center sm:text-left">
             SkillSetu Career Readiness Journey
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 text-xs sm:text-sm font-semibold text-slate-700">
-            <div className="px-3 py-2 bg-white border border-slate-200 rounded-xl shadow-2xs text-brand-teal text-center flex items-center justify-center">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200">
+            <div className="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xs text-brand-teal dark:text-teal-400 text-center flex items-center justify-center">
               1. Learn Skill
             </div>
-            <div className="px-3 py-2 bg-white border border-slate-200 rounded-xl shadow-2xs text-emerald-700 text-center flex items-center justify-center">
+            <div className="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xs text-emerald-700 dark:text-emerald-400 text-center flex items-center justify-center">
               2. Verify Skill ✓
             </div>
-            <div className="px-3 py-2 bg-white border border-slate-200 rounded-xl shadow-2xs text-blue-700 text-center flex items-center justify-center">
+            <div className="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xs text-blue-700 dark:text-blue-400 text-center flex items-center justify-center">
               3. Micro Experience
             </div>
-            <div className="px-3 py-2 bg-white border border-slate-200 rounded-xl shadow-2xs text-orange-700 text-center flex items-center justify-center">
+            <div className="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xs text-orange-700 dark:text-orange-400 text-center flex items-center justify-center">
               4. Startup Internship
             </div>
-            <div className="px-3 py-2 bg-white border border-slate-200 rounded-xl shadow-2xs text-purple-700 text-center flex items-center justify-center">
+            <div className="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xs text-purple-700 dark:text-purple-400 text-center flex items-center justify-center">
               5. Industry Internship
             </div>
             <div className="px-3 py-2 bg-emerald-600 text-white rounded-xl shadow-sm font-bold text-center flex items-center justify-center">
@@ -481,36 +481,36 @@ export default function StudentDashboardPage() {
           {startupRecommendedOpps.map((opp) => (
             <div
               key={opp.id}
-              className="p-5 xl:p-6 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between"
+              className="p-5 xl:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/60 hover:bg-white dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md transition-all flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center justify-between text-xs mb-2">
-                  <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-semibold text-[11px]">
+                  <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 font-semibold text-[11px]">
                     {opp.type}
                   </span>
-                  <span className="font-bold text-emerald-700">{opp.matchScore}% Match</span>
+                  <span className="font-bold text-emerald-700 dark:text-emerald-400">{opp.matchScore}% Match</span>
                 </div>
-                <h4 className="font-bold text-sm sm:text-base text-slate-900 line-clamp-1">{opp.title}</h4>
-                <p className="text-xs sm:text-sm text-slate-600 font-medium mt-0.5">{opp.company}</p>
-                <div className="mt-2 text-xs text-slate-500 space-y-1">
+                <h4 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white line-clamp-1">{opp.title}</h4>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium mt-0.5">{opp.company}</p>
+                <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 space-y-1">
                   <p className="flex items-center gap-1 truncate">
                     <MapPin className="w-3 h-3 text-slate-400" /> {opp.distanceKm} km away &bull; {opp.location}
                   </p>
-                  <p className="font-semibold text-slate-800">{opp.stipend}</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200">{opp.stipend}</p>
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between">
+              <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <div className="flex flex-wrap gap-1">
                   {opp.requiredSkills.slice(0, 2).map((sk) => (
-                    <span key={sk} className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">
+                    <span key={sk} className="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded">
                       {sk}
                     </span>
                   ))}
                 </div>
                 <Link
                   href="/student/opportunities"
-                  className="text-xs font-bold text-brand-teal hover:underline flex items-center gap-0.5"
+                  className="text-xs font-bold text-brand-teal dark:text-teal-400 hover:underline flex items-center gap-0.5"
                 >
                   View <ChevronRight className="w-3.5 h-3.5" />
                 </Link>

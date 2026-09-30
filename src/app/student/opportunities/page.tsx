@@ -136,20 +136,20 @@ export default function OpportunitiesExplorePage() {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-teal/10 text-brand-teal text-xs font-semibold mb-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-teal/10 dark:bg-brand-teal/20 text-brand-teal dark:text-teal-300 text-xs font-semibold mb-2">
             <Compass className="w-3.5 h-3.5" />
             Location-Aware Career Discovery
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             Opportunities Near You
           </h1>
-          <p className="text-xs sm:text-sm text-slate-600 mt-1">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
             Discover internships, micro-sprints, and tasks from nearby companies matching your skills.
           </p>
         </div>
 
         {/* Location Controls & Geolocation */}
-        <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-card flex flex-wrap items-center gap-2">
+        <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-card flex flex-wrap items-center gap-2">
           {/* Use My Location Button */}
           <button
             type="button"
@@ -171,10 +171,10 @@ export default function OpportunitiesExplorePage() {
             <select
               value={selectedCity.name}
               onChange={(e) => setSelectedCityByName(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-teal"
+              className="bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 text-slate-800 dark:text-slate-200 rounded-xl px-2.5 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-teal"
             >
               {cities.map((c) => (
-                <option key={c.name} value={c.name}>
+                <option key={c.name} value={c.name} className="dark:bg-slate-900 dark:text-slate-100">
                   {c.name}
                 </option>
               ))}
@@ -184,18 +184,18 @@ export default function OpportunitiesExplorePage() {
       </div>
 
       {/* Location Status Message banner */}
-      <div className="text-xs text-slate-600 bg-slate-100/80 px-4 py-2 rounded-xl border border-slate-200/60 flex items-center justify-between">
+      <div className="text-xs text-slate-600 dark:text-slate-300 bg-slate-100/80 dark:bg-slate-850/80 px-4 py-2 rounded-xl border border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           <span>{locationStatusMessage}</span>
         </div>
-        <span className="text-[11px] font-bold text-brand-teal">
+        <span className="text-[11px] font-bold text-brand-teal dark:text-teal-400">
           {filteredOpportunities.length} opportunities within {searchRadius} km
         </span>
       </div>
 
       {/* Radius Controls & Search Toolbar */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-card space-y-4">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-card space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           {/* Search input */}
           <div className="relative flex-1">
@@ -205,13 +205,13 @@ export default function OpportunitiesExplorePage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by role, company, or required skill (e.g. Python, SQL)..."
-              className="w-full pl-9 pr-4 py-2 text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-teal/50"
+              className="w-full pl-9 pr-4 py-2 text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-teal/50"
             />
           </div>
 
           {/* Radius Selector Chips */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-semibold text-slate-600 flex items-center gap-1">
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1">
               <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
               Radius:
             </span>
@@ -223,8 +223,8 @@ export default function OpportunitiesExplorePage() {
                   onClick={() => setSearchRadius(r)}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
                     searchRadius === r
-                      ? 'bg-brand-dark text-white shadow-xs'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      ? 'bg-brand-dark dark:bg-teal-600 text-white shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                   }`}
                 >
                   {r} km
@@ -244,7 +244,7 @@ export default function OpportunitiesExplorePage() {
               className={`px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all ${
                 selectedOpportunityType === cat
                   ? 'bg-brand-teal text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
               {cat}
@@ -253,34 +253,34 @@ export default function OpportunitiesExplorePage() {
         </div>
 
         {/* Secondary Filters: Work Mode, Skill & Clear Filters */}
-        <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex flex-wrap items-center gap-3">
             {/* Work Mode */}
             <div className="flex items-center gap-1.5">
-              <span className="text-slate-500 font-medium">Work Mode:</span>
+              <span className="text-slate-500 dark:text-slate-400 font-medium">Work Mode:</span>
               <select
                 value={workModeFilter}
                 onChange={(e) => setWorkModeFilter(e.target.value as any)}
-                className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-700 font-medium"
+                className="bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-lg px-2 py-1 text-xs text-slate-700 dark:text-slate-200 font-medium"
               >
-                <option value="All">All Modes</option>
-                <option value="Remote">Remote</option>
-                <option value="Hybrid">Hybrid</option>
-                <option value="On-site">On-site</option>
+                <option value="All" className="dark:bg-slate-900">All Modes</option>
+                <option value="Remote" className="dark:bg-slate-900">Remote</option>
+                <option value="Hybrid" className="dark:bg-slate-900">Hybrid</option>
+                <option value="On-site" className="dark:bg-slate-900">On-site</option>
               </select>
             </div>
 
             {/* Required Skill */}
             <div className="flex items-center gap-1.5">
-              <span className="text-slate-500 font-medium">Skill:</span>
+              <span className="text-slate-500 dark:text-slate-400 font-medium">Skill:</span>
               <select
                 value={selectedSkillFilter}
                 onChange={(e) => setSelectedSkillFilter(e.target.value)}
-                className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-700 font-medium"
+                className="bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-lg px-2 py-1 text-xs text-slate-700 dark:text-slate-200 font-medium"
               >
-                <option value="All">All Skills</option>
+                <option value="All" className="dark:bg-slate-900">All Skills</option>
                 {availableSkills.map((s) => (
-                  <option key={s} value={s}>
+                  <option key={s} value={s} className="dark:bg-slate-900">
                     {s}
                   </option>
                 ))}
@@ -291,7 +291,7 @@ export default function OpportunitiesExplorePage() {
           <button
             type="button"
             onClick={handleClearFilters}
-            className="text-slate-500 hover:text-slate-800 font-semibold flex items-center gap-1 hover:underline"
+            className="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-semibold flex items-center gap-1 hover:underline"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Clear Filters
@@ -302,15 +302,15 @@ export default function OpportunitiesExplorePage() {
       {/* Main Split Layout: Left Map & Right Opportunity Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Interactive Map */}
-        <div className="lg:col-span-6 bg-white p-3 sm:p-4 rounded-3xl border border-slate-200 shadow-card lg:sticky lg:top-24">
+        <div className="lg:col-span-6 bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-card lg:sticky lg:top-24">
           <div className="flex items-center justify-between mb-3 px-1">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-sm text-slate-900">Interactive Opportunity Map</span>
-              <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
+              <span className="font-bold text-sm text-slate-900 dark:text-white">Interactive Opportunity Map</span>
+              <span className="text-xs bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded-full font-bold">
                 {filteredOpportunities.length} Pins
               </span>
             </div>
-            <span className="text-[11px] text-slate-400">OpenStreetMap &bull; Leaflet</span>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500">OpenStreetMap &bull; Leaflet</span>
           </div>
 
           {/* Leaflet Map */}
@@ -328,19 +328,19 @@ export default function OpportunitiesExplorePage() {
         {/* Right Column: Opportunities List Cards */}
         <div className="lg:col-span-6 space-y-4">
           <div className="flex items-center justify-between px-1">
-            <h3 className="font-bold text-slate-900 text-sm">
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm">
               Nearby Opportunities List ({filteredOpportunities.length})
             </h3>
-            <span className="text-xs text-slate-500">Sorted by proximity &amp; skill match</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">Sorted by proximity &amp; skill match</span>
           </div>
 
           {filteredOpportunities.length === 0 ? (
-            <div className="bg-white rounded-3xl border border-slate-200 p-10 text-center space-y-3 shadow-card">
-              <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-10 text-center space-y-3 shadow-card">
+              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center mx-auto">
                 <Filter className="w-6 h-6" />
               </div>
-              <h4 className="font-bold text-slate-900 text-base">No opportunities found</h4>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              <h4 className="font-bold text-slate-900 dark:text-white text-base">No opportunities found</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
                 No opportunities match your current filters within {searchRadius} km. Try expanding your radius or clearing selected filters.
               </p>
               <button

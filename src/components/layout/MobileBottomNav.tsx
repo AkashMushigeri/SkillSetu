@@ -26,7 +26,7 @@ export const MobileBottomNav: React.FC = () => {
   };
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 py-1.5 px-3 shadow-lg no-print">
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 py-1.5 px-3 shadow-lg no-print transition-colors duration-200">
       <div className="flex items-center justify-around">
         {navItems.map((item) => {
           const active = isActive(item.href);
@@ -36,7 +36,7 @@ export const MobileBottomNav: React.FC = () => {
               key={item.name}
               href={item.href}
               className={`flex flex-col items-center py-1 px-3 rounded-xl relative transition-all ${
-                active ? 'text-brand-teal font-semibold' : 'text-slate-500 hover:text-slate-900'
+                active ? 'text-brand-teal dark:text-teal-400 font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <div className="relative">

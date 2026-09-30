@@ -113,7 +113,7 @@ export default function SkillsHubPage() {
       {/* 2. Three Skill Tier Tabs */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2 p-1.5 bg-slate-200/80 rounded-2xl w-fit">
+          <div className="flex items-center gap-2 p-1.5 bg-slate-200/80 dark:bg-slate-800 rounded-2xl w-fit">
             {(['Basic', 'Intermediate', 'Advanced'] as SkillTier[]).map((tier) => (
               <button
                 key={tier}
@@ -121,8 +121,8 @@ export default function SkillsHubPage() {
                 onClick={() => setActiveTier(tier)}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                   activeTier === tier
-                    ? 'bg-white text-brand-dark shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-white dark:bg-slate-900 text-brand-dark dark:text-white shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 {tier.toUpperCase()} SKILLS
@@ -130,7 +130,7 @@ export default function SkillsHubPage() {
             ))}
           </div>
 
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             {activeTier === 'Basic' && 'Foundational programming & essential workplace competencies'}
             {activeTier === 'Intermediate' && 'Industry-standard frameworks, libraries, and analytical tools'}
             {activeTier === 'Advanced' && 'Specialized enterprise skills (SAP, Cloud, ML, DevOps) for final years & high-paying placements'}
@@ -143,47 +143,47 @@ export default function SkillsHubPage() {
             <Link
               key={skill.id}
               href={`/student/skills/${skill.id}`}
-              className="bg-white rounded-2xl border border-slate-200 p-5 shadow-card hover:shadow-cardHover hover:border-brand-teal/40 transition-all flex flex-col justify-between group"
+              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-card hover:shadow-cardHover hover:border-brand-teal/40 dark:hover:border-teal-500/40 transition-all flex flex-col justify-between group"
             >
               <div>
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2.5">
                     <span className="text-2xl">{skill.icon}</span>
                     <div>
-                      <h3 className="font-bold text-base text-slate-900 group-hover:text-brand-teal transition-colors">
+                      <h3 className="font-bold text-base text-slate-900 dark:text-white group-hover:text-brand-teal dark:group-hover:text-teal-400 transition-colors">
                         {skill.name}
                       </h3>
-                      <span className="text-[11px] text-slate-500">{skill.category}</span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">{skill.category}</span>
                     </div>
                   </div>
 
                   {skill.isVerified ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-extrabold border border-emerald-300 shadow-2xs">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[11px] font-extrabold border border-emerald-300 dark:border-emerald-800 shadow-2xs">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                       ✓ Verified
                     </span>
                   ) : skill.assessmentStatus === 'ready' ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 text-[11px] font-bold">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 text-[11px] font-bold">
                       Assess Ready
                     </span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-medium">
+                    <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-medium">
                       {skill.level}
                     </span>
                   )}
                 </div>
 
-                <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
+                <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed">
                   {skill.description}
                 </p>
 
                 {/* Progress Bar */}
                 <div className="mt-4">
                   <div className="flex items-center justify-between text-[11px] mb-1">
-                    <span className="text-slate-500 font-medium">Learning Progress</span>
-                    <span className="font-bold text-slate-800">{skill.progress}%</span>
+                    <span className="text-slate-500 dark:text-slate-400 font-medium">Learning Progress</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{skill.progress}%</span>
                   </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                  <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
                     <div
                       className={`h-2 rounded-full transition-all duration-500 ${
                         skill.isVerified
@@ -198,13 +198,13 @@ export default function SkillsHubPage() {
                 </div>
 
                 {/* Roles Unlocked preview */}
-                <div className="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-500 flex items-center justify-between">
+                <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
                   <span className="truncate">Unlocks: {skill.careerRoles.slice(0, 2).join(', ')}</span>
-                  <span className="text-slate-400 font-medium shrink-0 ml-1">{skill.relatedOpportunityCount} jobs</span>
+                  <span className="text-slate-400 dark:text-slate-500 font-medium shrink-0 ml-1">{skill.relatedOpportunityCount} jobs</span>
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-brand-teal group-hover:translate-x-0.5 transition-transform">
+              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-brand-teal dark:text-teal-400 group-hover:translate-x-0.5 transition-transform">
                 <span>View Syllabus &amp; Assessment</span>
                 <ChevronRight className="w-4 h-4" />
               </div>
@@ -214,16 +214,16 @@ export default function SkillsHubPage() {
       </div>
 
       {/* 3. Skill -> Career Role Mapping Section */}
-      <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-card space-y-6">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-card space-y-6">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold mb-2">
-            <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-xs font-bold mb-2">
+            <TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             Skill &rarr; Career Role Mapping
           </div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
             Your skills unlock these opportunities
           </h2>
-          <p className="text-xs text-slate-600 mt-1">
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
             SkillSetu maps verified competencies directly to high-demand industry roles and salary brackets.
           </p>
         </div>
@@ -234,39 +234,39 @@ export default function SkillsHubPage() {
               key={item.skill}
               className={`p-4 rounded-2xl border transition-all ${
                 item.verified
-                  ? 'border-emerald-300 bg-emerald-50/40'
-                  : 'border-slate-200 bg-slate-50/50'
+                  ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-950/20'
+                  : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/50'
               }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">{item.icon}</span>
-                  <h3 className="font-bold text-sm text-slate-900">{item.skill}</h3>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white">{item.skill}</h3>
                 </div>
                 {item.verified ? (
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold">
                     ✓ Verified
                   </span>
                 ) : (
-                  <span className="text-[10px] text-slate-400 font-medium">In Progress</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">In Progress</span>
                 )}
               </div>
 
-              <p className="text-[11px] text-slate-500 font-semibold mb-1.5">Eligible Career Roles:</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold mb-1.5">Eligible Career Roles:</p>
               <div className="flex flex-wrap gap-1 mb-3">
                 {item.roles.map((r) => (
                   <span
                     key={r}
-                    className="text-[10px] px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 font-medium"
+                    className="text-[10px] px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium"
                   >
                     {r}
                   </span>
                 ))}
               </div>
 
-              <div className="pt-2 border-t border-slate-200/60 text-[11px]">
-                <span className="text-slate-400 block">Matched Opportunity:</span>
-                <strong className="text-slate-800 font-semibold truncate block mt-0.5">
+              <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800 text-[11px]">
+                <span className="text-slate-400 dark:text-slate-500 block">Matched Opportunity:</span>
+                <strong className="text-slate-800 dark:text-slate-200 font-semibold truncate block mt-0.5">
                   {item.highlightRole}
                 </strong>
               </div>

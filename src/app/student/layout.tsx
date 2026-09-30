@@ -10,7 +10,7 @@ export default function StudentLayout({
 }) {
   return (
     <StudentProvider>
-      <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans">
+      <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#0B131E] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200">
         <StudentHeader />
         <main className="flex-1 pb-20 lg:pb-10">
           {children}

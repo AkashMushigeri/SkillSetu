@@ -28,14 +28,14 @@ export default function StudentLearningPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-teal/10 text-brand-teal text-xs font-semibold mb-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-teal/10 dark:bg-brand-teal/20 text-brand-teal dark:text-teal-300 text-xs font-semibold mb-2">
             <BookOpen className="w-3.5 h-3.5" />
             Personal Learning Hub
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             My Learning Dashboard
           </h1>
-          <p className="text-xs sm:text-sm text-slate-600 mt-1">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
             Track active curriculum progress, pending assessments, and unlocked credentials.
           </p>
         </div>
@@ -75,42 +75,42 @@ export default function StudentLearningPage() {
 
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-card">
-          <span className="text-xs text-slate-500 font-semibold">Active Learning</span>
-          <p className="text-2xl font-extrabold text-blue-600 mt-1">{inProgressSkills.length}</p>
-          <span className="text-[11px] text-slate-400 mt-0.5 block">Modules in progress</span>
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-card">
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Active Learning</span>
+          <p className="text-2xl font-extrabold text-blue-600 dark:text-blue-400 mt-1">{inProgressSkills.length}</p>
+          <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 block">Modules in progress</span>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-card">
-          <span className="text-xs text-slate-500 font-semibold">Verified Badges</span>
-          <p className="text-2xl font-extrabold text-emerald-600 mt-1">{verifiedSkills.length}</p>
-          <span className="text-[11px] text-slate-400 mt-0.5 block">SkillSetu verified</span>
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-card">
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Verified Badges</span>
+          <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">{verifiedSkills.length}</p>
+          <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 block">SkillSetu verified</span>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-card">
-          <span className="text-xs text-slate-500 font-semibold">Ready for Assessment</span>
-          <p className="text-2xl font-extrabold text-amber-600 mt-1">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-card">
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Ready for Assessment</span>
+          <p className="text-2xl font-extrabold text-amber-600 dark:text-amber-400 mt-1">
             {skills.filter((s) => s.assessmentStatus === 'ready' && !s.isVerified).length}
           </p>
-          <span className="text-[11px] text-slate-400 mt-0.5 block">&ge; 80% curriculum</span>
+          <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 block">&ge; 80% curriculum</span>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-card">
-          <span className="text-xs text-slate-500 font-semibold">Unlocked Roles</span>
-          <p className="text-2xl font-extrabold text-purple-600 mt-1">16</p>
-          <span className="text-[11px] text-slate-400 mt-0.5 block">Industry placements</span>
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-card">
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Unlocked Roles</span>
+          <p className="text-2xl font-extrabold text-purple-600 dark:text-purple-400 mt-1">16</p>
+          <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 block">Industry placements</span>
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-2 p-1.5 bg-slate-200/80 rounded-2xl w-fit">
+      <div className="flex items-center gap-2 p-1.5 bg-slate-200/80 dark:bg-slate-800 rounded-2xl w-fit">
         <button
           type="button"
           onClick={() => setActiveTab('in_progress')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
             activeTab === 'in_progress'
-              ? 'bg-white text-slate-900 shadow-sm'
-              : 'text-slate-600 hover:text-slate-900'
+              ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
           In Progress ({inProgressSkills.length})
@@ -120,8 +120,8 @@ export default function StudentLearningPage() {
           onClick={() => setActiveTab('verified')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
             activeTab === 'verified'
-              ? 'bg-white text-slate-900 shadow-sm'
-              : 'text-slate-600 hover:text-slate-900'
+              ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
           Verified ({verifiedSkills.length})
@@ -131,8 +131,8 @@ export default function StudentLearningPage() {
           onClick={() => setActiveTab('all')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
             activeTab === 'all'
-              ? 'bg-white text-slate-900 shadow-sm'
-              : 'text-slate-600 hover:text-slate-900'
+              ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
           All Skills ({skills.length})
@@ -149,39 +149,39 @@ export default function StudentLearningPage() {
         ).map((skill) => (
           <div
             key={skill.id}
-            className="bg-white rounded-2xl border border-slate-200 p-5 shadow-card hover:shadow-cardHover transition-all flex flex-col justify-between"
+            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-card hover:shadow-cardHover transition-all flex flex-col justify-between"
           >
             <div>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2.5">
                   <span className="text-2xl">{skill.icon}</span>
                   <div>
-                    <h3 className="font-bold text-sm text-slate-900">{skill.name}</h3>
-                    <span className="text-[10px] text-slate-500">{skill.level} &bull; {skill.category}</span>
+                    <h3 className="font-bold text-sm text-slate-900 dark:text-white">{skill.name}</h3>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400">{skill.level} &bull; {skill.category}</span>
                   </div>
                 </div>
 
                 {skill.isVerified ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold border border-emerald-300">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[11px] font-bold border border-emerald-300 dark:border-emerald-800">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     ✓ Verified
                   </span>
                 ) : skill.assessmentStatus === 'ready' ? (
-                  <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold">
+                  <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 text-[10px] font-bold">
                     Test Ready
                   </span>
                 ) : (
-                  <span className="text-[11px] text-slate-400 font-medium">In Progress</span>
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">In Progress</span>
                 )}
               </div>
 
               {/* Progress Bar */}
               <div className="space-y-1 mt-4">
                 <div className="flex justify-between text-xs">
-                  <span className="text-slate-500 font-medium">Completed</span>
-                  <span className="font-bold text-slate-800">{skill.progress}%</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">Completed</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">{skill.progress}%</span>
                 </div>
-                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
                   <div
                     className={`h-2 rounded-full transition-all duration-500 ${
                       skill.isVerified
@@ -196,13 +196,13 @@ export default function StudentLearningPage() {
               </div>
             </div>
 
-            <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-[11px] text-slate-400">
+            <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <span className="text-[11px] text-slate-400 dark:text-slate-500">
                 {skill.resources.length} curriculum items
               </span>
               <Link
                 href={`/student/skills/${skill.id}`}
-                className="text-xs font-bold text-brand-teal hover:underline flex items-center gap-1"
+                className="text-xs font-bold text-brand-teal dark:text-teal-400 hover:underline flex items-center gap-1"
               >
                 Continue <ArrowRight className="w-3.5 h-3.5" />
               </Link>
