@@ -74,23 +74,25 @@ export const StudentHeader: React.FC = () => {
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 transition-all">
       {/* Top Banner Tagline */}
-      <div className="bg-brand-dark text-slate-300 text-xs py-1 px-4 text-center font-medium hidden sm:flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span>AYUSH CAREER BRIDGE &bull; Portal for Academia&ndash;Industry Collaboration</span>
-        </div>
-        <div className="flex items-center gap-4 text-[11px] text-slate-400">
-          <span>&ldquo;Learn. Connect. Grow Together.&rdquo;</span>
-          <span className="text-emerald-400 font-semibold">
-            {profile.name === 'Aarav Sharma' ? 'Demo Role: Student' : 'Role: Student'}
-          </span>
+      <div className="bg-brand-dark text-slate-300 text-xs py-1 px-4 sm:px-6 lg:px-8 xl:px-10 text-center font-medium hidden sm:flex items-center justify-between">
+        <div className="w-full max-w-[1820px] mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>AYUSH CAREER BRIDGE &bull; Portal for Academia&ndash;Industry Collaboration</span>
+          </div>
+          <div className="flex items-center gap-4 text-[11px] text-slate-400">
+            <span>&ldquo;Learn. Connect. Grow Together.&rdquo;</span>
+            <span className="text-emerald-400 font-semibold">
+              Role: Student
+            </span>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+      <div className="w-full max-w-[1820px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
+        <div className="flex items-center justify-between h-16 gap-3 lg:gap-4">
           {/* Logo & Subtitle */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <Link href="/student" className="flex items-center gap-2.5 group">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-teal to-brand-emerald flex items-center justify-center text-white shadow-md shadow-brand-teal/20 group-hover:scale-105 transition-transform">
                 <Sparkles className="w-5 h-5" />
@@ -107,7 +109,7 @@ export const StudentHeader: React.FC = () => {
           </div>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center space-x-1">
+          <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1.5 2xl:gap-2">
             {navLinks.map((link) => {
               const active = isActive(link.href);
               const Icon = link.icon;
@@ -115,21 +117,21 @@ export const StudentHeader: React.FC = () => {
                 <Link
                   key={link.name}
                   href={link.href}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`flex items-center gap-1.5 px-2.5 xl:px-3 py-2 rounded-xl text-xs xl:text-sm font-medium transition-all ${
                     active
                       ? 'bg-brand-teal/10 text-brand-teal font-semibold shadow-xs'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
                   <Icon className={`w-4 h-4 ${active ? 'text-brand-teal' : 'text-slate-500'}`} />
-                  {link.name}
+                  <span>{link.name}</span>
                 </Link>
               );
             })}
           </nav>
 
           {/* Right Action Area */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
             {/* Notification Bell Dropdown */}
             <div className="relative" ref={notifRef}>
               <button

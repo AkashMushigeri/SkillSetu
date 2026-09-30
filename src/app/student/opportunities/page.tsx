@@ -132,7 +132,7 @@ export default function OpportunitiesExplorePage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+    <div className="w-full max-w-[1820px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 space-y-6">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -314,7 +314,7 @@ export default function OpportunitiesExplorePage() {
           </div>
 
           {/* Leaflet Map */}
-          <div className="h-[420px] sm:h-[500px] w-full rounded-2xl overflow-hidden">
+          <div className="h-[420px] sm:h-[500px] xl:h-[600px] w-full rounded-2xl overflow-hidden">
             <OpportunityMap
               userCoords={userCoords}
               isUsingGeolocation={isUsingGeolocation}

@@ -187,7 +187,7 @@ export const HeroMapAnimation: React.FC = () => {
 
         {/* Floating Mini Radar HUD Card on Right Side */}
         <div
-          className="absolute hidden xl:flex flex-col gap-2 p-3 rounded-2xl bg-slate-900/75 backdrop-blur-lg border border-white/20 shadow-2xl text-xs text-white"
+          className="absolute hidden xl:flex flex-col gap-2 p-3.5 rounded-2xl bg-slate-900/80 backdrop-blur-lg border border-white/20 shadow-2xl text-xs text-white pointer-events-auto"
           style={{ right: '2.5rem', bottom: '2rem' }}
         >
           <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-1.5">

@@ -71,7 +71,7 @@ export default function SkillsHubPage() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
+    <div className="w-full max-w-[1820px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 space-y-8">
       {/* 1. Header Banner */}
       <div className="bg-gradient-to-r from-brand-dark via-brand-teal to-teal-900 rounded-3xl p-6 sm:p-10 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-3 max-w-2xl">
@@ -97,7 +97,7 @@ export default function SkillsHubPage() {
 
         <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 shrink-0 text-center sm:text-right">
           <span className="text-[11px] text-slate-300 uppercase tracking-wider block font-semibold">
-            Primary Demo Flow
+            Recommended Assessment
           </span>
           <p className="text-sm font-bold text-white mt-1">Python Basic Assessment</p>
           <Link
@@ -138,7 +138,7 @@ export default function SkillsHubPage() {
         </div>
 
         {/* Skill Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 xl:gap-5">
           {filteredSkills.map((skill) => (
             <Link
               key={skill.id}
