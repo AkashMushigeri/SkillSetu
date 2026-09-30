@@ -525,9 +525,9 @@ export default function StudentProfilePage() {
             <div className="space-y-2.5 text-xs">
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
                 <span className="font-bold text-slate-800 block">
-                  Smart India Hackathon Finalist 2026
+                  National Skill Intelligence Challenge Finalist
                 </span>
-                <span className="text-[11px] text-slate-500">Team GAT054 &bull; Ministry of Ayush</span>
+                <span className="text-[11px] text-slate-500">Ministry of Ayush &bull; Top National Merit</span>
               </div>
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
                 <span className="font-bold text-slate-800 block">

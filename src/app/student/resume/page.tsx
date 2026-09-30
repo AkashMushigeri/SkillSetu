@@ -233,7 +233,7 @@ export default function ResumePage() {
             Honors &amp; Extracurriculars
           </h2>
           <ul className="list-disc pl-4 space-y-1 text-xs text-slate-600">
-            <li>Smart India Hackathon Finalist (SIH 2026) &mdash; Team GAT054</li>
+            <li>National Skill Intelligence Challenge Finalist &mdash; AI &amp; Health Track</li>
             <li>Awarded SkillSetu Verified Developer Badge in Web and Python tracks</li>
             <li>Member of RVCE Open Source Software Development Club</li>
           </ul>

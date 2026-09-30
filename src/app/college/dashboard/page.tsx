@@ -53,7 +53,7 @@ export default function CollegeDashboardPage() {
         <div className="space-y-2 relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-emerald-300 text-xs font-semibold backdrop-blur-md">
             <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
-            <span>SIH Academia–Industry Skill Bridge</span>
+            <span>Academia–Industry Skill Bridge</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
             Good morning, {profile.placementOfficer.name}

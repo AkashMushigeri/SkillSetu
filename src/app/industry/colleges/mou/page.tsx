@@ -87,8 +87,8 @@ export default function CollegeMoUStudioPage() {
               <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                 Academia–Industry Bilateral MoUs &amp; Curriculum Studio
               </h1>
-              <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-purple-50 text-purple-800 border border-purple-200 font-mono">
-                SIH Core
+              <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-purple-50 text-purple-800 border border-purple-200">
+                Official Network
               </span>
             </div>
             <p className="text-xs text-slate-600 mt-1 max-w-3xl leading-relaxed">

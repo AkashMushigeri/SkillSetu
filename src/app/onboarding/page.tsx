@@ -1749,7 +1749,7 @@ export default function OnboardingPage() {
       {/* Footer */}
       <footer className="max-w-4xl mx-auto w-full py-2 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-slate-800/60 pt-4">
         <span>&copy; 2026 SkillSetu &bull; AYUSH Career Bridge</span>
-        <span>Secure Firebase Database Storage &bull; Team ID: GAT054</span>
+        <span>Secure Cloud Database &bull; All rights reserved</span>
       </footer>
     </div>
   );
