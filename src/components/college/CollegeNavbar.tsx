@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCollege } from '@/context/CollegeContext';
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import {
   Search,
   Bell,
@@ -94,6 +95,9 @@ export const CollegeNavbar: React.FC<NavbarProps> = ({ onOpenSearch, onOpenMobil
           >
             <HelpCircle className="w-4 h-4" />
           </button>
+
+          {/* Theme Toggle Button */}
+          <ThemeToggle />
 
           {/* Notifications Dropdown */}
           <div className="relative">

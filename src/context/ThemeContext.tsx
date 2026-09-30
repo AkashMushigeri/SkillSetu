@@ -31,9 +31,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const root = document.documentElement;
       if (newTheme === 'dark') {
         root.classList.add('dark');
+        document.body?.classList.add('dark');
         root.setAttribute('data-theme', 'dark');
       } else {
         root.classList.remove('dark');
+        document.body?.classList.remove('dark');
         root.setAttribute('data-theme', 'light');
       }
     }
@@ -47,8 +49,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (stored === 'dark' || stored === 'light') {
         applyTheme(stored);
       } else {
-        // Default to light mode per requirements
-        applyTheme('light');
+        const hasDarkClass = document.documentElement.classList.contains('dark');
+        applyTheme(hasDarkClass ? 'dark' : 'light');
       }
     } catch (e) {
       applyTheme('light');
@@ -56,8 +58,33 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [applyTheme]);
 
   const toggleTheme = useCallback(() => {
-    applyTheme(theme === 'dark' ? 'light' : 'dark');
-  }, [theme, applyTheme]);
+    setThemeState((currentTheme) => {
+      const isCurrentlyDark =
+        typeof document !== 'undefined'
+          ? document.documentElement.classList.contains('dark') || currentTheme === 'dark'
+          : currentTheme === 'dark';
+      const nextTheme: Theme = isCurrentlyDark ? 'light' : 'dark';
+
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+        } catch (e) {}
+
+        const root = document.documentElement;
+        if (nextTheme === 'dark') {
+          root.classList.add('dark');
+          document.body?.classList.add('dark');
+          root.setAttribute('data-theme', 'dark');
+        } else {
+          root.classList.remove('dark');
+          document.body?.classList.remove('dark');
+          root.setAttribute('data-theme', 'light');
+        }
+      }
+
+      return nextTheme;
+    });
+  }, []);
 
   const setTheme = useCallback((t: Theme) => {
     applyTheme(t);

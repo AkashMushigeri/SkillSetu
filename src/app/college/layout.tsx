@@ -28,12 +28,12 @@ export default function CollegeRootLayout({ children }: { children: React.ReactN
 
   return (
     <CollegeProvider>
-      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col lg:flex-row font-sans selection:bg-emerald-500 selection:text-white">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0B131E] text-slate-900 dark:text-slate-100 flex flex-col lg:flex-row font-sans selection:bg-emerald-500 selection:text-white transition-colors duration-200">
         {/* Sidebar */}
         <CollegeSidebar mobileOpen={mobileMenuOpen} setMobileOpen={setMobileMenuOpen} />
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0 min-h-screen bg-slate-50">
+        <div className="flex-1 flex flex-col min-w-0 min-h-screen bg-slate-50 dark:bg-[#0B131E] transition-colors duration-200">
           <CollegeNavbar
             onOpenSearch={() => setIsSearchOpen(true)}
             onOpenMobileMenu={() => setMobileMenuOpen(true)}

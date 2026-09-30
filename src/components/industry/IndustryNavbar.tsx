@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useIndustry } from '@/context/IndustryContext';
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import {
   Menu,
   Search,
@@ -130,6 +131,9 @@ export const IndustryNavbar: React.FC<NavbarProps> = ({ onOpenSearch, onOpenMobi
             </div>
           )}
         </div>
+
+        {/* Theme Toggle Button */}
+        <ThemeToggle />
 
         {/* Notifications Dropdown */}
         <div className="relative" ref={notifRef}>
