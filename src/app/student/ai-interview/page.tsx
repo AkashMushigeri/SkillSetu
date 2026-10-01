@@ -28,7 +28,7 @@ export default function StudentAIInterviewPage() {
       {/* Back Link */}
       <Link
         href="/student/skills"
-        className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to Skills Hub
@@ -61,17 +61,17 @@ export default function StudentAIInterviewPage() {
       </div>
 
       {/* Role Selection & Preparation Card */}
-      <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-card space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-card space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
           <div>
-            <h3 className="text-lg font-bold text-slate-900">Select Practice Domain</h3>
-            <p className="text-xs text-slate-500">Target role for AI technical question generation</p>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Select Practice Domain</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Target role for AI technical question generation</p>
           </div>
 
           <select
             value={targetRole}
             onChange={(e) => setTargetRole(e.target.value)}
-            className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-brand-teal"
+            className="px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-brand-teal"
           >
             <option value="Full Stack Software Engineer">Full Stack Software Engineer</option>
             <option value="Frontend React Developer">Frontend React Developer</option>
@@ -83,32 +83,32 @@ export default function StudentAIInterviewPage() {
 
         {/* Requirements Checklist */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 space-y-2">
-            <div className="flex items-center gap-2 text-emerald-800 font-bold text-xs">
-              <Mic className="w-4 h-4 text-emerald-600" />
+          <div className="p-4 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/40 space-y-2">
+            <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-400 font-bold text-xs">
+              <Mic className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>Microphone Input</span>
             </div>
-            <p className="text-[11px] text-slate-600 leading-relaxed">
+            <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
               Browser will explicitly request microphone permissions for real-time speech transcription &amp; voice volume analysis.
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-200/80 space-y-2">
-            <div className="flex items-center gap-2 text-blue-800 font-bold text-xs">
-              <Video className="w-4 h-4 text-blue-600" />
+          <div className="p-4 rounded-2xl bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200/80 dark:border-blue-800/40 space-y-2">
+            <div className="flex items-center gap-2 text-blue-800 dark:text-blue-400 font-bold text-xs">
+              <Video className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               <span>Webcam Video Feed</span>
             </div>
-            <p className="text-[11px] text-slate-600 leading-relaxed">
+            <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
               Real-time video feed lets you monitor eye contact and interview posture during practice questions.
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-200/80 space-y-2">
-            <div className="flex items-center gap-2 text-purple-800 font-bold text-xs">
-              <Zap className="w-4 h-4 text-purple-600" />
+          <div className="p-4 rounded-2xl bg-purple-50/60 dark:bg-purple-950/20 border border-purple-200/80 dark:border-purple-800/40 space-y-2">
+            <div className="flex items-center gap-2 text-purple-800 dark:text-purple-400 font-bold text-xs">
+              <Zap className="w-4 h-4 text-purple-600 dark:text-purple-400" />
               <span>Instant AI Score</span>
             </div>
-            <p className="text-[11px] text-slate-600 leading-relaxed">
+            <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
               Evaluates technical vocabulary, communication fluency, and problem-solving explanation quality.
             </p>
           </div>

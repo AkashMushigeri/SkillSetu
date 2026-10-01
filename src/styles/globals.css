@@ -34,6 +34,38 @@ body.dark header {
   border-color: #1e293b !important;
 }
 
+/* Smooth Theme Transitions across page elements */
+html,
+body {
+  transition: background-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              color 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+header,
+nav,
+aside,
+main,
+section,
+footer {
+  transition: background-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              color 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Polished Theme Transition for cards, containers, buttons, and form inputs */
+.shadow-card,
+.bg-white,
+.dark\:bg-slate-900,
+.dark\:bg-\[\#0b131e\],
+.dark\:bg-\[\#0f172a\],
+input,
+select,
+textarea {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
 /* Custom Leaflet Map styling */
 .leaflet-container {
   width: 100%;

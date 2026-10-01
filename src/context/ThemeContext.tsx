@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 
 export type Theme = 'light' | 'dark';
 
@@ -18,9 +18,16 @@ export const THEME_STORAGE_KEY = 'skillsetu_theme';
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>('light');
   const [isMounted, setIsMounted] = useState<boolean>(false);
+  const themeRef = useRef<Theme>('light');
+
+  // Keep themeRef in sync with state
+  useEffect(() => {
+    themeRef.current = theme;
+  }, [theme]);
 
   // Sync theme with DOM and localStorage
   const applyTheme = useCallback((newTheme: Theme) => {
+    themeRef.current = newTheme;
     setThemeState(newTheme);
     if (typeof window !== 'undefined') {
       try {
@@ -58,33 +65,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [applyTheme]);
 
   const toggleTheme = useCallback(() => {
-    setThemeState((currentTheme) => {
-      const isCurrentlyDark =
-        typeof document !== 'undefined'
-          ? document.documentElement.classList.contains('dark') || currentTheme === 'dark'
-          : currentTheme === 'dark';
-      const nextTheme: Theme = isCurrentlyDark ? 'light' : 'dark';
-
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
-        } catch (e) {}
-
-        const root = document.documentElement;
-        if (nextTheme === 'dark') {
-          root.classList.add('dark');
-          document.body?.classList.add('dark');
-          root.setAttribute('data-theme', 'dark');
-        } else {
-          root.classList.remove('dark');
-          document.body?.classList.remove('dark');
-          root.setAttribute('data-theme', 'light');
-        }
-      }
-
-      return nextTheme;
-    });
-  }, []);
+    const nextTheme: Theme = themeRef.current === 'dark' ? 'light' : 'dark';
+    applyTheme(nextTheme);
+  }, [applyTheme]);
 
   const setTheme = useCallback((t: Theme) => {
     applyTheme(t);

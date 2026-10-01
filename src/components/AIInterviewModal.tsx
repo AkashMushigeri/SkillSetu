@@ -655,20 +655,20 @@ export const AIInterviewModal: React.FC<AIInterviewModalProps> = ({
           </div>
 
           {/* Right Column: AI Conversation & Transcription (7 cols) */}
-          <div className="lg:col-span-7 flex flex-col justify-between p-4 sm:p-5 space-y-3.5 overflow-hidden bg-white">
+          <div className="lg:col-span-7 flex flex-col justify-between p-4 sm:p-5 space-y-3.5 overflow-hidden bg-white dark:bg-slate-900">
             
             {/* Header / Question Turn Progress Indicator */}
-            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-teal-50 text-teal-700 border border-teal-200">
+                <div className="p-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
                   <Bot className="w-4 h-4" />
                 </div>
-                <span className="font-bold text-slate-900 text-xs sm:text-sm">
+                <span className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">
                   AI Contextual Interviewer &bull; Server API Engine
                 </span>
               </div>
               
-              <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
+              <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                 Turn {turnCount} of 4 &bull; AI Evaluation
               </span>
             </div>
@@ -692,13 +692,13 @@ export const AIInterviewModal: React.FC<AIInterviewModalProps> = ({
                     className={`max-w-[84%] rounded-2xl p-3.5 space-y-1 ${
                       msg.sender === 'user'
                         ? 'bg-emerald-600 text-white shadow-xs'
-                        : 'bg-slate-100 border border-slate-200 text-slate-800'
+                        : 'bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'
                     }`}
                   >
                     <p className="leading-relaxed font-medium text-xs">{msg.text}</p>
                     <p
                       className={`text-[9px] text-right font-mono ${
-                        msg.sender === 'user' ? 'text-emerald-100' : 'text-slate-400'
+                        msg.sender === 'user' ? 'text-emerald-100' : 'text-slate-400 dark:text-slate-500'
                       }`}
                     >
                       {msg.time}
@@ -714,7 +714,7 @@ export const AIInterviewModal: React.FC<AIInterviewModalProps> = ({
               ))}
 
               {isAiThinking && (
-                <div className="flex items-center gap-2 text-xs text-slate-500 italic p-2 bg-slate-50 rounded-xl w-fit border border-slate-200 animate-pulse">
+                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 italic p-2 bg-slate-50 dark:bg-slate-850 rounded-xl w-fit border border-slate-200 dark:border-slate-750 animate-pulse">
                   <Brain className="w-4 h-4 text-brand-teal animate-spin" />
                   <span>Real AI is processing response &amp; evaluating technical depth...</span>
                 </div>
@@ -722,44 +722,44 @@ export const AIInterviewModal: React.FC<AIInterviewModalProps> = ({
 
               {/* Evaluation Summary Report when finished */}
               {isInterviewFinished && evaluationResult && (
-                <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 text-xs space-y-3 animate-in fade-in">
+                <div className="bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl p-4 text-xs space-y-3 animate-in fade-in">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Award className="w-5 h-5 text-emerald-600" />
-                      <h4 className="font-extrabold text-emerald-900 text-sm">Real AI Technical Report</h4>
+                      <Award className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                      <h4 className="font-extrabold text-emerald-900 dark:text-emerald-200 text-sm">Real AI Technical Report</h4>
                     </div>
-                    <span className="font-extrabold font-mono text-emerald-800 text-sm bg-emerald-200/80 px-2.5 py-0.5 rounded-full">
+                    <span className="font-extrabold font-mono text-emerald-800 dark:text-emerald-200 text-sm bg-emerald-200/80 dark:bg-emerald-900/60 px-2.5 py-0.5 rounded-full">
                       Overall Score: {evaluationResult.score}%
                     </span>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 pt-1">
-                    <div className="bg-white p-2 rounded-xl border border-emerald-200 text-center">
-                      <span className="text-[10px] text-slate-500 font-semibold block">Communication</span>
-                      <strong className="font-bold text-emerald-800 text-xs">{evaluationResult.communicationScore}%</strong>
+                    <div className="bg-white dark:bg-slate-900 p-2 rounded-xl border border-emerald-200 dark:border-emerald-800 text-center">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block">Communication</span>
+                      <strong className="font-bold text-emerald-800 dark:text-emerald-300 text-xs">{evaluationResult.communicationScore}%</strong>
                     </div>
-                    <div className="bg-white p-2 rounded-xl border border-emerald-200 text-center">
-                      <span className="text-[10px] text-slate-500 font-semibold block">Technical Depth</span>
-                      <strong className="font-bold text-emerald-800 text-xs">{evaluationResult.technicalScore}%</strong>
+                    <div className="bg-white dark:bg-slate-900 p-2 rounded-xl border border-emerald-200 dark:border-emerald-800 text-center">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block">Technical Depth</span>
+                      <strong className="font-bold text-emerald-800 dark:text-emerald-300 text-xs">{evaluationResult.technicalScore}%</strong>
                     </div>
-                    <div className="bg-white p-2 rounded-xl border border-emerald-200 text-center">
-                      <span className="text-[10px] text-slate-500 font-semibold block">Confidence Index</span>
-                      <strong className="font-bold text-emerald-800 text-xs">{evaluationResult.confidenceScore || 92}%</strong>
+                    <div className="bg-white dark:bg-slate-900 p-2 rounded-xl border border-emerald-200 dark:border-emerald-800 text-center">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block">Confidence Index</span>
+                      <strong className="font-bold text-emerald-800 dark:text-emerald-300 text-xs">{evaluationResult.confidenceScore || 92}%</strong>
                     </div>
                   </div>
 
                   {detectedKeywords.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                      <span className="text-[10px] text-slate-500 font-bold">Verified Keywords:</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">Verified Keywords:</span>
                       {detectedKeywords.map((kw, i) => (
-                        <span key={i} className="px-2 py-0.5 rounded bg-emerald-200/80 text-emerald-900 font-mono text-[10px] font-bold">
+                        <span key={i} className="px-2 py-0.5 rounded bg-emerald-200/80 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-200 font-mono text-[10px] font-bold">
                           #{kw}
                         </span>
                       ))}
                     </div>
                   )}
 
-                  <p className="text-slate-700 italic text-[11px] leading-relaxed pt-1">
+                  <p className="text-slate-700 dark:text-slate-300 italic text-[11px] leading-relaxed pt-1">
                     "{evaluationResult.feedback}"
                   </p>
                 </div>
@@ -768,7 +768,7 @@ export const AIInterviewModal: React.FC<AIInterviewModalProps> = ({
 
             {/* Answer Input Bar */}
             {!isInterviewFinished ? (
-              <form onSubmit={handleAnswerSubmit} className="space-y-2 pt-2 border-t border-slate-100">
+              <form onSubmit={handleAnswerSubmit} className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <div className="relative">
                   <textarea
                     rows={2}
@@ -779,7 +779,7 @@ export const AIInterviewModal: React.FC<AIInterviewModalProps> = ({
                         ? 'Speak into microphone or type your answer here...'
                         : 'Type your answer here (Enable microphone for live speech-to-text)...'
                     }
-                    className="w-full px-3.5 py-2.5 pr-24 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 text-xs focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal"
+                    className="w-full px-3.5 py-2.5 pr-24 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-900 dark:text-white text-xs focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   />
 
                   <div className="absolute right-2 bottom-2.5 flex items-center gap-1.5">
@@ -789,7 +789,7 @@ export const AIInterviewModal: React.FC<AIInterviewModalProps> = ({
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all shadow-xs ${
                         userSpeech.trim() && !isAiThinking
                           ? 'bg-brand-emerald hover:bg-emerald-600 text-white'
-                          : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                          : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
                       }`}
                     >
                       <span>Submit</span>
