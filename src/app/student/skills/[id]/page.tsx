@@ -144,7 +144,7 @@ export default function SkillDetailPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
+    <div className="w-full max-w-[1820px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 space-y-8">
       {/* Back Button */}
       <Link
         href="/student/skills"
@@ -226,7 +226,7 @@ export default function SkillDetailPage() {
             <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider block">
               Assessment Difficulty
             </span>
-            <div className="grid grid-cols-3 gap-1 bg-slate-200/80 dark:bg-slate-750 p-1 rounded-xl">
+            <div className="grid grid-cols-3 gap-1 bg-slate-200/80 dark:bg-slate-800 p-1 rounded-xl">
               {(['EASY', 'MEDIUM', 'HARD'] as const).map((diff) => (
                 <button
                   key={diff}
@@ -646,7 +646,7 @@ export default function SkillDetailPage() {
               className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
                 res.completed
                   ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800'
-                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-850/50'
+                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-800/50'
               }`}
             >
               <div className="flex items-center gap-3.5">
