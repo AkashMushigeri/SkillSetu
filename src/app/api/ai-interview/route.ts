@@ -6,8 +6,89 @@ import {
   processNLPResponse,
 } from '@/server/ai/interviewService';
 
+// In-memory sliding window rate limiter: key (uid/ip) -> timestamps[]
+const rateLimitMap = new Map<string, number[]>();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 10; // Max 10 interview turns per minute
+
+function checkRateLimit(key: string): boolean {
+  const now = Date.now();
+  const timestamps = (rateLimitMap.get(key) || []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+  if (timestamps.length >= MAX_REQUESTS_PER_WINDOW) {
+    return false;
+  }
+  timestamps.push(now);
+  rateLimitMap.set(key, timestamps);
+  return true;
+}
+
+/**
+ * Verifies the incoming Firebase Auth token server-side via Google Identity Toolkit.
+ */
+async function verifyAuthUser(req: Request): Promise<{ verified: boolean; uid?: string; email?: string; error?: string }> {
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return { verified: false, error: 'Unauthorized: Authentication required to access AI Interview.' };
+  }
+
+  const token = authHeader.slice(7).trim();
+  if (!token) {
+    return { verified: false, error: 'Unauthorized: Bearer token is empty.' };
+  }
+
+  // Support local demo sessions during development and testing
+  if (process.env.NODE_ENV !== 'production' && token.startsWith('demo_token_')) {
+    const demoUid = token.replace('demo_token_', '');
+    return { verified: true, uid: demoUid };
+  }
+
+  // Cryptographically verify ID token with Google Identity Toolkit
+  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyBYafwhkKarQs36-GehGM50b1QqZKTvzPk';
+  try {
+    const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken: token }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      return {
+        verified: false,
+        error: `Unauthorized: Invalid or expired Firebase session token (${errData.error?.message || res.statusText}).`,
+      };
+    }
+
+    const data = await res.json();
+    const user = data.users?.[0];
+    if (!user || !user.localId) {
+      return { verified: false, error: 'Unauthorized: No active user account associated with token.' };
+    }
+
+    return { verified: true, uid: user.localId, email: user.email };
+  } catch (err: any) {
+    console.error('[AI Interview Auth] Token verification error:', err);
+    return { verified: false, error: 'Unauthorized: Failed to verify authentication token.' };
+  }
+}
+
 export async function POST(req: Request) {
   try {
+    // 1. Authenticate user server-side
+    const authResult = await verifyAuthUser(req);
+    if (!authResult.verified) {
+      return NextResponse.json({ error: authResult.error }, { status: 401 });
+    }
+
+    // 2. Enforce sliding window rate limit per authenticated user
+    const rateLimitKey = authResult.uid || 'anonymous';
+    if (!checkRateLimit(rateLimitKey)) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded: You have reached the maximum allowed turns per minute. Please pause for a moment.' },
+        { status: 429 }
+      );
+    }
+
     const body: AIInterviewRequest = await req.json();
     const { candidateName, roleTitle, userAnswer, chatHistory, audioMetrics } = body;
 

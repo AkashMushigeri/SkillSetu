@@ -44,7 +44,14 @@ export interface AssessmentQuestion {
   correctIndex: number;
   explanation: string;
   topic: string;
+  codeSnippet?: string;
+  type?: 'mcq' | 'code_analysis' | 'scenario' | 'debugging' | 'conceptual';
+  difficulty?: 'easy' | 'medium' | 'hard';
 }
+
+export type SkillEvidenceSource = 'self_declared' | 'resume' | 'assessment' | 'project' | 'certification';
+export type SkillVerificationType = 'claimed' | 'assessment_verified' | 'registry_verified' | 'resume_extracted';
+export type SkillProficiencyLevel = 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
 
 export interface Skill {
   id: string;
@@ -56,6 +63,14 @@ export interface Skill {
   progress: number;
   isVerified: boolean;
   verifiedDate?: string;
+  verificationType?: SkillVerificationType;
+  verifiedScore?: number;
+  verifiedLevel?: SkillProficiencyLevel;
+  evidenceSource?: SkillEvidenceSource;
+  evidenceSnippet?: string;
+  evidenceConfidence?: number;
+  assessmentStrengths?: string[];
+  assessmentImprovements?: string[];
   learningStatus: 'not_started' | 'in_progress' | 'completed';
   assessmentStatus: 'locked' | 'ready' | 'passed' | 'failed';
   bestScore?: number;
@@ -66,6 +81,185 @@ export interface Skill {
   careerRoles: string[];
   relatedOpportunityCount: number;
   assessmentQuestions?: AssessmentQuestion[];
+}
+
+export interface ExtractedSkillItem {
+  name: string;
+  canonicalName: string;
+  category: string;
+  proficiency?: SkillProficiencyLevel;
+  evidenceSnippet?: string;
+  confidence: number;
+  isAlreadyInProfile?: boolean;
+  isAlreadyVerified?: boolean;
+  selected?: boolean;
+}
+
+export interface ExtractedProjectItem {
+  title: string;
+  description: string;
+  techStack: string[];
+}
+
+export interface ExtractedExperienceItem {
+  title: string;
+  company: string;
+  period?: string;
+  description?: string;
+  technologies?: string[];
+}
+
+export interface ExtractedEducationItem {
+  degree?: string;
+  institution?: string;
+  year?: string;
+  fieldOfStudy?: string;
+  score?: string;
+}
+
+export interface ResumeExtractionResult {
+  candidateName?: string;
+  email?: string;
+  phone?: string;
+  links?: {
+    github?: string;
+    linkedin?: string;
+    portfolio?: string;
+  };
+  summary?: string;
+  skills: ExtractedSkillItem[];
+  projects: ExtractedProjectItem[];
+  experience: ExtractedExperienceItem[];
+  education: ExtractedEducationItem[];
+  certifications: string[];
+  extractionSource: 'ai' | 'offline_fallback';
+  extractionTimeMs: number;
+  rawTextPreview?: string;
+}
+
+export interface SkillMatchExplanation {
+  matchScore: number;
+  summary: string;
+  matchedSkills: {
+    name: string;
+    verified: boolean;
+    level?: string;
+    matchedVia?: 'exact' | 'synonym' | 'project';
+  }[];
+  partialSkills: {
+    name: string;
+    reason: string;
+  }[];
+  missingSkills: {
+    name: string;
+    importance: 'required' | 'preferred';
+  }[];
+  projectRelevance?: string[];
+  isMatchBoosted: boolean;
+  boostMessage?: string;
+}
+
+export type SkillGapStatus =
+  | 'MATCHED'
+  | 'PARTIAL'
+  | 'CLAIMED_UNVERIFIED'
+  | 'MISSING'
+  | 'PREFERRED_GAP';
+
+export interface SkillGapItem {
+  skill: string;
+  importance: 'Required' | 'Preferred';
+  status: SkillGapStatus;
+  requiredProficiency?: string;
+  studentProficiency?: string;
+  isVerified: boolean;
+  score?: number;
+  matchedWith?: string;
+  relationType: 'exact' | 'synonym' | 'related' | 'none';
+  explanation: string;
+  recommendedAction?: {
+    type: 'take_assessment' | 'reassess' | 'add_skill' | 'add_project';
+    label: string;
+    url: string;
+  };
+  priorityRank: number; // 1 (Highest) to 5 (Lowest)
+}
+
+export interface SkillGapSummary {
+  totalRequired: number;
+  totalPreferred: number;
+  matchedCount: number;
+  partialCount: number;
+  claimedUnverifiedCount: number;
+  missingCount: number;
+  preferredGapCount: number;
+  overallReadiness: 'High' | 'Moderate' | 'Developing' | 'Early Stage';
+}
+
+export interface SkillGapAnalysisResult {
+  opportunityId: string;
+  opportunityTitle: string;
+  company: string;
+  currentMatchScore: number;
+  potentialMatchScore: number;
+  potentialScoreDelta: number;
+  summary: SkillGapSummary;
+  requiredSkills: {
+    matched: SkillGapItem[];
+    partial: SkillGapItem[];
+    claimedUnverified: SkillGapItem[];
+    missing: SkillGapItem[];
+  };
+  preferredSkills: {
+    matched: SkillGapItem[];
+    partial: SkillGapItem[];
+    missing: SkillGapItem[];
+  };
+  priorityGaps: SkillGapItem[];
+  recommendedActions: Array<{
+    skill: string;
+    action: string;
+    url: string;
+    urgency: 'critical' | 'high' | 'medium';
+  }>;
+}
+
+export interface AssessmentQuestionItem {
+  id: number;
+  type: 'mcq' | 'code_analysis' | 'scenario' | 'debugging' | 'conceptual';
+  questionType?: 'mcq' | 'code_analysis' | 'scenario' | 'debugging' | 'conceptual' | string;
+  question: string;
+  codeSnippet?: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+  topic: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+}
+
+export interface AssessmentSession {
+  id: string;
+  skillName: string;
+  skillId: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced' | 'Adaptive';
+  questions: AssessmentQuestionItem[];
+  startedAt: string;
+}
+
+export interface AssessmentEvaluationResult {
+  score: number;
+  correctCount?: number;
+  totalQuestions: number;
+  percentage: number;
+  passed: boolean;
+  skillLevel: SkillProficiencyLevel;
+  proficiencyLevel?: SkillProficiencyLevel;
+  strengths: string[];
+  areasForImprovement: string[];
+  topicsDemonstrated: string[];
+  topicsToImprove: string[];
+  disclaimer: string;
+  verifiedDate: string;
 }
 
 export interface Opportunity {
@@ -88,6 +282,7 @@ export interface Opportunity {
   deadline: string;
   requiredSkills: string[];
   preferredSkills?: string[];
+  domain?: string;
   experienceLevel: string;
   isStartup: boolean;
   description: string;
@@ -95,8 +290,15 @@ export interface Opportunity {
   perks?: string[];
   matchScore?: number;
   matchedSkills?: string[];
+  verifiedMatchedSkills?: string[];
+  claimedMatchedSkills?: string[];
+  partialMatchedSkills?: Array<{ skill: string; matchedWith: string }>;
   missingSkills?: string[];
   isMatchBoosted?: boolean;
+  boostMessage?: string;
+  matchExplanation?: string;
+  companyId?: string;
+  industryId?: string;
 }
 
 export interface Application {
@@ -107,10 +309,12 @@ export interface Application {
   type: OpportunityType;
   location: string;
   appliedDate: string;
-  status: 'Applied' | 'Under Review' | 'Shortlisted' | 'Rejected';
+  status: 'Applied' | 'Under Review' | 'Shortlisted' | 'Interview Scheduled' | 'Selected' | 'Rejected' | 'Submitted';
   resumeUsed: string;
   matchScoreAtApply: number;
   stipend: string;
+  companyId?: string;
+  institutionId?: string;
 }
 
 export interface Project {

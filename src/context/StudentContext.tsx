@@ -11,6 +11,7 @@ import {
   NotificationItem,
   CityLocation,
   OpportunityType,
+  AssessmentEvaluationResult,
 } from '@/types/student';
 import {
   INITIAL_STUDENT_PROFILE,
@@ -49,7 +50,11 @@ interface StudentContextType {
   skills: Skill[];
   getSkillById: (id: string) => Skill | undefined;
   toggleResourceCompletion: (skillId: string, resourceId: string) => void;
-  verifySkill: (skillId: string, score: number) => boolean;
+  verifySkill: (
+    skillId: string,
+    score: number,
+    evaluationResult?: Partial<AssessmentEvaluationResult>
+  ) => boolean;
   opportunities: Opportunity[];
   savedOpportunityIds: string[];
   toggleSaveOpportunity: (oppId: string) => void;
@@ -634,75 +639,128 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     );
   }, []);
 
-  // Verify skill upon passing assessment
-  const verifySkill = useCallback((skillId: string, score: number): boolean => {
-    const passed = score >= 70;
-    if (passed) {
-      // Trigger confetti celebration
-      if (typeof window !== 'undefined') {
-        confetti({
-          particleCount: 120,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#0D5C68', '#059669', '#10B981', '#F97316', '#3B82F6'],
-        });
+  // Verify skill upon passing assessment (non-downgrade: preserves higher score and status on retakes)
+  const verifySkill = useCallback(
+    (
+      skillId: string,
+      score: number,
+      evaluationResult?: Partial<AssessmentEvaluationResult>
+    ): boolean => {
+      const passed = score >= 70;
+
+      const rankProficiency = (lvl?: string): number => {
+        if (!lvl) return 2;
+        const l = lvl.toLowerCase().trim();
+        if (l === 'expert') return 4;
+        if (l === 'advanced') return 3;
+        if (l === 'intermediate') return 2;
+        return 1;
+      };
+
+      if (passed) {
+        // Trigger confetti celebration
+        if (typeof window !== 'undefined') {
+          confetti({
+            particleCount: 120,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#0D5C68', '#059669', '#10B981', '#F97316', '#3B82F6'],
+          });
+        }
+
+        setSkills((prev) =>
+          prev.map((skill) => {
+            if (skill.id !== skillId) return skill;
+
+            const currentRank = rankProficiency(skill.verifiedLevel);
+            const newRank = rankProficiency(evaluationResult?.skillLevel);
+            const bestLevel =
+              newRank >= currentRank
+                ? (evaluationResult?.skillLevel || (score >= 90 ? 'Advanced' : 'Intermediate'))
+                : skill.verifiedLevel;
+
+            return {
+              ...skill,
+              isVerified: true,
+              progress: 100,
+              verifiedDate:
+                evaluationResult?.verifiedDate ||
+                new Date().toLocaleDateString('en-GB', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                }),
+              verificationType: 'assessment_verified',
+              verifiedScore: Math.max(skill.verifiedScore || 0, score),
+              bestScore: Math.max(skill.bestScore || 0, score),
+              verifiedLevel: bestLevel,
+              evidenceSource: 'assessment',
+              assessmentStatus: 'passed',
+              learningStatus: 'completed',
+              assessmentStrengths:
+                evaluationResult?.strengths || ['Core conceptual proficiency', 'Applied syntax'],
+              assessmentImprovements:
+                evaluationResult?.areasForImprovement || ['Advanced system optimization'],
+            };
+          })
+        );
+
+        // Increase profile completion
+        setProfile((prev) => ({
+          ...prev,
+          profileCompletion: Math.min(100, prev.profileCompletion + 7),
+        }));
+
+        // Add celebratory notification
+        setNotifications((prev) => [
+          {
+            id: `notif-badge-${Date.now()}`,
+            title: 'Skill Assessment Verified!',
+            message: `Congratulations ${profile.name ? profile.name.split(' ')[0] : 'Student'}! You earned the official SkillSetu Verified Badge. Opportunity matches have been upgraded.`,
+            time: 'Just now',
+            read: false,
+            type: 'badge',
+            link: '/student/profile',
+          },
+          ...prev,
+        ]);
+      } else {
+        // Failed retake: preserve verified status and higher score if previously verified
+        setSkills((prev) =>
+          prev.map((skill) => {
+            if (skill.id !== skillId) return skill;
+            if (skill.isVerified) {
+              return {
+                ...skill,
+                bestScore: Math.max(skill.bestScore || 0, score),
+                assessmentImprovements:
+                  evaluationResult?.areasForImprovement || skill.assessmentImprovements,
+              };
+            }
+            return {
+              ...skill,
+              assessmentStatus: 'failed',
+              bestScore: Math.max(skill.bestScore || 0, score),
+            };
+          })
+        );
       }
-
-      setSkills((prev) =>
-        prev.map((skill) => {
-          if (skill.id !== skillId) return skill;
-          return {
-            ...skill,
-            isVerified: true,
-            verifiedDate: new Date().toLocaleDateString('en-GB', {
-              day: 'numeric',
-              month: 'short',
-              year: 'numeric',
-            }),
-            progress: 100,
-            assessmentStatus: 'passed',
-            learningStatus: 'completed',
-            bestScore: Math.max(skill.bestScore || 0, score),
-          };
-        })
-      );
-
-      // Increase profile completion
-      setProfile((prev) => ({
-        ...prev,
-        profileCompletion: Math.min(100, prev.profileCompletion + 7),
-      }));
-
-      // Add celebratory notification
-      setNotifications((prev) => [
-        {
-          id: `notif-badge-${Date.now()}`,
-          title: 'Skill Assessment Verified!',
-          message: `Congratulations ${profile.name ? profile.name.split(' ')[0] : 'Student'}! You earned the official SkillSetu Verified Badge. Opportunity matches have been upgraded.`,
-          time: 'Just now',
-          read: false,
-          type: 'badge',
-          link: '/student/profile',
-        },
-        ...prev,
-      ]);
-    } else {
-      setSkills((prev) =>
-        prev.map((skill) => {
-          if (skill.id !== skillId) return skill;
-          return {
-            ...skill,
-            assessmentStatus: 'failed',
-            bestScore: Math.max(skill.bestScore || 0, score),
-          };
-        })
-      );
-    }
-    return passed;
-  }, []);
+      return passed;
+    },
+    [profile.name]
+  );
 
   const getSkillById = useCallback(
-    (id: string) => skills.find((s) => s.id === id),
+    (id: string) => {
+      if (!id) return undefined;
+      const lower = decodeURIComponent(id).toLowerCase().trim();
+      return (
+        skills.find((s) => s.id === id) ||
+        skills.find((s) => s.id.toLowerCase() === lower) ||
+        skills.find((s) => s.name.toLowerCase() === lower) ||
+        skills.find((s) => s.name.toLowerCase().replace(/[^a-z0-9]/g, '') === lower.replace(/[^a-z0-9]/g, ''))
+      );
+    },
     [skills]
   );
 
@@ -819,15 +877,20 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         opp.coordinates.lng
       );
 
-      const match = computeOpportunityMatch(opp, skills);
+      const match = computeOpportunityMatch(opp, skills, projects, profile);
 
       return {
         ...opp,
         distanceKm: distance,
         matchScore: match.matchScore,
         matchedSkills: match.matchedSkills,
+        verifiedMatchedSkills: match.verifiedMatchedSkills,
+        claimedMatchedSkills: match.claimedMatchedSkills,
+        partialMatchedSkills: match.partialMatchedSkills,
         missingSkills: match.missingSkills,
         isMatchBoosted: match.isMatchBoosted,
+        boostMessage: match.boostMessage,
+        matchExplanation: match.matchExplanation,
       };
     });
 
@@ -842,15 +905,20 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
           opp.coordinates.lng
         );
 
-        const match = computeOpportunityMatch(opp, skills);
+        const match = computeOpportunityMatch(opp, skills, projects, profile);
 
         return {
           ...opp,
           distanceKm: distance,
           matchScore: match.matchScore,
           matchedSkills: match.matchedSkills,
+          verifiedMatchedSkills: match.verifiedMatchedSkills,
+          claimedMatchedSkills: match.claimedMatchedSkills,
+          partialMatchedSkills: match.partialMatchedSkills,
           missingSkills: match.missingSkills,
           isMatchBoosted: match.isMatchBoosted,
+          boostMessage: match.boostMessage,
+          matchExplanation: match.matchExplanation,
         };
       });
 
@@ -866,15 +934,20 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
           opp.coordinates.lng
         );
 
-        const match = computeOpportunityMatch(opp, skills);
+        const match = computeOpportunityMatch(opp, skills, projects, profile);
 
         return {
           ...opp,
           distanceKm: distance,
           matchScore: match.matchScore !== undefined && match.matchScore > 0 ? match.matchScore : opp.matchScore,
           matchedSkills: match.matchedSkills,
+          verifiedMatchedSkills: match.verifiedMatchedSkills,
+          claimedMatchedSkills: match.claimedMatchedSkills,
+          partialMatchedSkills: match.partialMatchedSkills,
           missingSkills: match.missingSkills,
           isMatchBoosted: match.isMatchBoosted ?? opp.isMatchBoosted,
+          boostMessage: match.boostMessage,
+          matchExplanation: match.matchExplanation,
         };
       });
 
@@ -891,20 +964,25 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
           opp.coordinates?.lng || 77.5946
         );
 
-        const match = computeOpportunityMatch(opp, skills);
+        const match = computeOpportunityMatch(opp, skills, projects, profile);
 
         return {
           ...opp,
           distanceKm: distance,
           matchScore: match.matchScore,
           matchedSkills: match.matchedSkills,
+          verifiedMatchedSkills: match.verifiedMatchedSkills,
+          claimedMatchedSkills: match.claimedMatchedSkills,
+          partialMatchedSkills: match.partialMatchedSkills,
           missingSkills: match.missingSkills,
           isMatchBoosted: match.isMatchBoosted,
+          boostMessage: match.boostMessage,
+          matchExplanation: match.matchExplanation,
         };
       });
 
     return [...local, ...synced, ...remoteOpps, ...apiJobs];
-  }, [userCoords, skills, syncedOpportunities, dataConnectOpportunities, liveApiJobs]);
+  }, [userCoords, skills, projects, profile, syncedOpportunities, dataConnectOpportunities, liveApiJobs]);
 
   // Reset demo state
   const resetToDemo = useCallback(() => {
