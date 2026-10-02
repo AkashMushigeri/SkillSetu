@@ -34,6 +34,8 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { LocationSuggestion } from '@/app/api/locations/autocomplete/route';
+import { CollegeAutocomplete } from '@/components/onboarding/CollegeAutocomplete';
+import { CollegeItem, searchColleges } from '@/data/collegesData';
 
 const POPULAR_STUDENT_SKILLS = [
   'React',
@@ -206,6 +208,7 @@ export default function OnboardingPage() {
 
   // Student Fields
   const [college, setCollege] = useState('');
+  const [selectedCollege, setSelectedCollege] = useState<CollegeItem | null>(null);
   const [degree, setDegree] = useState('B.Tech');
   const [department, setDepartment] = useState('Computer Science & Engineering');
   const [year, setYear] = useState('3rd Year');
@@ -276,7 +279,17 @@ export default function OnboardingPage() {
       }
 
       // Student fields
-      if (userProfile.college) setCollege(userProfile.college);
+      if (userProfile.college) {
+        setCollege(userProfile.college);
+        if (userProfile.collegeDetails) {
+          setSelectedCollege(userProfile.collegeDetails as CollegeItem);
+        } else {
+          const matched = searchColleges(userProfile.college, 1)[0];
+          if (matched && matched.name.toLowerCase() === userProfile.college.toLowerCase()) {
+            setSelectedCollege(matched);
+          }
+        }
+      }
       if (userProfile.degree) setDegree(userProfile.degree);
       if (userProfile.department) setDepartment(userProfile.department);
       if (userProfile.year) setYear(userProfile.year);
@@ -559,8 +572,16 @@ export default function OnboardingPage() {
 
       if (role === 'STUDENT') {
         if (!college.trim()) {
-          setError('Please provide your college or university name.');
+          setError('Please search and select your college or university from the list.');
           return false;
+        }
+        const matched = selectedCollege || searchColleges(college.trim(), 1)[0];
+        if (!matched) {
+          setError('Please select a verified college or university from the dropdown list.');
+          return false;
+        }
+        if (!selectedCollege && matched) {
+          setSelectedCollege(matched);
         }
         if (!degree.trim()) {
           setError('Please select your degree or program.');
@@ -648,11 +669,11 @@ export default function OnboardingPage() {
     return (
       <div className="relative" ref={locationDropdownRef}>
         <div className="flex items-center justify-between mb-1.5">
-          <label className="block text-xs font-semibold text-slate-300">
-            {label} {required && <span className="text-emerald-400">*</span>}
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+            {label} {required && <span className="text-emerald-600 dark:text-emerald-400">*</span>}
           </label>
           {selectedLocationDetails?.state && (
-            <span className="text-[10px] text-emerald-400 font-medium truncate max-w-[200px]">
+            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium truncate max-w-[200px]">
               {[selectedLocationDetails.city, selectedLocationDetails.state, selectedLocationDetails.country]
                 .filter(Boolean)
                 .join(', ')}
@@ -684,15 +705,15 @@ export default function OnboardingPage() {
             onKeyDown={handleLocationKeyDown}
             placeholder={placeholder}
             autoComplete="off"
-            className={`w-full pl-10 pr-9 py-2.5 bg-slate-800/80 border rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 transition-all ${
+            className={`w-full pl-10 pr-9 py-2.5 bg-white dark:bg-slate-800/90 border rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 font-sans transition-all ${
               showLocationError
-                ? 'border-red-500/80 focus:ring-red-500/40 focus:border-red-500'
-                : 'border-slate-700 focus:ring-emerald-500/50 focus:border-emerald-500'
+                ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500'
+                : 'border-slate-300 dark:border-slate-700 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500'
             }`}
           />
           {isSearchingLocation && (
             <div className="absolute right-3 top-3">
-              <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
+              <Loader2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 animate-spin" />
             </div>
           )}
         </div>
@@ -703,7 +724,7 @@ export default function OnboardingPage() {
             id="location-suggestions-listbox"
             role="listbox"
             aria-label="Location suggestions"
-            className="absolute top-full left-0 right-0 mt-1.5 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl max-h-60 overflow-y-auto divide-y divide-slate-800"
+            className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800"
           >
             {locationSuggestions.length > 0 ? (
               locationSuggestions.map((sug, idx) => {
@@ -719,20 +740,20 @@ export default function OnboardingPage() {
                     onMouseEnter={() => setHighlightedLocationIndex(idx)}
                     className={`w-full text-left px-3.5 py-2.5 flex items-start gap-2.5 transition-colors ${
                       isHighlighted
-                        ? 'bg-slate-800 text-white'
-                        : 'hover:bg-slate-800/60 text-slate-200'
+                        ? 'bg-emerald-50 dark:bg-slate-800 text-slate-900 dark:text-white'
+                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-200'
                     }`}
                   >
                     <MapPin
                       className={`w-4 h-4 mt-0.5 shrink-0 ${
-                        isHighlighted ? 'text-emerald-400' : 'text-slate-400'
+                        isHighlighted ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'
                       }`}
                     />
                     <div className="min-w-0 flex-1">
-                      <div className="text-xs sm:text-sm font-medium text-white truncate">
+                      <div className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white truncate">
                         {sug.city || sug.displayName.split(',')[0]}
                       </div>
-                      <div className="text-[11px] text-slate-400 truncate">
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                         {[sug.state, sug.country].filter(Boolean).join(', ') || sug.displayName}
                       </div>
                     </div>
@@ -740,7 +761,7 @@ export default function OnboardingPage() {
                 );
               })
             ) : (
-              <div className="p-3 text-xs text-slate-400 text-center">
+              <div className="p-3 text-xs text-slate-500 dark:text-slate-400 text-center">
                 {locationSearchError || 'No matching locations found. You can keep your manually entered city.'}
               </div>
             )}
@@ -748,12 +769,12 @@ export default function OnboardingPage() {
         )}
 
         {showLocationError ? (
-          <p id="location-error-msg" className="text-[11px] text-red-400 mt-1.5 flex items-center gap-1.5 animate-in fade-in duration-200">
+          <p id="location-error-msg" className="text-[11px] text-red-600 dark:text-red-400 mt-1.5 flex items-center gap-1.5 animate-in fade-in duration-200">
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             <span>Please provide your {label.toLowerCase()}.</span>
           </p>
         ) : (
-          <p id="location-help-msg" className="text-[10px] text-slate-400 mt-1">
+          <p id="location-help-msg" className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
             Type 3+ letters to search real verified cities
           </p>
         )}
@@ -788,16 +809,32 @@ export default function OnboardingPage() {
       let finalPayload: Partial<UserProfileData> = { ...baseData };
 
       if (role === 'STUDENT') {
+        const finalCollegeItem = selectedCollege || searchColleges(college.trim(), 1)[0];
         finalPayload = {
           ...baseData,
-          college: college.trim(),
+          college: finalCollegeItem ? finalCollegeItem.name : college.trim(),
+          collegeId: finalCollegeItem ? finalCollegeItem.id : undefined,
+          collegeDetails: finalCollegeItem
+            ? {
+                id: finalCollegeItem.id,
+                name: finalCollegeItem.name,
+                city: finalCollegeItem.city,
+                state: finalCollegeItem.state,
+                type: finalCollegeItem.type,
+                university: finalCollegeItem.university,
+                affiliation: finalCollegeItem.affiliation,
+                institutionType: finalCollegeItem.institutionType,
+              }
+            : undefined,
           degree: degree.trim(),
           department: department.trim(),
           year: year.trim(),
           gpa: gpa.trim(),
           careerGoal: careerGoal.trim(),
           skills: selectedSkills,
-          bio: bio.trim() || `${careerGoal} focused student at ${college}, keen on real-world projects and verified skill assessment.`,
+          bio:
+            bio.trim() ||
+            `${careerGoal} focused student at ${finalCollegeItem ? finalCollegeItem.name : college.trim()}, keen on real-world projects and verified skill assessment.`,
           github: github.trim(),
           linkedin: linkedin.trim(),
         };
@@ -858,62 +895,66 @@ export default function OnboardingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white p-4">
-        <Loader2 className="w-8 h-8 text-emerald-400 animate-spin mb-4" />
-        <p className="text-slate-400 text-sm">Loading your SkillSetu profile...</p>
+      <div className="min-h-screen bg-gradient-to-br from-[#EFF6FA] via-[#E4EFF7] to-[#D9EAF5] dark:from-[#0b131e] dark:via-[#0f172a] dark:to-[#08131d] flex flex-col items-center justify-center text-slate-900 dark:text-white p-4">
+        <Loader2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400 animate-spin mb-4" />
+        <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Loading your SkillSetu profile...</p>
       </div>
     );
   }
 
   const roleMeta = {
     STUDENT: {
-      label: 'Student Profile',
+      label: 'Student Profile Setup',
       icon: GraduationCap,
       description: 'Set up your verified skill portfolio, college details, and internship preferences.',
-      badgeColor: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
+      badgeColor: 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-400',
     },
     INDUSTRY: {
       label: 'Company & Recruiter Setup',
       icon: Building2,
       description: 'Define your company profile, hiring domains, and team contacts.',
-      badgeColor: 'bg-blue-500/10 border-blue-500/30 text-blue-400',
+      badgeColor: 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30 text-blue-800 dark:text-blue-400',
     },
     COLLEGE: {
       label: 'College Administration Setup',
       icon: School,
       description: 'Register institution details, placement office contacts, and academic faculties.',
-      badgeColor: 'bg-purple-500/10 border-purple-500/30 text-purple-400',
+      badgeColor: 'bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30 text-purple-800 dark:text-purple-400',
     },
   }[role];
 
   const RoleIcon = roleMeta.icon;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-brand-dark text-white flex flex-col justify-between p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#EFF6FA] via-[#E4EFF7] to-[#D9EAF5] dark:from-[#0b131e] dark:via-[#0f172a] dark:to-[#08131d] text-slate-900 dark:text-slate-100 flex flex-col justify-between p-4 sm:p-6 lg:px-10 lg:py-6 relative selection:bg-emerald-100 selection:text-emerald-950">
+      {/* Subtle soft ambient lighting */}
+      <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(13,92,104,0.07),rgba(255,255,255,0))] dark:bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(16,185,129,0.08),rgba(0,0,0,0))] -z-10" />
+      <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(ellipse_60%_50%_at_90%_90%,rgba(56,189,248,0.1),rgba(255,255,255,0))] dark:bg-[radial-gradient(ellipse_60%_50%_at_90%_90%,rgba(14,165,233,0.06),rgba(0,0,0,0))] -z-10" />
+
       {/* Header */}
-      <header className="max-w-4xl mx-auto w-full flex items-center justify-between py-3 border-b border-slate-800">
+      <header className="max-w-4xl mx-auto w-full flex items-center justify-between py-2 border-b border-slate-200/80 dark:border-slate-800/80">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-teal to-brand-emerald flex items-center justify-center shadow-lg shadow-brand-teal/20">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-teal to-brand-emerald flex items-center justify-center shadow-md shadow-brand-teal/20">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div>
-            <div className="font-bold text-xl tracking-tight text-white flex items-center gap-1.5">
-              Skill<span className="text-emerald-400">Setu</span>
+            <div className="font-bold text-xl sm:text-2xl tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
+              Skill<span className="text-emerald-700 dark:text-emerald-400">Setu</span>
             </div>
-            <div className="text-[9px] tracking-widest uppercase font-semibold text-emerald-300">
-              PROFILE ONBOARDING &amp; DATABASE SYNC
+            <div className="text-[9px] sm:text-[10px] tracking-widest uppercase font-bold text-emerald-800 dark:text-emerald-400">
+              ACADEMIA – INDUSTRY SKILL INTELLIGENCE
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="text-xs text-slate-400 hidden sm:inline">
-            Logged in as <strong className="text-slate-200">{user?.email}</strong>
+          <span className="text-xs text-slate-500 dark:text-slate-400 hidden sm:inline">
+            Logged in as <strong className="text-slate-700 dark:text-slate-200 font-semibold">{user?.email}</strong>
           </span>
           <button
             onClick={() => signOut()}
             type="button"
-            className="text-xs px-3 py-1.5 rounded-xl border border-slate-700 bg-slate-800/60 hover:bg-slate-800 text-slate-300 hover:text-white transition-all"
+            className="text-xs px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-semibold transition-all shadow-xs"
           >
             Sign Out
           </button>
@@ -921,19 +962,19 @@ export default function OnboardingPage() {
       </header>
 
       {/* Main Container */}
-      <main className="max-w-3xl mx-auto w-full my-8 bg-slate-900/90 border border-slate-800/90 rounded-3xl p-6 sm:p-8 md:p-10 backdrop-blur-2xl shadow-2xl space-y-8">
+      <main className="max-w-3xl mx-auto w-full my-6 bg-white dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800/90 rounded-3xl p-6 sm:p-8 md:p-10 backdrop-blur-xl shadow-xl shadow-blue-950/5 dark:shadow-black/40 space-y-7">
         {/* Banner */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800/70">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800/80">
           <div>
-            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-semibold mb-2 ${roleMeta.badgeColor}`}>
+            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-semibold mb-2 shadow-xs ${roleMeta.badgeColor}`}>
               <RoleIcon className="w-3.5 h-3.5" />
               <span>{roleMeta.label}</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Complete Your Account Details
             </h1>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">
-              {roleMeta.description} All information is securely stored in Firebase database.
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+              {roleMeta.description} All information is securely synced with your SkillSetu account.
             </p>
           </div>
 
@@ -947,10 +988,10 @@ export default function OnboardingPage() {
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
                       isDone
-                        ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
+                        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-700/20'
                         : isCurrent
-                        ? 'bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300'
-                        : 'bg-slate-800 text-slate-500 border border-slate-700'
+                        ? 'bg-emerald-50 dark:bg-emerald-500/20 border-2 border-emerald-600 dark:border-emerald-400 text-emerald-700 dark:text-emerald-300 font-bold'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700'
                     }`}
                   >
                     {isDone ? <Check className="w-4 h-4" /> : step}
@@ -958,7 +999,7 @@ export default function OnboardingPage() {
                   {step < 3 && (
                     <div
                       className={`w-6 sm:w-10 h-0.5 rounded-full transition-all ${
-                        currentStep > step ? 'bg-emerald-500' : 'bg-slate-800'
+                        currentStep > step ? 'bg-emerald-600' : 'bg-slate-200 dark:bg-slate-800'
                       }`}
                     />
                   )}
@@ -973,7 +1014,7 @@ export default function OnboardingPage() {
           {/* ==================== STEP 1 ==================== */}
           {currentStep === 1 && (
             <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+              <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">
                 <ShieldCheck className="w-4 h-4" />
                 <span>Step 1 of 3: Core Identity &amp; Contact Details</span>
               </div>
@@ -981,8 +1022,8 @@ export default function OnboardingPage() {
               {/* Display Name & Phone */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Full Name <span className="text-emerald-400">*</span>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Full Name <span className="text-emerald-600 dark:text-emerald-400">*</span>
                   </label>
                   <div className="relative">
                     <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -995,17 +1036,17 @@ export default function OnboardingPage() {
                         if (error && error.toLowerCase().includes('name')) setError(null);
                       }}
                       placeholder="e.g. Aarav Sharma"
-                      className="w-full pl-10 pr-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                      className="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500 font-sans transition-all"
                     />
                   </div>
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-semibold text-slate-300">
-                      Phone / WhatsApp Number <span className="text-emerald-400">*</span>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Phone / WhatsApp Number <span className="text-emerald-600 dark:text-emerald-400">*</span>
                     </label>
-                    <span className="text-[10px] text-slate-400 font-mono">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
                       {selectedCountry.code === '+91'
                         ? `${phoneNumber.length}/10 digits`
                         : `${phoneNumber.length} digits`}
@@ -1013,7 +1054,7 @@ export default function OnboardingPage() {
                   </div>
 
                   <div className="relative" ref={countryDropdownRef}>
-                    <div className="flex rounded-xl shadow-sm">
+                    <div className="flex rounded-xl shadow-xs">
                       {/* Country Code Trigger Button */}
                       <button
                         type="button"
@@ -1021,11 +1062,11 @@ export default function OnboardingPage() {
                         aria-haspopup="listbox"
                         aria-expanded={isCountryDropdownOpen}
                         aria-label={`Country calling code: ${selectedCountry.name} ${selectedCountry.code}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 border border-r-0 border-slate-700 rounded-l-xl text-sm font-medium text-white hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/50 select-none shrink-0"
+                        className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-r-0 border-slate-300 dark:border-slate-700 rounded-l-xl text-sm font-medium text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-600/20 select-none shrink-0"
                         title={`Current: ${selectedCountry.name} (${selectedCountry.code})`}
                       >
                         <span className="text-base leading-none">{selectedCountry.flag}</span>
-                        <span className="text-xs font-semibold text-slate-200">{selectedCountry.code}</span>
+                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{selectedCountry.code}</span>
                         <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
                       </button>
 
@@ -1044,10 +1085,10 @@ export default function OnboardingPage() {
                           aria-label="Phone / WhatsApp Number"
                           aria-invalid={showPhoneError}
                           aria-describedby={showPhoneError ? 'phone-error-msg' : 'phone-help-msg'}
-                          className={`w-full pl-9 pr-3.5 py-2.5 bg-slate-800/80 border rounded-r-xl text-sm text-white font-mono tracking-wider placeholder-slate-500 focus:outline-none focus:ring-2 transition-all ${
+                          className={`w-full pl-9 pr-3.5 py-2.5 bg-white dark:bg-slate-800/90 border rounded-r-xl text-sm text-slate-900 dark:text-white font-mono tracking-wider placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 font-sans transition-all ${
                             showPhoneError
-                              ? 'border-red-500/80 focus:ring-red-500/40 focus:border-red-500'
-                              : 'border-slate-700 focus:ring-emerald-500/50 focus:border-emerald-500'
+                              ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500'
+                              : 'border-slate-300 dark:border-slate-700 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500'
                           }`}
                         />
                       </div>
@@ -1058,7 +1099,7 @@ export default function OnboardingPage() {
                       <div
                         role="listbox"
                         aria-label="Country calling codes"
-                        className="absolute top-full left-0 mt-1.5 w-72 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 p-2 space-y-1 backdrop-blur-xl max-h-64 flex flex-col"
+                        className="absolute top-full left-0 mt-1.5 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-50 p-2 space-y-1 backdrop-blur-xl max-h-64 flex flex-col"
                       >
                         <div className="relative mb-1">
                           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
@@ -1069,7 +1110,7 @@ export default function OnboardingPage() {
                             placeholder="Search country or code..."
                             autoFocus
                             aria-label="Search countries"
-                            className="w-full pl-8 pr-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            className="w-full pl-8 pr-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-600"
                           />
                         </div>
                         <div className="overflow-y-auto space-y-0.5 flex-1 pr-1">
@@ -1102,8 +1143,8 @@ export default function OnboardingPage() {
                                 }}
                                 className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between text-xs transition-colors ${
                                   isSelected
-                                    ? 'bg-emerald-500/20 text-emerald-300 font-semibold'
-                                    : 'hover:bg-slate-800 text-slate-300'
+                                    ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-semibold'
+                                    : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
                                 }`}
                               >
                                 <div className="flex items-center gap-2 truncate">
@@ -1128,12 +1169,12 @@ export default function OnboardingPage() {
 
                   {/* Inline Error or Helper */}
                   {showPhoneError ? (
-                    <p id="phone-error-msg" className="text-[11px] text-red-400 mt-1.5 flex items-center gap-1.5 animate-in fade-in duration-200">
+                    <p id="phone-error-msg" className="text-[11px] text-red-600 dark:text-red-400 mt-1.5 flex items-center gap-1.5 animate-in fade-in duration-200">
                       <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                       <span>{phoneError}</span>
                     </p>
                   ) : (
-                    <p id="phone-help-msg" className="text-[11px] text-slate-400 mt-1.5">
+                    <p id="phone-help-msg" className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
                       {selectedCountry.code === '+91'
                         ? '10-digit mobile number for SMS & WhatsApp updates'
                         : `Enter standard ${selectedCountry.name} mobile/contact number`}
@@ -1145,35 +1186,31 @@ export default function OnboardingPage() {
               {/* STUDENT ROLE FIELDS */}
               {role === 'STUDENT' && (
                 <>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                      College / University Name <span className="text-emerald-400">*</span>
-                    </label>
-                    <div className="relative">
-                      <GraduationCap className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                      <input
-                        type="text"
-                        required
-                        value={college}
-                        onChange={(e) => {
-                          setCollege(e.target.value);
-                          if (error && error.toLowerCase().includes('college')) setError(null);
-                        }}
-                        placeholder="e.g. RV College of Engineering, Bengaluru"
-                        className="w-full pl-10 pr-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
-                      />
-                    </div>
-                  </div>
+                  <CollegeAutocomplete
+                    value={college}
+                    selectedCollege={selectedCollege}
+                    onChange={(name, item) => {
+                      setCollege(name);
+                      setSelectedCollege(item);
+                      if (error && error.toLowerCase().includes('college')) setError(null);
+                    }}
+                    error={
+                      step1Attempted && !college.trim()
+                        ? 'Please select your college or university from the list.'
+                        : null
+                    }
+                    required={true}
+                  />
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                        Degree / Program <span className="text-emerald-400">*</span>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                        Degree / Program <span className="text-emerald-600 dark:text-emerald-400">*</span>
                       </label>
                       <select
                         value={degree}
                         onChange={(e) => setDegree(e.target.value)}
-                        className="w-full px-3 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500 font-sans transition-all"
                       >
                         <option value="B.Tech">B.Tech / B.E</option>
                         <option value="BAMS">BAMS (Ayurveda)</option>
@@ -1187,8 +1224,8 @@ export default function OnboardingPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                        Department / Branch <span className="text-emerald-400">*</span>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                        Department / Branch <span className="text-emerald-600 dark:text-emerald-400">*</span>
                       </label>
                       <input
                         type="text"
@@ -1199,18 +1236,18 @@ export default function OnboardingPage() {
                           if (error && error.toLowerCase().includes('department')) setError(null);
                         }}
                         placeholder="e.g. CSE / AIML / Ayurveda"
-                        className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                        className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500 font-sans transition-all"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                        Current Academic Year <span className="text-emerald-400">*</span>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                        Current Academic Year <span className="text-emerald-600 dark:text-emerald-400">*</span>
                       </label>
                       <select
                         value={year}
                         onChange={(e) => setYear(e.target.value)}
-                        className="w-full px-3 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500 font-sans transition-all"
                       >
                         <option value="1st Year">1st Year</option>
                         <option value="2nd Year">2nd Year</option>
@@ -1223,7 +1260,7 @@ export default function OnboardingPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                         Current CGPA / Percentage
                       </label>
                       <input
@@ -1231,7 +1268,7 @@ export default function OnboardingPage() {
                         value={gpa}
                         onChange={(e) => setGpa(e.target.value)}
                         placeholder="e.g. 8.7 CGPA or 85%"
-                        className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                        className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500 font-sans transition-all"
                       />
                     </div>
 
@@ -1247,8 +1284,8 @@ export default function OnboardingPage() {
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                        Company / Organization Name <span className="text-emerald-400">*</span>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                        Company / Organization Name <span className="text-emerald-600 dark:text-emerald-400">*</span>
                       </label>
                       <div className="relative">
                         <Building2 className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -1261,19 +1298,19 @@ export default function OnboardingPage() {
                             if (error && error.toLowerCase().includes('company')) setError(null);
                           }}
                           placeholder="e.g. TechNova Labs"
-                          className="w-full pl-10 pr-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                          className="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500 font-sans transition-all"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                        Industry Sector <span className="text-emerald-400">*</span>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                        Industry Sector <span className="text-emerald-600 dark:text-emerald-400">*</span>
                       </label>
                       <select
                         value={companyIndustry}
                         onChange={(e) => setCompanyIndustry(e.target.value)}
-                        className="w-full px-3 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500 font-sans transition-all"
                       >
                         <option value="AYUSH & Healthcare Technology">AYUSH &amp; Healthcare Technology</option>
                         <option value="IT, Cloud & Software Services">IT, Cloud &amp; Software Services</option>
@@ -1287,8 +1324,8 @@ export default function OnboardingPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                        Your Work Designation <span className="text-emerald-400">*</span>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                        Your Work Designation <span className="text-emerald-600 dark:text-emerald-400">*</span>
                       </label>
                       <input
                         type="text"
@@ -1296,18 +1333,18 @@ export default function OnboardingPage() {
                         value={recruiterTitle}
                         onChange={(e) => setRecruiterTitle(e.target.value)}
                         placeholder="e.g. Head of Talent Acquisition"
-                        className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                        className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500 font-sans transition-all"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                         Company Size
                       </label>
                       <select
                         value={companySize}
                         onChange={(e) => setCompanySize(e.target.value)}
-                        className="w-full px-3 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500 font-sans transition-all"
                       >
                         <option value="1-10 employees (Early Startup)">1-10 employees (Early Startup)</option>
                         <option value="11-50 employees (Growth Startup)">11-50 employees (Growth Startup)</option>
@@ -1323,7 +1360,7 @@ export default function OnboardingPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                       Company Website
                     </label>
                     <div className="relative">
@@ -1333,7 +1370,7 @@ export default function OnboardingPage() {
                         value={companyWebsite}
                         onChange={(e) => setCompanyWebsite(e.target.value)}
                         placeholder="https://technovalabs.com"
-                        className="w-full pl-10 pr-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                        className="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500 font-sans transition-all"
                       />
                     </div>
                   </div>
@@ -1345,8 +1382,8 @@ export default function OnboardingPage() {
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                        Institution / University Name <span className="text-emerald-400">*</span>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                        Institution / University Name <span className="text-emerald-600 dark:text-emerald-400">*</span>
                       </label>
                       <div className="relative">
                         <School className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -1359,14 +1396,14 @@ export default function OnboardingPage() {
                             if (error && error.toLowerCase().includes('institution')) setError(null);
                           }}
                           placeholder="e.g. AYUSH Institute of Technology"
-                          className="w-full pl-10 pr-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                          className="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500 font-sans transition-all"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                        AISHE / College Code <span className="text-emerald-400">*</span>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                        AISHE / College Code <span className="text-emerald-600 dark:text-emerald-400">*</span>
                       </label>
                       <input
                         type="text"
@@ -1377,15 +1414,15 @@ export default function OnboardingPage() {
                           if (error && error.toLowerCase().includes('code')) setError(null);
                         }}
                         placeholder="e.g. C-12894 / KA-BLR-054"
-                        className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                        className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500 font-sans transition-all"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                        Your Official Designation <span className="text-emerald-400">*</span>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                        Your Official Designation <span className="text-emerald-600 dark:text-emerald-400">*</span>
                       </label>
                       <input
                         type="text"
@@ -1393,7 +1430,7 @@ export default function OnboardingPage() {
                         value={designation}
                         onChange={(e) => setDesignation(e.target.value)}
                         placeholder="e.g. Placement Director"
-                        className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                        className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500 font-sans transition-all"
                       />
                     </div>
 
@@ -1402,13 +1439,13 @@ export default function OnboardingPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                         NAAC / NBA Accreditation
                       </label>
                       <select
                         value={naacGrade}
                         onChange={(e) => setNaacGrade(e.target.value)}
-                        className="w-full px-3 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500 font-sans transition-all"
                       >
                         <option value="A++ Accredited">A++ Accredited</option>
                         <option value="A+ Accredited">A+ Accredited</option>
@@ -1421,7 +1458,7 @@ export default function OnboardingPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                         Campus Website
                       </label>
                       <div className="relative">
@@ -1431,13 +1468,13 @@ export default function OnboardingPage() {
                           value={institutionWebsite}
                           onChange={(e) => setInstitutionWebsite(e.target.value)}
                           placeholder="https://ayushcollege.edu.in"
-                          className="w-full pl-10 pr-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                          className="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500 font-sans transition-all"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                         Approximate Student Enrollment
                       </label>
                       <input
@@ -1445,7 +1482,7 @@ export default function OnboardingPage() {
                         value={totalStudents}
                         onChange={(e) => setTotalStudents(e.target.value)}
                         placeholder="e.g. 2400"
-                        className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                        className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500 font-sans transition-all"
                       />
                     </div>
                   </div>
@@ -1457,7 +1494,7 @@ export default function OnboardingPage() {
           {/* ==================== STEP 2 ==================== */}
           {currentStep === 2 && (
             <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+              <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">
                 <Award className="w-4 h-4" />
                 <span>
                   {role === 'STUDENT'
@@ -1472,8 +1509,8 @@ export default function OnboardingPage() {
               {role === 'STUDENT' && (
                 <>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                      Target Career Goal / Aspiring Role <span className="text-emerald-400">*</span>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                      Target Career Goal / Aspiring Role <span className="text-emerald-600 dark:text-emerald-400">*</span>
                     </label>
                     <div className="relative">
                       <Briefcase className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -1483,14 +1520,14 @@ export default function OnboardingPage() {
                         value={careerGoal}
                         onChange={(e) => setCareerGoal(e.target.value)}
                         placeholder="e.g. Full Stack AI Developer, Ayurvedic Clinical Researcher"
-                        className="w-full pl-10 pr-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                        className="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500 font-sans transition-all"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                      Your Primary Skills <span className="text-emerald-400">*</span> (Select all that apply)
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                      Your Primary Skills <span className="text-emerald-600 dark:text-emerald-400">*</span> (Select all that apply)
                     </label>
                     <div className="flex flex-wrap gap-2 pt-1">
                       {POPULAR_STUDENT_SKILLS.map((skill) => {
@@ -1502,11 +1539,11 @@ export default function OnboardingPage() {
                             onClick={() => toggleSkill(skill)}
                             className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all flex items-center gap-1.5 ${
                               isSelected
-                                ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-sm shadow-emerald-500/20 font-semibold'
-                                : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                                ? 'bg-emerald-50 dark:bg-emerald-500/20 border-emerald-300 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-300 shadow-xs font-semibold'
+                                : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                             }`}
                           >
-                            {isSelected ? <Check className="w-3 h-3 text-emerald-400" /> : <Plus className="w-3 h-3 text-slate-500" />}
+                            {isSelected ? <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> : <Plus className="w-3 h-3 text-slate-400" />}
                             <span>{skill}</span>
                           </button>
                         );
@@ -1526,12 +1563,12 @@ export default function OnboardingPage() {
                           }
                         }}
                         placeholder="Add another skill..."
-                        className="flex-1 px-3.5 py-2 bg-slate-800/60 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                        className="flex-1 px-3.5 py-2 bg-white dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 font-sans"
                       />
                       <button
                         type="button"
                         onClick={addCustomSkill}
-                        className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold border border-slate-600 transition-colors"
+                        className="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-semibold border border-slate-300 dark:border-slate-600 transition-colors shadow-xs"
                       >
                         Add
                       </button>
@@ -1544,8 +1581,8 @@ export default function OnboardingPage() {
               {role === 'INDUSTRY' && (
                 <>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                      Active Hiring Domains &amp; Roles <span className="text-emerald-400">*</span>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                      Active Hiring Domains &amp; Roles <span className="text-emerald-600 dark:text-emerald-400">*</span>
                     </label>
                     <div className="flex flex-wrap gap-2 pt-1">
                       {POPULAR_INDUSTRY_DOMAINS.map((domain) => {
@@ -1557,11 +1594,11 @@ export default function OnboardingPage() {
                             onClick={() => toggleHiringDomain(domain)}
                             className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all flex items-center gap-1.5 ${
                               isSelected
-                                ? 'bg-blue-500/20 border-blue-400 text-blue-300 shadow-sm font-semibold'
-                                : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                                ? 'bg-emerald-50 dark:bg-blue-500/20 border-emerald-300 dark:border-blue-400 text-emerald-800 dark:text-blue-300 shadow-xs font-semibold'
+                                : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                             }`}
                           >
-                            {isSelected ? <Check className="w-3 h-3 text-blue-400" /> : <Plus className="w-3 h-3 text-slate-500" />}
+                            {isSelected ? <Check className="w-3 h-3 text-emerald-600 dark:text-blue-400" /> : <Plus className="w-3 h-3 text-slate-400" />}
                             <span>{domain}</span>
                           </button>
                         );
@@ -1570,7 +1607,7 @@ export default function OnboardingPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                       About Company &amp; Hiring Culture
                     </label>
                     <textarea
@@ -1578,7 +1615,7 @@ export default function OnboardingPage() {
                       value={companyBio}
                       onChange={(e) => setCompanyBio(e.target.value)}
                       placeholder="Share what makes your team unique, your mission, and the type of talent you are excited to mentor..."
-                      className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                      className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500 font-sans transition-all"
                     />
                   </div>
                 </>
@@ -1588,8 +1625,8 @@ export default function OnboardingPage() {
               {role === 'COLLEGE' && (
                 <>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                      Active Academic Departments &amp; Faculties <span className="text-emerald-400">*</span>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                      Active Academic Departments &amp; Faculties <span className="text-emerald-600 dark:text-emerald-400">*</span>
                     </label>
                     <div className="flex flex-wrap gap-2 pt-1">
                       {POPULAR_DEPARTMENTS.map((dept) => {
@@ -1601,11 +1638,11 @@ export default function OnboardingPage() {
                             onClick={() => toggleDepartment(dept)}
                             className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all flex items-center gap-1.5 ${
                               isSelected
-                                ? 'bg-purple-500/20 border-purple-400 text-purple-300 shadow-sm font-semibold'
-                                : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                                ? 'bg-emerald-50 dark:bg-purple-500/20 border-emerald-300 dark:border-purple-400 text-emerald-800 dark:text-purple-300 shadow-xs font-semibold'
+                                : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                             }`}
                           >
-                            {isSelected ? <Check className="w-3 h-3 text-purple-400" /> : <Plus className="w-3 h-3 text-slate-500" />}
+                            {isSelected ? <Check className="w-3 h-3 text-emerald-600 dark:text-purple-400" /> : <Plus className="w-3 h-3 text-slate-400" />}
                             <span>{dept}</span>
                           </button>
                         );
@@ -1620,7 +1657,7 @@ export default function OnboardingPage() {
           {/* ==================== STEP 3 ==================== */}
           {currentStep === 3 && (
             <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+              <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">
                 <FileText className="w-4 h-4" />
                 <span>Step 3 of 3: Bio &amp; Professional Links</span>
               </div>
@@ -1629,7 +1666,7 @@ export default function OnboardingPage() {
               {role === 'STUDENT' && (
                 <>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                       Short Bio / Elevator Pitch
                     </label>
                     <textarea
@@ -1637,13 +1674,13 @@ export default function OnboardingPage() {
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
                       placeholder="Briefly describe your passion, key projects, and what kind of internship/micro-task opportunities excite you..."
-                      className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                      className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500 font-sans transition-all"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                         GitHub Profile Link (Optional)
                       </label>
                       <div className="relative">
@@ -1653,13 +1690,13 @@ export default function OnboardingPage() {
                           value={github}
                           onChange={(e) => setGithub(e.target.value)}
                           placeholder="https://github.com/username"
-                          className="w-full pl-10 pr-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                          className="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500 font-sans transition-all"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                         LinkedIn Profile Link (Optional)
                       </label>
                       <div className="relative">
@@ -1669,7 +1706,7 @@ export default function OnboardingPage() {
                           value={linkedin}
                           onChange={(e) => setLinkedin(e.target.value)}
                           placeholder="https://linkedin.com/in/username"
-                          className="w-full pl-10 pr-3.5 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                          className="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 dark:focus:ring-emerald-500/20 focus:border-emerald-600 dark:focus:border-emerald-500 font-sans transition-all"
                         />
                       </div>
                     </div>
@@ -1678,13 +1715,13 @@ export default function OnboardingPage() {
               )}
 
               {/* Confirmation Overview Box */}
-              <div className="bg-slate-800/40 border border-slate-700/80 rounded-2xl p-4 space-y-2.5">
-                <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold">
+              <div className="bg-emerald-50/70 dark:bg-slate-800/50 border border-emerald-200/90 dark:border-slate-700/80 rounded-2xl p-4 space-y-2">
+                <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-400 text-xs font-bold">
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Ready to Save to Firebase Database</span>
+                  <span>Ready to Sync Profile &amp; Launch</span>
                 </div>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Clicking <strong>Complete Onboarding &amp; Launch</strong> will immediately persist your full profile into Firebase Firestore (under collection <code className="text-emerald-300 font-mono">users/{user?.uid?.slice(0, 8)}...</code>), verify your active session, and open your personalized dashboard.
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                  Clicking <strong>Complete Onboarding &amp; Launch</strong> will immediately persist your profile into SkillSetu&apos;s verified network, activate your personalized dashboard, and connect you with curated career opportunities.
                 </p>
               </div>
             </div>
@@ -1692,20 +1729,20 @@ export default function OnboardingPage() {
 
           {/* Error Banner */}
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3.5 text-xs text-red-300 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-red-400 shrink-0" />
+            <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-xl p-3 text-xs text-red-700 dark:text-red-300 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           {/* Navigation Buttons */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-800/80">
+          <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800/80">
             {currentStep > 1 ? (
               <button
                 type="button"
                 onClick={handleBack}
                 disabled={isSubmitting}
-                className="px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800/60 hover:bg-slate-800 text-slate-300 text-xs font-bold transition-all flex items-center gap-2"
+                className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all flex items-center gap-2 shadow-xs"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Back</span>
@@ -1718,7 +1755,7 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 onClick={handleNext}
-                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors shadow-lg shadow-emerald-950/40 flex items-center gap-2"
+                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold transition-all shadow-md shadow-emerald-700/20 flex items-center gap-2"
               >
                 <span>Continue</span>
                 <ArrowRight className="w-4 h-4" />
@@ -1727,17 +1764,17 @@ export default function OnboardingPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold transition-all shadow-lg shadow-emerald-950/50 flex items-center gap-2 disabled:opacity-50"
+                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold transition-all shadow-md shadow-emerald-700/20 flex items-center gap-2 disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Saving to Firebase Database...</span>
+                    <span>Saving Profile...</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4" />
-                    <span>Complete Onboarding &amp; Launch Dashboard</span>
+                    <span>Complete Onboarding &amp; Launch</span>
                   </>
                 )}
               </button>
@@ -1747,7 +1784,7 @@ export default function OnboardingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="max-w-4xl mx-auto w-full py-2 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-slate-800/60 pt-4">
+      <footer className="max-w-4xl mx-auto w-full py-2 text-center text-xs text-slate-500 dark:text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-slate-200/80 dark:border-slate-800/60 pt-4">
         <span>&copy; 2026 SkillSetu &bull; AYUSH Career Bridge</span>
         <span>Secure Cloud Database &bull; All rights reserved</span>
       </footer>
