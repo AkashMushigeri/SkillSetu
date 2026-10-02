@@ -8,6 +8,37 @@ export type OpportunityType =
 
 export type SkillTier = 'Basic' | 'Intermediate' | 'Advanced';
 
+export interface CollegeEducation {
+  institutionName: string;
+  degree: string;
+  branch?: string;
+  academicYear: string;
+  score: string;
+  scoreType?: string;
+}
+
+export interface PucEducation {
+  institutionName: string;
+  course: string;
+  academicYear: string;
+  score: string;
+  scoreType?: string;
+}
+
+export interface SchoolEducation {
+  institutionName: string;
+  board: string;
+  academicYear: string;
+  score: string;
+  scoreType?: string;
+}
+
+export interface EducationHistory {
+  college?: CollegeEducation;
+  puc?: PucEducation;
+  school?: SchoolEducation;
+}
+
 export interface StudentProfile {
   id: string;
   name: string;
@@ -24,6 +55,7 @@ export interface StudentProfile {
   github: string;
   linkedin: string;
   gpa: string;
+  education?: EducationHistory;
 }
 
 export interface LearningResource {

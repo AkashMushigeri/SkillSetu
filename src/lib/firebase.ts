@@ -29,6 +29,7 @@ import {
   connectFirestoreEmulator,
 } from 'firebase/firestore';
 import { getDataConnect, DataConnect, connectDataConnectEmulator } from 'firebase/data-connect';
+import { EducationHistory } from '@/types/student';
 import {
   connectorConfig,
   upsertStudentProfile,
@@ -322,10 +323,22 @@ export interface UserProfileData {
 
   // Student specific:
   college?: string;
+  collegeId?: string;
+  collegeDetails?: {
+    id: string;
+    name: string;
+    city: string;
+    state: string;
+    type?: string;
+    university?: string;
+    affiliation?: string;
+    institutionType?: string;
+  };
   degree?: string;
   department?: string;
   year?: string;
   gpa?: string;
+  education?: EducationHistory;
   careerGoal?: string;
   skills?: string[];
   location?: string;
