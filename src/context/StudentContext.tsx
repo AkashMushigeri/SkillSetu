@@ -63,6 +63,7 @@ interface StudentContextType {
   submitApplication: (oppId: string) => boolean;
   projects: Project[];
   addProject: (project: Omit<Project, 'id'>) => void;
+  updateProject: (projectId: string, updates: Partial<Project>) => void;
   deleteProject: (projectId: string) => void;
   notifications: NotificationItem[];
   unreadNotificationCount: number;
@@ -98,14 +99,19 @@ const calculateProfileCompletion = (
   if (prof.name) score += 15;
   if (prof.email) score += 10;
   if (prof.phone) score += 10;
-  if (prof.college) score += 15;
-  if (prof.degree) score += 10;
-  if (prof.year) score += 10;
+  if (prof.college || prof.education?.college?.institutionName) score += 15;
+  if (prof.degree || prof.education?.college?.degree) score += 10;
+  if (prof.year || prof.education?.college?.academicYear) score += 10;
   if (prof.careerGoal) score += 10;
   if (prof.location) score += 10;
   if (prof.bio) score += 10;
   if (projectsCount > 0) score += 5;
   if (skillsCount > 0) score += 5;
+
+  // Contributing bonus for added PUC and School education
+  if (prof.education?.puc?.institutionName) score += 5;
+  if (prof.education?.school?.institutionName) score += 5;
+
   return Math.min(100, score);
 };
 
@@ -144,7 +150,22 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
       const savedSkills = localStorage.getItem('skillsetu_student_skills');
       if (savedSkills) {
-        setSkills(JSON.parse(savedSkills));
+        try {
+          const parsed: Skill[] = JSON.parse(savedSkills);
+          const savedMap = new Map(parsed.map((s) => [s.id, s]));
+          const merged = INITIAL_SKILLS.map((initSkill) => {
+            const saved = savedMap.get(initSkill.id);
+            return saved ? { ...initSkill, ...saved } : initSkill;
+          });
+          parsed.forEach((s) => {
+            if (!merged.some((m) => m.id === s.id)) {
+              merged.push(s);
+            }
+          });
+          setSkills(merged);
+        } catch {
+          setSkills(INITIAL_SKILLS);
+        }
       }
       const savedOpps = localStorage.getItem('skillsetu_saved_opps');
       if (savedOpps) {
@@ -259,6 +280,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
               ? ''
               : prev.linkedin,
           avatar: userProfile.photoURL || user?.photoURL || (shouldResetMock ? '' : prev.avatar),
+          education: userProfile.education || prev.education,
           profileCompletion: 0,
         };
 
@@ -347,7 +369,22 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const userSkillsKey = `skillsetu_student_skills_${user.uid}`;
         const savedSkills = localStorage.getItem(userSkillsKey);
         if (savedSkills) {
-          setSkills(JSON.parse(savedSkills));
+          try {
+            const parsed: Skill[] = JSON.parse(savedSkills);
+            const savedMap = new Map(parsed.map((s) => [s.id, s]));
+            const merged = INITIAL_SKILLS.map((initSkill) => {
+              const saved = savedMap.get(initSkill.id);
+              return saved ? { ...initSkill, ...saved } : initSkill;
+            });
+            parsed.forEach((s) => {
+              if (!merged.some((m) => m.id === s.id)) {
+                merged.push(s);
+              }
+            });
+            setSkills(merged);
+          } catch {
+            setSkills(INITIAL_SKILLS);
+          }
         } else if (!userProfile?.skills || userProfile.skills.length === 0) {
           // Clean curriculum skills without fake 80% progress
           setSkills(
@@ -487,6 +524,12 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setProjects((prev) => [proj, ...prev]);
   }, []);
 
+  const updateProject = useCallback((projectId: string, updates: Partial<Project>) => {
+    setProjects((prev) =>
+      prev.map((p) => (p.id === projectId ? { ...p, ...updates } : p))
+    );
+  }, []);
+
   const deleteProject = useCallback((projectId: string) => {
     setProjects((prev) => prev.filter((p) => p.id !== projectId));
   }, []);
@@ -588,6 +631,11 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     (updates: Partial<StudentProfile>) => {
       setProfile((prev) => {
         const next = { ...prev, ...updates };
+        next.profileCompletion = calculateProfileCompletion(
+          next,
+          projects.length,
+          skills.filter((s) => s.isVerified).length
+        );
         if (user?.uid) {
           saveUserProfile(user.uid, {
             displayName: next.name,
@@ -596,6 +644,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
             degree: next.degree,
             year: next.year,
             gpa: next.gpa,
+            education: next.education,
             careerGoal: next.careerGoal,
             location: next.location,
             bio: next.bio,
@@ -606,7 +655,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return next;
       });
     },
-    [user]
+    [user, projects.length, skills]
   );
 
   // Toggle resource completion for a skill
@@ -1024,6 +1073,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         submitApplication,
         projects,
         addProject,
+        updateProject,
         deleteProject,
         notifications,
         unreadNotificationCount,
