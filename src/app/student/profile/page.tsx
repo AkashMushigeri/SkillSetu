@@ -840,9 +840,10 @@ export default function StudentProfilePage() {
               </h3>
             </div>
 
-            <div className="space-y-4 text-xs divide-y divide-slate-100 dark:divide-slate-800/80">
+            {/* Single Continuous Vertical Timeline Line across College -> PUC -> School */}
+            <div className="border-l-2 border-brand-teal pl-3 space-y-4 text-xs divide-y divide-slate-100 dark:divide-slate-800/80">
               {/* 1. College / University */}
-              <div className="border-l-2 border-brand-teal pl-3 space-y-1 relative pt-1 first:pt-0">
+              <div className="space-y-1 relative pt-1 first:pt-0">
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-0.5 flex-1 min-w-0">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-brand-teal dark:text-teal-400 block">
@@ -875,7 +876,7 @@ export default function StudentProfilePage() {
 
               {/* 2. PUC / 12th */}
               {pucEdu ? (
-                <div className="border-l-2 border-emerald-500 pl-3 space-y-1 relative pt-3">
+                <div className="space-y-1 relative pt-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="space-y-0.5 flex-1 min-w-0">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
@@ -907,7 +908,7 @@ export default function StudentProfilePage() {
 
               {/* 3. School / 10th */}
               {schoolEdu ? (
-                <div className="border-l-2 border-sky-500 pl-3 space-y-1 relative pt-3">
+                <div className="space-y-1 relative pt-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="space-y-0.5 flex-1 min-w-0">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 block">
@@ -936,33 +937,33 @@ export default function StudentProfilePage() {
                   </div>
                 </div>
               ) : null}
-
-              {/* Dynamic Add Buttons for Missing Education Entries */}
-              {(!pucEdu || !schoolEdu) && (
-                <div className="pt-3 flex flex-wrap gap-2">
-                  {!pucEdu && (
-                    <button
-                      type="button"
-                      onClick={handleOpenAddPuc}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-brand-teal dark:hover:border-teal-400 hover:text-brand-teal dark:hover:text-teal-400 hover:bg-brand-teal/5 text-xs font-semibold transition-all"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>+ Add PUC / 12th</span>
-                    </button>
-                  )}
-                  {!schoolEdu && (
-                    <button
-                      type="button"
-                      onClick={handleOpenAddSchool}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-brand-teal dark:hover:border-teal-400 hover:text-brand-teal dark:hover:text-teal-400 hover:bg-brand-teal/5 text-xs font-semibold transition-all"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>+ Add School / 10th</span>
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
+
+            {/* Dynamic Add Buttons for Missing Education Entries */}
+            {(!pucEdu || !schoolEdu) && (
+              <div className="pt-2 flex flex-wrap gap-2">
+                {!pucEdu && (
+                  <button
+                    type="button"
+                    onClick={handleOpenAddPuc}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-brand-teal dark:hover:border-teal-400 hover:text-brand-teal dark:hover:text-teal-400 hover:bg-brand-teal/5 text-xs font-semibold transition-all"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ Add PUC / 12th</span>
+                  </button>
+                )}
+                {!schoolEdu && (
+                  <button
+                    type="button"
+                    onClick={handleOpenAddSchool}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-brand-teal dark:hover:border-teal-400 hover:text-brand-teal dark:hover:text-teal-400 hover:bg-brand-teal/5 text-xs font-semibold transition-all"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ Add School / 10th</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Contact & Links */}
