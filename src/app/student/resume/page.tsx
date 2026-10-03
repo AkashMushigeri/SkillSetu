@@ -18,7 +18,7 @@ import {
 import { GithubIcon } from '@/components/icons/BrandIcons';
 
 export default function ResumePage() {
-  const { profile, skills, projects } = useStudent();
+  const { profile, skills, projects, certifications } = useStudent();
 
   const verifiedSkills = skills.filter((s) => s.isVerified);
   const otherSkills = skills.filter((s) => !s.isVerified);
@@ -230,10 +230,15 @@ export default function ResumePage() {
         {/* 7. Achievements & Verified Credentials */}
         <div className="space-y-2">
           <h2 className="text-xs font-black uppercase tracking-widest text-slate-400 border-b border-slate-200 pb-1">
-            Honors &amp; Verified Credentials
+            Honors &amp; Certifications
           </h2>
-          {verifiedSkills.length > 0 ? (
+          {certifications.length > 0 || verifiedSkills.length > 0 ? (
             <ul className="list-disc pl-4 space-y-1 text-xs text-slate-600">
+              {certifications.map((c) => (
+                <li key={c.id}>
+                  <strong>{c.title}</strong> &mdash; {c.issuer}{c.issueDate ? ` (${c.issueDate})` : ''}{c.credentialId ? ` • ID: ${c.credentialId}` : ''}
+                </li>
+              ))}
               {verifiedSkills.map((sk) => (
                 <li key={sk.id}>
                   SkillSetu Verified Competency: <strong>{sk.name}</strong> ({sk.level} Level) &mdash; Benchmark Assessed
@@ -242,7 +247,7 @@ export default function ResumePage() {
             </ul>
           ) : (
             <p className="text-xs text-slate-500 italic">
-              Active skill benchmarks in progress &bull; Complete skills to earn official SkillSetu verified badges.
+              Active skill benchmarks in progress &bull; Add certifications or pass skill assessments to earn verified credentials.
             </p>
           )}
         </div>
