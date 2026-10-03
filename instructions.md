@@ -17,22 +17,28 @@ Firebase immediately. It never overwrites an existing `.env.local`.
 `npm run dev` and `npm run build` run `setup` automatically via npm `pre` hooks, so
 if you skip the explicit call it still happens.
 
-### Required ordering: Data Connect SDK before `npm install`
+### Data Connect SDK: generated automatically by `npm install`
 
 `src/generated/dataconnect/` is gitignored, so a fresh clone does not contain it, and
-`package.json` depends on it via `file:src/generated/dataconnect`. Installing first
-leaves a broken package and dozens of `Cannot find module '@skillsetu/dataconnect'`
-errors.
+`package.json` depends on it via `file:src/generated/dataconnect`. A `postinstall` hook
+(`scripts/ensure-dataconnect-sdk.cjs`) generates it from `dataconnect/schema/schema.gql`
+during `npm install`, so the three commands above are all you need. It is a fast no-op
+once the SDK exists, so repeat installs are unaffected.
+
+The hook **never fails the install**. If it cannot generate the SDK — typically because
+the Firebase CLI is missing or not logged in — it prints the manual steps and exits 0.
+The app will not start until you run them:
 
 ```bash
 npm install -g firebase-tools    # once
-firebase login                   # once
+firebase login                # once
 firebase dataconnect:sdk:generate
-npm install
 ```
 
-If you already ran `npm install` and see those module errors, just run
-`firebase dataconnect:sdk:generate` and then `npm install` again.
+No `npm install` is needed after generating: `node_modules/@skillsetu/dataconnect` is a
+junction to `src/generated/dataconnect`, so it resolves the generated files as soon as
+they exist. Set `SKIP_DATACONNECT_SDK=1` to skip the hook entirely, which is useful in CI
+where the SDK is already cached.
 
 ## Environment variables
 

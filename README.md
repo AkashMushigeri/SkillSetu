@@ -264,16 +264,22 @@ git clone https://github.com/AkashMushigeri/SkillSetu.git
 cd SkillSetu
 ```
 
-### 2. Generate the Firebase Data Connect SDK — **do this before `npm install`**
+### 2. Generate the Firebase Data Connect SDK — automatic during `npm install`
 
 `src/generated/dataconnect/` is **gitignored**, so a fresh clone does not contain it.
-`package.json` depends on it via `"@skillsetu/dataconnect": "file:src/generated/dataconnect"`, so
-installing first leaves you with a broken/empty package and dozens of
-`Cannot find module '@skillsetu/dataconnect'` type errors.
+`package.json` depends on it via `"@skillsetu/dataconnect": "file:src/generated/dataconnect"`.
+A `postinstall` hook (`scripts/ensure-dataconnect-sdk.cjs`) generates it automatically
+from `dataconnect/schema/schema.gql`, so step 3 is all you need.
+
+If the hook cannot reach the Firebase CLI it prints the manual steps and lets the install
+finish; run them yourself to get a working app:
 
 ```bash
 firebase dataconnect:sdk:generate
 ```
+
+No reinstall is needed afterwards — `node_modules/@skillsetu/dataconnect` is a junction
+to `src/generated/dataconnect` and resolves the files immediately.
 
 This reads `dataconnect/schema/schema.gql` and writes the typed SDK to
 `src/generated/dataconnect/`. Re-run it after any schema change.

@@ -8,6 +8,7 @@
   },
   "scripts": {
     "setup": "node scripts/setup-env.cjs",
+    "postinstall": "node scripts/ensure-dataconnect-sdk.cjs",
     "predev": "node scripts/setup-env.cjs",
     "dev": "next dev",
     "prebuild": "node scripts/setup-env.cjs",
