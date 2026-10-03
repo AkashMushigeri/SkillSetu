@@ -19,7 +19,9 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@server/*": ["./src/server/*"]
+      "@server/*": ["./src/server/*"],
+      "@skillsetu/dataconnect": ["./src/generated/dataconnect"],
+      "@skillsetu/dataconnect/*": ["./src/generated/dataconnect/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

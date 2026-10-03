@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  transpilePackages: ['@skillsetu/dataconnect'],
   eslint: {
     ignoreDuringBuilds: true,
   },
