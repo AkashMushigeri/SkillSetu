@@ -29,6 +29,7 @@ import {
   Search,
   ChevronDown,
   AlertCircle,
+  ArrowRight,
 } from 'lucide-react';
 import { GithubIcon, LinkedinIcon } from '@/components/icons/BrandIcons';
 import { Project, EducationHistory } from '@/types/student';
@@ -473,29 +474,31 @@ export default function StudentProfilePage() {
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
                 <h1 suppressHydrationWarning className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
-                  {profile.name}
+                  {profile.name || 'Student'}
                 </h1>
-                <span className="p-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300" title="Verified Student">
-                  <CheckCircle2 className="w-5 h-5" />
-                </span>
+                {verifiedSkills.length > 0 && (
+                  <span className="p-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300" title="Verified Student">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </span>
+                )}
               </div>
 
               <p suppressHydrationWarning className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300">
-                {profile.degree} &bull; {profile.year} ({profile.gpa})
+                {profile.degree ? `${profile.degree}${profile.year ? ` • ${profile.year}` : ''}${profile.gpa ? ` (${profile.gpa})` : ''}` : 'Profile in progress'}
               </p>
 
               <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-500 dark:text-slate-400 pt-0.5">
                 <span suppressHydrationWarning className="flex items-center gap-1">
                   <GraduationCap className="w-3.5 h-3.5 text-brand-teal" />
-                  {profile.college}
+                  {profile.college || 'College not set'}
                 </span>
                 <span suppressHydrationWarning className="flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                  {profile.location}
+                  {profile.location || 'Location not set'}
                 </span>
                 <span className="flex items-center gap-1">
                   <Briefcase className="w-3.5 h-3.5 text-brand-orange" />
-                  Goal: <strong className="text-slate-700 dark:text-slate-200">{profile.careerGoal}</strong>
+                  Goal: <strong className="text-slate-700 dark:text-slate-200">{profile.careerGoal || 'Not set yet'}</strong>
                 </span>
               </div>
             </div>
@@ -1068,20 +1071,39 @@ export default function StudentProfilePage() {
               <Award className="w-4 h-4 text-brand-teal" />
               Certifications &amp; Honors
             </h3>
-            <div className="space-y-2.5 text-xs">
-              <div className="p-3 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800">
-                <span className="font-bold text-slate-800 dark:text-slate-200 block">
-                  National Skill Intelligence Challenge Finalist
-                </span>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">Ministry of Ayush &bull; Top National Merit</span>
+            {verifiedSkills.length > 0 ? (
+              <div className="space-y-2.5 text-xs">
+                {verifiedSkills.map((sk) => (
+                  <div
+                    key={sk.id}
+                    className="p-3 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800 flex items-start justify-between gap-2"
+                  >
+                    <div>
+                      <span className="font-bold text-slate-800 dark:text-slate-200 block">
+                        SkillSetu Verified: {sk.name}
+                      </span>
+                      <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">
+                        {sk.level} &bull; Verified Competency
+                      </span>
+                    </div>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                  </div>
+                ))}
               </div>
-              <div className="p-3 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800">
-                <span className="font-bold text-slate-800 dark:text-slate-200 block">
-                  SkillSetu Verified Developer Badge
-                </span>
-                <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">Web &amp; Python Competency</span>
+            ) : (
+              <div className="p-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-center space-y-2">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  No verified credentials yet. Pass skill benchmark assessments to earn verified badges.
+                </p>
+                <Link
+                  href="/student/skills"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-brand-teal hover:underline"
+                >
+                  <span>Verify skills</span>
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
