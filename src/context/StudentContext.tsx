@@ -8,6 +8,7 @@ import {
   Opportunity,
   Application,
   Project,
+  Certification,
   NotificationItem,
   CityLocation,
   OpportunityType,
@@ -74,6 +75,10 @@ interface StudentContextType {
   addProject: (project: Omit<Project, 'id'>) => void;
   updateProject: (projectId: string, updates: Partial<Project>) => void;
   deleteProject: (projectId: string) => void;
+  certifications: Certification[];
+  addCertification: (cert: Omit<Certification, 'id'>) => void;
+  updateCertification: (certId: string, updates: Partial<Certification>) => void;
+  deleteCertification: (certId: string) => void;
   notifications: NotificationItem[];
   unreadNotificationCount: number;
   markNotificationAsRead: (id: string) => void;
@@ -172,6 +177,9 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // 5. Projects State (empty by default for real students, loaded from user storage)
   const [projects, setProjects] = useState<Project[]>([]);
 
+  // 5b. Certifications State (empty by default for real students, loaded from user storage)
+  const [certifications, setCertifications] = useState<Certification[]>([]);
+
   // 6. Notifications State
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
@@ -196,6 +204,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setSavedOpportunityIds(['opp-1', 'opp-4']);
       setApplications(INITIAL_APPLICATIONS);
       setProjects(INITIAL_PROJECTS);
+      setCertifications([]);
       setNotifications(INITIAL_NOTIFICATIONS);
       setIsHydrated(true);
       return;
@@ -291,6 +300,18 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setProjects([]);
       }
 
+      // 3b. Certifications
+      try {
+        const savedCertsStr = localStorage.getItem(getStorageKey('certifications', user.uid));
+        if (savedCertsStr) {
+          setCertifications(JSON.parse(savedCertsStr));
+        } else {
+          setCertifications([]);
+        }
+      } catch {
+        setCertifications([]);
+      }
+
       // 4. Applications
       try {
         const savedAppsStr = localStorage.getItem(getStorageKey('applications', user.uid));
@@ -353,6 +374,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setProfile(EMPTY_STUDENT_PROFILE);
       setSkills([]);
       setProjects([]);
+      setCertifications([]);
       setApplications([]);
       setSavedOpportunityIds([]);
       setNotifications([]);
@@ -471,6 +493,32 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const deleteProject = useCallback((projectId: string) => {
     setProjects((prev) => prev.filter((p) => p.id !== projectId));
+  }, []);
+
+  // Certifications persistence & handlers
+  useEffect(() => {
+    if (!isHydrated || typeof window === 'undefined') return;
+    if (isDemoUser) return;
+    localStorage.setItem(getStorageKey('certifications', user?.uid), JSON.stringify(certifications));
+  }, [certifications, user?.uid, isHydrated, isDemoUser]);
+
+  const addCertification = useCallback((newCert: Omit<Certification, 'id'>) => {
+    const cert: Certification = {
+      ...newCert,
+      id: `cert-${Date.now()}`,
+      uploadedAt: new Date().toISOString(),
+    };
+    setCertifications((prev) => [cert, ...prev]);
+  }, []);
+
+  const updateCertification = useCallback((certId: string, updates: Partial<Certification>) => {
+    setCertifications((prev) =>
+      prev.map((c) => (c.id === certId ? { ...c, ...updates } : c))
+    );
+  }, []);
+
+  const deleteCertification = useCallback((certId: string) => {
+    setCertifications((prev) => prev.filter((c) => c.id !== certId));
   }, []);
 
   useEffect(() => {
@@ -1125,6 +1173,8 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setSkills(INITIAL_SKILLS);
     setSavedOpportunityIds(['opp-1', 'opp-4']);
     setApplications(INITIAL_APPLICATIONS);
+    setProjects(INITIAL_PROJECTS);
+    setCertifications([]);
     setNotifications(INITIAL_NOTIFICATIONS);
     setSelectedCity(CITIES_LIST[0]);
     setUserCoords(CITIES_LIST[0].coordinates);
@@ -1157,6 +1207,10 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         addProject,
         updateProject,
         deleteProject,
+        certifications,
+        addCertification,
+        updateCertification,
+        deleteCertification,
         notifications,
         unreadNotificationCount,
         markNotificationAsRead,

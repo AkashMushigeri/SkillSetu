@@ -39,6 +39,21 @@ export interface EducationHistory {
   school?: SchoolEducation;
 }
 
+export interface Certification {
+  id: string;
+  title: string;
+  issuer: string;
+  issueDate?: string;
+  expiryDate?: string;
+  credentialId?: string;
+  credentialUrl?: string;
+  fileName?: string;
+  fileType?: string;
+  fileData?: string;
+  fileSize?: number;
+  uploadedAt?: string;
+}
+
 export interface StudentProfile {
   id: string;
   name: string;
@@ -56,6 +71,7 @@ export interface StudentProfile {
   linkedin: string;
   gpa: string;
   education?: EducationHistory;
+  certifications?: Certification[];
 }
 
 export interface LearningResource {
