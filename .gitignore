@@ -43,8 +43,7 @@ Thumbs.db
 # Logs
 *.log
 
-# Data Connect generated
-src/generated/dataconnect/
+
 
 # Build cache
 *.tsbuildinfo
