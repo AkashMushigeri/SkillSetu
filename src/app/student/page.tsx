@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { OpportunityType } from '@/types/student';
 import { HeroMapAnimation } from '@/components/dashboard/HeroMapAnimation';
+import { computeOpportunityMatch } from '@/lib/matchUtils';
 
 export default function StudentDashboardPage() {
   const router = useRouter();
@@ -42,15 +43,24 @@ export default function StudentDashboardPage() {
   const inProgressSkill = skills.find((s) => !s.isVerified && s.progress > 0);
   const targetSkill = inProgressSkill || skills.find((s) => !s.isVerified) || skills[0];
 
+  // Dynamic real count of opportunities matching user's real skills >= 60%
+  const recommendedOppsCount = React.useMemo(() => {
+    if (skills.length === 0) return 0;
+    return opportunities.filter((opp) => {
+      const match = computeOpportunityMatch(opp, skills, projects, profile);
+      return match.matchScore >= 60;
+    }).length;
+  }, [opportunities, skills, projects, profile]);
+
   const handleCategoryClick = (category: OpportunityType) => {
     setSelectedOpportunityType(category);
     router.push('/student/opportunities');
   };
 
-  const opportunityTypes = [
+  const opportunityTypes = React.useMemo(() => [
     {
       title: 'Internship' as OpportunityType,
-      count: '14 live',
+      count: `${opportunities.filter((o) => o.type === 'Internship').length} live`,
       color: 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100',
       badgeBg: 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300',
       icon: Briefcase,
@@ -59,7 +69,7 @@ export default function StudentDashboardPage() {
     },
     {
       title: 'Micro-Internship' as OpportunityType,
-      count: '23 live',
+      count: `${opportunities.filter((o) => o.type === 'Micro-Internship').length} live`,
       color: 'border-blue-200 dark:border-blue-800/60 bg-blue-50/50 dark:bg-blue-950/20 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-blue-900 dark:text-blue-100',
       badgeBg: 'bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300',
       icon: Zap,
@@ -68,7 +78,7 @@ export default function StudentDashboardPage() {
     },
     {
       title: 'Same-Day Task' as OpportunityType,
-      count: '19 live',
+      count: `${opportunities.filter((o) => o.type === 'Same-Day Task').length} live`,
       color: 'border-orange-200 dark:border-orange-800/60 bg-orange-50/50 dark:bg-orange-950/20 hover:bg-orange-50 dark:hover:bg-orange-950/40 text-orange-900 dark:text-orange-100',
       badgeBg: 'bg-orange-100 dark:bg-orange-900/60 text-orange-800 dark:text-orange-300',
       icon: Clock,
@@ -77,7 +87,7 @@ export default function StudentDashboardPage() {
     },
     {
       title: 'Part-Time Job' as OpportunityType,
-      count: '10 live',
+      count: `${opportunities.filter((o) => o.type === 'Part-Time Job').length} live`,
       color: 'border-purple-200 dark:border-purple-800/60 bg-purple-50/50 dark:bg-purple-950/20 hover:bg-purple-50 dark:hover:bg-purple-950/40 text-purple-900 dark:text-purple-100',
       badgeBg: 'bg-purple-100 dark:bg-purple-900/60 text-purple-800 dark:text-purple-300',
       icon: TrendingUp,
@@ -86,7 +96,7 @@ export default function StudentDashboardPage() {
     },
     {
       title: 'Full-Time Job' as OpportunityType,
-      count: '5 live',
+      count: `${opportunities.filter((o) => o.type === 'Full-Time Job').length} live`,
       color: 'border-teal-200 dark:border-teal-800/60 bg-teal-50/50 dark:bg-teal-950/20 hover:bg-teal-50 dark:hover:bg-teal-950/40 text-teal-900 dark:text-teal-100',
       badgeBg: 'bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300',
       icon: Target,
@@ -95,19 +105,28 @@ export default function StudentDashboardPage() {
     },
     {
       title: 'Industry Challenge' as OpportunityType,
-      count: '6 live',
+      count: `${opportunities.filter((o) => o.type === 'Industry Challenge').length} live`,
       color: 'border-rose-200 dark:border-rose-800/60 bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-900 dark:text-rose-100',
       badgeBg: 'bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300',
       icon: Rocket,
       iconColor: 'text-rose-600 dark:text-rose-400',
       description: 'Real-world competitions and industry challenges.',
     },
-  ];
+  ], [opportunities]);
 
-  // Startup-first recommendations for 3rd year students
-  const startupRecommendedOpps = opportunities
-    .filter((o) => o.isStartup || o.type === 'Micro-Internship' || o.type === 'Industry Challenge')
-    .slice(0, 3);
+  // Startup-first recommendations for student career stage
+  const startupRecommendedOpps = React.useMemo(() => {
+    return opportunities
+      .filter((o) => o.isStartup || o.type === 'Micro-Internship' || o.type === 'Industry Challenge')
+      .map((opp) => {
+        const liveMatch = computeOpportunityMatch(opp, skills, projects, profile);
+        return {
+          ...opp,
+          matchScore: liveMatch.matchScore,
+        };
+      })
+      .slice(0, 3);
+  }, [opportunities, skills, projects, profile]);
 
   return (
     <div className="w-full max-w-[1820px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 space-y-8">
@@ -171,12 +190,16 @@ export default function StudentDashboardPage() {
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h3 suppressHydrationWarning className="font-bold text-slate-900 dark:text-white text-base sm:text-lg">{profile.name}</h3>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <h3 suppressHydrationWarning className="font-bold text-slate-900 dark:text-white text-base sm:text-lg">{profile.name || 'Student'}</h3>
+                  {verifiedSkillsCount > 0 && (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  )}
                 </div>
-                <p suppressHydrationWarning className="text-xs font-medium text-slate-600 dark:text-slate-300">{profile.degree} &bull; {profile.year}</p>
+                <p suppressHydrationWarning className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                  {profile.degree ? `${profile.degree}${profile.year ? ` • ${profile.year}` : ''}` : 'Profile in progress'}
+                </p>
                 <p suppressHydrationWarning className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400" /> {profile.location}
+                  <MapPin className="w-3.5 h-3.5 text-slate-400" /> {profile.location || 'Location not set'}
                 </p>
               </div>
             </div>
@@ -196,8 +219,8 @@ export default function StudentDashboardPage() {
                 <Briefcase className="w-3 h-3 text-brand-teal dark:text-teal-400" />
                 Career Goal
               </span>
-              <p className="font-bold text-slate-800 dark:text-slate-100 truncate" title={profile.careerGoal}>
-                {profile.careerGoal}
+              <p className="font-bold text-slate-800 dark:text-slate-100 truncate" title={profile.careerGoal || 'Not set yet'}>
+                {profile.careerGoal || 'Not set yet'}
               </p>
             </div>
 
@@ -260,28 +283,36 @@ export default function StudentDashboardPage() {
             <h4 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">
               {inProgressSkill
                 ? `Complete your ${inProgressSkill.name} Assessment`
-                : `Verify your ${targetSkill?.name || 'Core'} Skills`}
+                : targetSkill
+                ? `Verify your ${targetSkill.name} Skills`
+                : 'Explore & Add Your Core Skills'}
             </h4>
             <p className="text-xs text-slate-600 dark:text-slate-300 mt-1.5 leading-relaxed">
               {inProgressSkill ? (
                 <>
-                  <strong>Reason:</strong> You completed {inProgressSkill.progress}% of curriculum. Passing this assessment unlocks verified skill status and boosts your local internship match from <strong>62% to 87%</strong>.
+                  <strong>Reason:</strong> You completed {inProgressSkill.progress}% of the curriculum. Passing this assessment unlocks verified skill status and boosts your internship match score.
+                </>
+              ) : targetSkill ? (
+                <>
+                  <strong>Reason:</strong> Take a 10-question skill benchmark in {targetSkill.name} to unlock your verified badge and boost your employer match score.
                 </>
               ) : (
                 <>
-                  <strong>Reason:</strong> Take a 10-question skill benchmark in {targetSkill?.name || 'your core area'} to unlock your verified badge and boost your employer match score up to <strong>+25%</strong>.
+                  <strong>Get Started:</strong> Add your technical skills to your profile to unlock benchmark assessments and personalized industry opportunity matches.
                 </>
               )}
             </p>
           </div>
 
           <div className="mt-4 pt-3 border-t border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-between">
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">10 Questions &bull; 15 mins</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              {targetSkill ? '10 Questions • 15 mins' : 'Over 200+ skills available'}
+            </span>
             <Link
               href={targetSkill ? `/student/skills/${targetSkill.id}` : '/student/skills'}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-teal hover:bg-brand-dark text-white font-bold text-xs shadow-sm transition-all"
             >
-              <span>{inProgressSkill ? 'Continue Learning' : 'Start Assessment'}</span>
+              <span>{inProgressSkill ? 'Continue Learning' : targetSkill ? 'Start Assessment' : 'Explore Skills'}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -366,14 +397,16 @@ export default function StudentDashboardPage() {
           >
             <div className="flex items-center justify-between">
               <span className="text-2xl sm:text-3xl xl:text-4xl font-extrabold text-brand-teal dark:text-teal-400 group-hover:scale-105 transition-transform">
-                12
+                {recommendedOppsCount}
               </span>
               <div className="w-8 h-8 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-brand-teal dark:text-teal-400 flex items-center justify-center">
                 <Compass className="w-4 h-4" />
               </div>
             </div>
             <p className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 mt-2">Recommended</p>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Matching &gt; 60%</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+              {skills.length === 0 ? 'Add skills to match' : 'Matching ≥ 60%'}
+            </p>
           </Link>
         </div>
       </div>
@@ -425,13 +458,13 @@ export default function StudentDashboardPage() {
         </div>
       </div>
 
-      {/* 5. Startup-First Recommendations (Key Differentiator for 3rd Year) */}
+      {/* 5. Startup-First Recommendations (Key Differentiator for Student Stage) */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 xl:p-10 shadow-card space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-orange/10 dark:bg-brand-orange/20 text-brand-orange text-xs font-bold mb-1.5">
               <Rocket className="w-3.5 h-3.5" />
-              Recommended for your career stage (3rd Year)
+              Recommended for your career stage ({profile.year || 'Student'})
             </div>
             <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
               Start small. Build real industry experience before targeting larger companies.
