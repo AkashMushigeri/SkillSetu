@@ -30,9 +30,13 @@ import {
   ChevronDown,
   AlertCircle,
   ArrowRight,
+  Upload,
+  FileText,
+  Eye,
+  Download,
 } from 'lucide-react';
 import { GithubIcon, LinkedinIcon } from '@/components/icons/BrandIcons';
-import { Project, EducationHistory } from '@/types/student';
+import { Project, EducationHistory, Certification } from '@/types/student';
 import { getAllCatalogSkills, SkillItem } from '@/data/skillsData';
 
 export default function StudentProfilePage() {
@@ -47,6 +51,10 @@ export default function StudentProfilePage() {
     addSkill,
     removeSkill,
     updateSkillLevel,
+    certifications,
+    addCertification,
+    updateCertification,
+    deleteCertification,
   } = useStudent();
 
   // 1. Profile Header Edit Modal State
@@ -437,6 +445,196 @@ export default function StudentProfilePage() {
       setTimeout(() => setSkillAddMessage(null), 4000);
     } else {
       setSkillAddMessage({ text: result.message, type: 'error' });
+    }
+  };
+
+  // 7. Certifications & Honors State & Handlers
+  const [isAddOrEditCertOpen, setIsAddOrEditCertOpen] = useState(false);
+  const [editingCert, setEditingCert] = useState<Certification | null>(null);
+  const [deletingCertId, setDeletingCertId] = useState<string | null>(null);
+  const [viewingCert, setViewingCert] = useState<Certification | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [certFileError, setCertFileError] = useState<string | null>(null);
+  const certFileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const [certForm, setCertForm] = useState({
+    title: '',
+    issuer: '',
+    issueDate: '',
+    expiryDate: '',
+    credentialId: '',
+    credentialUrl: '',
+    fileName: '',
+    fileType: '',
+    fileData: '',
+    fileSize: 0,
+  });
+
+  const MAX_CERT_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+
+  const handleProcessCertFile = (file: File) => {
+    setCertFileError(null);
+    const validExtensions = ['.pdf', '.png', '.jpg', '.jpeg'];
+    const hasValidExt = validExtensions.some((ext) => file.name.toLowerCase().endsWith(ext));
+    const validMimes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+    const hasValidMime = validMimes.includes(file.type);
+
+    if (!hasValidExt && !hasValidMime) {
+      setCertFileError('Unsupported file type. Please upload a PDF, PNG, JPG, or JPEG file.');
+      return;
+    }
+
+    if (file.size > MAX_CERT_FILE_SIZE) {
+      setCertFileError('File size exceeds 5MB limit. Please upload a smaller file.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setCertForm((prev) => ({
+        ...prev,
+        fileName: file.name,
+        fileType: file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg'),
+        fileSize: file.size,
+        fileData: dataUrl,
+      }));
+    };
+    reader.onerror = () => {
+      setCertFileError('Error reading file. Please try again.');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCertDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleCertDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleCertDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleProcessCertFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleCertFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleProcessCertFile(e.target.files[0]);
+    }
+  };
+
+  const handleRemoveUploadedCert = () => {
+    setCertForm((prev) => ({
+      ...prev,
+      fileName: '',
+      fileType: '',
+      fileData: '',
+      fileSize: 0,
+    }));
+    setCertFileError(null);
+    if (certFileInputRef.current) {
+      certFileInputRef.current.value = '';
+    }
+  };
+
+  const handleOpenAddCert = () => {
+    setEditingCert(null);
+    setCertForm({
+      title: '',
+      issuer: '',
+      issueDate: '',
+      expiryDate: '',
+      credentialId: '',
+      credentialUrl: '',
+      fileName: '',
+      fileType: '',
+      fileData: '',
+      fileSize: 0,
+    });
+    setCertFileError(null);
+    setIsAddOrEditCertOpen(true);
+  };
+
+  const handleOpenEditCert = (cert: Certification) => {
+    setEditingCert(cert);
+    setCertForm({
+      title: cert.title || '',
+      issuer: cert.issuer || '',
+      issueDate: cert.issueDate || '',
+      expiryDate: cert.expiryDate || '',
+      credentialId: cert.credentialId || '',
+      credentialUrl: cert.credentialUrl || '',
+      fileName: cert.fileName || '',
+      fileType: cert.fileType || '',
+      fileData: cert.fileData || '',
+      fileSize: cert.fileSize || 0,
+    });
+    setCertFileError(null);
+    setIsAddOrEditCertOpen(true);
+  };
+
+  const handleSaveCertSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!certForm.title.trim() || !certForm.issuer.trim()) return;
+
+    if (editingCert) {
+      updateCertification(editingCert.id, {
+        title: certForm.title.trim(),
+        issuer: certForm.issuer.trim(),
+        issueDate: certForm.issueDate.trim() || undefined,
+        expiryDate: certForm.expiryDate.trim() || undefined,
+        credentialId: certForm.credentialId.trim() || undefined,
+        credentialUrl: certForm.credentialUrl.trim() || undefined,
+        fileName: certForm.fileName || undefined,
+        fileType: certForm.fileType || undefined,
+        fileData: certForm.fileData || undefined,
+        fileSize: certForm.fileSize || undefined,
+      });
+    } else {
+      addCertification({
+        title: certForm.title.trim(),
+        issuer: certForm.issuer.trim(),
+        issueDate: certForm.issueDate.trim() || undefined,
+        expiryDate: certForm.expiryDate.trim() || undefined,
+        credentialId: certForm.credentialId.trim() || undefined,
+        credentialUrl: certForm.credentialUrl.trim() || undefined,
+        fileName: certForm.fileName || undefined,
+        fileType: certForm.fileType || undefined,
+        fileData: certForm.fileData || undefined,
+        fileSize: certForm.fileSize || undefined,
+      });
+    }
+
+    setIsAddOrEditCertOpen(false);
+    setEditingCert(null);
+  };
+
+  const handleDownloadOrOpenNewTab = (cert: Certification) => {
+    if (!cert.fileData) return;
+    try {
+      const arr = cert.fileData.split(',');
+      const mime = arr[0].match(/:(.*?);/)?.[1] || cert.fileType || 'application/octet-stream';
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      const blob = new Blob([u8arr], { type: mime });
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+    } catch {
+      window.open(cert.fileData, '_blank');
     }
   };
 
@@ -1065,43 +1263,128 @@ export default function StudentProfilePage() {
             </div>
           </div>
 
-          {/* Certifications & Achievements */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-card space-y-3">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Award className="w-4 h-4 text-brand-teal" />
-              Certifications &amp; Honors
-            </h3>
-            {verifiedSkills.length > 0 ? (
-              <div className="space-y-2.5 text-xs">
-                {verifiedSkills.map((sk) => (
-                  <div
-                    key={sk.id}
-                    className="p-3 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800 flex items-start justify-between gap-2"
-                  >
-                    <div>
-                      <span className="font-bold text-slate-800 dark:text-slate-200 block">
-                        SkillSetu Verified: {sk.name}
-                      </span>
-                      <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">
-                        {sk.level} &bull; Verified Competency
-                      </span>
-                    </div>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                  </div>
-                ))}
+          {/* Certifications & Honors Card */}
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-card space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Award className="w-4 h-4 text-brand-teal dark:text-teal-400" />
+                Certifications &amp; Honors {certifications.length > 0 && `(${certifications.length})`}
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleOpenAddCert}
+                  className="text-xs font-semibold text-brand-teal dark:text-teal-400 hover:text-brand-dark dark:hover:text-teal-300 hover:underline flex items-center gap-1 transition-colors"
+                  title="Add or manage certifications"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Edit &rarr;</span>
+                </button>
+              </div>
+            </div>
+
+            {certifications.length === 0 ? (
+              <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-dashed border-slate-200 dark:border-slate-800 text-center space-y-2">
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                  No certifications added yet.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleOpenAddCert}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-teal hover:bg-brand-dark text-white text-xs font-bold transition-all shadow-xs"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Certification</span>
+                </button>
               </div>
             ) : (
-              <div className="p-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-center space-y-2">
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  No verified credentials yet. Pass skill benchmark assessments to earn verified badges.
-                </p>
-                <Link
-                  href="/student/skills"
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-brand-teal hover:underline"
-                >
-                  <span>Verify skills</span>
-                  <ArrowRight className="w-3 h-3" />
-                </Link>
+              <div className="space-y-3">
+                {certifications.map((cert) => (
+                  <div
+                    key={cert.id}
+                    className="p-3.5 bg-slate-50 dark:bg-slate-850 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2 group hover:border-slate-300 dark:hover:border-slate-700 transition-all"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-0.5 flex-1 min-w-0">
+                        <span className="font-bold text-slate-900 dark:text-white block text-sm truncate">
+                          {cert.title}
+                        </span>
+                        <p className="text-slate-600 dark:text-slate-300 text-xs font-medium">
+                          {cert.issuer}
+                          {cert.issueDate ? ` • ${cert.issueDate}` : ''}
+                        </p>
+                        {cert.credentialId && (
+                          <p className="text-[11px] text-slate-400 dark:text-slate-500 font-mono truncate">
+                            ID: {cert.credentialId}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditCert(cert)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-brand-teal dark:hover:text-teal-400 hover:bg-white dark:hover:bg-slate-800 transition-colors"
+                          title="Edit certification"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeletingCertId(cert.id)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-white dark:hover:bg-slate-800 transition-colors"
+                          title="Delete certification"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Uploaded Certificate Preview & View Action */}
+                    {cert.fileData ? (
+                      <button
+                        type="button"
+                        onClick={() => setViewingCert(cert)}
+                        className="w-full mt-1.5 p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-brand-teal dark:hover:border-teal-400 flex items-center justify-between gap-2 text-left transition-all shadow-2xs group/file"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {cert.fileType?.includes('pdf') || cert.fileName?.toLowerCase().endsWith('.pdf') ? (
+                            <div className="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                              <FileText className="w-4 h-4" />
+                            </div>
+                          ) : (
+                            <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 overflow-hidden">
+                              <img src={cert.fileData} alt="" className="w-full h-full object-cover" />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block truncate group-hover/file:text-brand-teal dark:group-hover/file:text-teal-400">
+                              {cert.fileName || 'View Certificate Document'}
+                            </span>
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                              {cert.fileSize ? `${(cert.fileSize / 1024).toFixed(0)} KB • ` : ''}
+                              Click to view
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 text-[11px] font-bold text-brand-teal dark:text-teal-400 shrink-0">
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>View</span>
+                        </div>
+                      </button>
+                    ) : cert.credentialUrl ? (
+                      <a
+                        href={cert.credentialUrl.startsWith('http') ? cert.credentialUrl : `https://${cert.credentialUrl}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-teal dark:text-teal-400 hover:underline pt-1"
+                      >
+                        <span>Verify Credential</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    ) : null}
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -2209,6 +2492,333 @@ export default function StudentProfilePage() {
                 className="px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-xs transition-colors"
               >
                 Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add / Edit Certification Modal */}
+      {isAddOrEditCertOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 max-w-lg w-full p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Award className="w-5 h-5 text-brand-teal dark:text-teal-400" />
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                  {editingCert ? 'Edit Certification & Honor' : 'Add Certification & Honor'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddOrEditCertOpen(false);
+                  setEditingCert(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCertSubmit} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Certification / Award Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={certForm.title}
+                  onChange={(e) => setCertForm({ ...certForm, title: e.target.value })}
+                  placeholder="e.g. AWS Certified Cloud Practitioner"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-brand-teal/30 focus:border-brand-teal outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Issuing Organization *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={certForm.issuer}
+                  onChange={(e) => setCertForm({ ...certForm, issuer: e.target.value })}
+                  placeholder="e.g. Amazon Web Services, Coursera, HackerRank"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-brand-teal/30 focus:border-brand-teal outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Issue Date
+                  </label>
+                  <input
+                    type="text"
+                    value={certForm.issueDate}
+                    onChange={(e) => setCertForm({ ...certForm, issueDate: e.target.value })}
+                    placeholder="e.g. Aug 2025"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-brand-teal/30 focus:border-brand-teal outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Credential ID (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={certForm.credentialId}
+                    onChange={(e) => setCertForm({ ...certForm, credentialId: e.target.value })}
+                    placeholder="e.g. AWS-123456"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-brand-teal/30 focus:border-brand-teal outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Credential Verification URL (Optional)
+                </label>
+                <input
+                  type="url"
+                  value={certForm.credentialUrl}
+                  onChange={(e) => setCertForm({ ...certForm, credentialUrl: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-brand-teal/30 focus:border-brand-teal outline-none"
+                />
+              </div>
+
+              {/* Dedicated Drag-and-Drop Certificate Upload Zone */}
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Certificate Document / Image (PDF, JPG, JPEG, PNG)
+                </label>
+
+                <input
+                  type="file"
+                  ref={certFileInputRef}
+                  onChange={handleCertFileInputChange}
+                  accept=".pdf,image/png,image/jpeg,image/jpg"
+                  className="hidden"
+                />
+
+                {certForm.fileName && certForm.fileData ? (
+                  /* Uploaded File Preview Card */
+                  <div className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-850 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {certForm.fileType?.includes('pdf') || certForm.fileName.toLowerCase().endsWith('.pdf') ? (
+                        <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-700 overflow-hidden shrink-0 border border-slate-300 dark:border-slate-600">
+                          <img src={certForm.fileData} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-bold text-xs text-slate-900 dark:text-white truncate">
+                          {certForm.fileName}
+                        </p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          {certForm.fileSize ? `${(certForm.fileSize / 1024).toFixed(0)} KB • ` : ''}
+                          Ready to save
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => certFileInputRef.current?.click()}
+                        className="px-2.5 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-brand-teal dark:hover:text-teal-400 hover:bg-slate-200/60 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                      >
+                        Replace
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleRemoveUploadedCert}
+                        className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-colors"
+                        title="Remove certificate file"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Dedicated Drag and Drop Area */
+                  <div
+                    onDragOver={handleCertDragOver}
+                    onDragEnter={handleCertDragOver}
+                    onDragLeave={handleCertDragLeave}
+                    onDrop={handleCertDrop}
+                    onClick={() => certFileInputRef.current?.click()}
+                    className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${
+                      isDragging
+                        ? 'border-brand-teal bg-teal-50/60 dark:bg-teal-950/40 ring-4 ring-brand-teal/20 scale-[1.01]'
+                        : 'border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-850/50 hover:bg-slate-50 dark:hover:bg-slate-850 hover:border-brand-teal dark:hover:border-teal-400'
+                    }`}
+                  >
+                    <div className="w-10 h-10 mx-auto rounded-xl bg-teal-50 dark:bg-teal-950/60 text-brand-teal dark:text-teal-400 flex items-center justify-center mb-2">
+                      <Upload className="w-5 h-5" />
+                    </div>
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      {isDragging ? 'Drop your certificate here' : 'Drag & drop your certificate here'}
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                      or <span className="text-brand-teal dark:text-teal-400 font-semibold underline">Browse files</span> from your computer
+                    </p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
+                      Accepted formats: PDF, JPG, JPEG, PNG (up to 5MB)
+                    </p>
+                  </div>
+                )}
+
+                {certFileError && (
+                  <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1 mt-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {certFileError}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddOrEditCertOpen(false);
+                    setEditingCert(null);
+                  }}
+                  className="px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-brand-teal hover:bg-brand-dark text-white rounded-xl font-bold transition-all shadow-xs"
+                >
+                  {editingCert ? 'Save Changes' : 'Add Certification'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Certificate Viewer Modal */}
+      {viewingCert && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-xs p-4 sm:p-6 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 max-w-3xl w-full p-5 sm:p-6 space-y-4 shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 shrink-0">
+              <div className="min-w-0 pr-4">
+                <div className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-brand-teal dark:text-teal-400 shrink-0" />
+                  <h3 className="font-bold text-base sm:text-lg text-slate-900 dark:text-white truncate">
+                    {viewingCert.title}
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Issued by <strong>{viewingCert.issuer}</strong>
+                  {viewingCert.issueDate ? ` • ${viewingCert.issueDate}` : ''}
+                  {viewingCert.credentialId ? ` • ID: ${viewingCert.credentialId}` : ''}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {viewingCert.fileData && (
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadOrOpenNewTab(viewingCert)}
+                    className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                    title="Open in new window / tab"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Open in New Tab</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setViewingCert(null)}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto flex items-center justify-center p-2 min-h-[300px]">
+              {viewingCert.fileData ? (
+                viewingCert.fileType?.includes('pdf') || viewingCert.fileName?.toLowerCase().endsWith('.pdf') ? (
+                  <iframe
+                    src={viewingCert.fileData}
+                    className="w-full h-[65vh] rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950"
+                    title={viewingCert.title}
+                  />
+                ) : (
+                  <div className="max-h-[65vh] flex items-center justify-center">
+                    <img
+                      src={viewingCert.fileData}
+                      alt={viewingCert.title}
+                      className="max-h-[65vh] w-auto max-w-full object-contain rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800"
+                    />
+                  </div>
+                )
+              ) : (
+                <div className="text-center p-8 text-slate-400">
+                  <p className="text-xs">No preview file attached to this certification.</p>
+                </div>
+              )}
+            </div>
+
+            {viewingCert.credentialUrl && (
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs shrink-0">
+                <span className="text-slate-500 dark:text-slate-400">External Verification:</span>
+                <a
+                  href={viewingCert.credentialUrl.startsWith('http') ? viewingCert.credentialUrl : `https://${viewingCert.credentialUrl}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-brand-teal dark:text-teal-400 hover:underline flex items-center gap-1 font-semibold"
+                >
+                  <span>Verify at Issuer</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Delete Certification Confirmation Modal */}
+      {deletingCertId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 max-w-sm w-full p-6 space-y-4 shadow-2xl">
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div className="text-center space-y-1">
+              <h3 className="font-bold text-base text-slate-900 dark:text-white">Delete Certification</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Are you sure you want to remove this certification from your profile? This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeletingCertId(null)}
+                className="flex-1 py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteCertification(deletingCertId);
+                  setDeletingCertId(null);
+                }}
+                className="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors shadow-xs"
+              >
+                Delete
               </button>
             </div>
           </div>
