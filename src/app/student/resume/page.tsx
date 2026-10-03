@@ -21,7 +21,7 @@ export default function ResumePage() {
   const { profile, skills, projects } = useStudent();
 
   const verifiedSkills = skills.filter((s) => s.isVerified);
-  const otherSkills = skills.filter((s) => !s.isVerified && s.progress > 0);
+  const otherSkills = skills.filter((s) => !s.isVerified);
 
   const handlePrint = () => {
     if (typeof window !== 'undefined') {
@@ -227,16 +227,24 @@ export default function ResumePage() {
           </div>
         </div>
 
-        {/* 7. Achievements */}
+        {/* 7. Achievements & Verified Credentials */}
         <div className="space-y-2">
           <h2 className="text-xs font-black uppercase tracking-widest text-slate-400 border-b border-slate-200 pb-1">
-            Honors &amp; Extracurriculars
+            Honors &amp; Verified Credentials
           </h2>
-          <ul className="list-disc pl-4 space-y-1 text-xs text-slate-600">
-            <li>National Skill Intelligence Challenge Finalist &mdash; AI &amp; Health Track</li>
-            <li>Awarded SkillSetu Verified Developer Badge in Web and Python tracks</li>
-            <li>Member of RVCE Open Source Software Development Club</li>
-          </ul>
+          {verifiedSkills.length > 0 ? (
+            <ul className="list-disc pl-4 space-y-1 text-xs text-slate-600">
+              {verifiedSkills.map((sk) => (
+                <li key={sk.id}>
+                  SkillSetu Verified Competency: <strong>{sk.name}</strong> ({sk.level} Level) &mdash; Benchmark Assessed
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-xs text-slate-500 italic">
+              Active skill benchmarks in progress &bull; Complete skills to earn official SkillSetu verified badges.
+            </p>
+          )}
         </div>
       </div>
     </div>

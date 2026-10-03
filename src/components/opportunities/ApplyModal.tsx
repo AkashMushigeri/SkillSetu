@@ -92,7 +92,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ opportunity, onClose }) 
               </div>
               <div className="flex justify-between">
                 <span>Attached Resume:</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">Aarav_Sharma_Resume_2026.pdf</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{resumeFileName}</span>
               </div>
             </div>
 
@@ -120,11 +120,19 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ opportunity, onClose }) 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-brand-teal text-white flex items-center justify-center font-bold text-xs">
-                    AS
+                    {profile.name
+                      ? profile.name
+                          .split(' ')
+                          .filter(Boolean)
+                          .map((n) => n[0])
+                          .join('')
+                          .slice(0, 2)
+                          .toUpperCase()
+                      : 'ST'}
                   </div>
                   <div>
-                    <span className="font-bold text-slate-900 dark:text-white block text-sm">{profile.name}</span>
-                    <span className="text-slate-500 dark:text-slate-400">{profile.degree}</span>
+                    <span className="font-bold text-slate-900 dark:text-white block text-sm">{profile.name || 'Student'}</span>
+                    <span className="text-slate-500 dark:text-slate-400">{profile.degree || 'Candidate'}</span>
                   </div>
                 </div>
                 <span className="px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold text-[11px]">
@@ -134,17 +142,23 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ opportunity, onClose }) 
 
               <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800">
                 <span className="text-slate-500 dark:text-slate-400 font-medium block mb-1">Attached Verified Skills:</span>
-                <div className="flex flex-wrap gap-1">
-                  {verifiedSkills.map((sk) => (
-                    <span
-                      key={sk.id}
-                      className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold flex items-center gap-1"
-                    >
-                      <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                      {sk.name} ✓
-                    </span>
-                  ))}
-                </div>
+                {verifiedSkills.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {verifiedSkills.map((sk) => (
+                      <span
+                        key={sk.id}
+                        className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold flex items-center gap-1"
+                      >
+                        <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                        {sk.name} ✓
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-slate-400 dark:text-slate-500 italic text-[11px]">
+                    No verified skills attached yet
+                  </span>
+                )}
               </div>
             </div>
 
@@ -157,7 +171,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ opportunity, onClose }) 
                 <div className="flex items-center gap-2 text-xs">
                   <Paperclip className="w-4 h-4 text-brand-teal dark:text-teal-400" />
                   <div>
-                    <span className="font-bold text-slate-800 dark:text-slate-200 block">Aarav_Sharma_Resume_2026.pdf</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 block">{resumeFileName}</span>
                     <span className="text-[10px] text-slate-400 dark:text-slate-500">SkillSetu ATS-Verified Format</span>
                   </div>
                 </div>
