@@ -840,10 +840,23 @@ export default function StudentProfilePage() {
               </h3>
             </div>
 
-            {/* Single Continuous Vertical Timeline Line across College -> PUC -> School */}
-            <div className="border-l-2 border-brand-teal pl-3 space-y-4 text-xs divide-y divide-slate-100 dark:divide-slate-800/80">
+            {/* Single Continuous Vertical Timeline Line across College -> PUC -> School with Circular Dots */}
+            <div className="relative pl-5 space-y-4 text-xs divide-y divide-slate-100 dark:divide-slate-800/80">
               {/* 1. College / University */}
               <div className="space-y-1 relative pt-1 first:pt-0">
+                {/* Continuous Vertical Timeline Line leaving College */}
+                {(pucEdu || schoolEdu) && (
+                  <div
+                    aria-hidden="true"
+                    className="absolute -left-[14px] top-2 bottom-[-18px] w-[2px] bg-brand-teal dark:bg-brand-teal z-0"
+                  />
+                )}
+                {/* College Timeline Dot */}
+                <div
+                  aria-hidden="true"
+                  className="absolute -left-[17px] top-1 w-2 h-2 rounded-full bg-brand-teal dark:bg-teal-400 ring-2 ring-white dark:ring-slate-900 z-10"
+                />
+
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-0.5 flex-1 min-w-0">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-brand-teal dark:text-teal-400 block">
@@ -877,6 +890,19 @@ export default function StudentProfilePage() {
               {/* 2. PUC / 12th */}
               {pucEdu ? (
                 <div className="space-y-1 relative pt-3">
+                  {/* Continuous Vertical Timeline Line through PUC */}
+                  <div
+                    aria-hidden="true"
+                    className={`absolute -left-[14px] top-0 w-[2px] bg-brand-teal dark:bg-brand-teal z-0 ${
+                      schoolEdu ? 'bottom-[-18px]' : 'h-5'
+                    }`}
+                  />
+                  {/* PUC Timeline Dot */}
+                  <div
+                    aria-hidden="true"
+                    className="absolute -left-[17px] top-4 w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 ring-2 ring-white dark:ring-slate-900 z-10"
+                  />
+
                   <div className="flex items-start justify-between gap-2">
                     <div className="space-y-0.5 flex-1 min-w-0">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
@@ -909,6 +935,17 @@ export default function StudentProfilePage() {
               {/* 3. School / 10th */}
               {schoolEdu ? (
                 <div className="space-y-1 relative pt-3">
+                  {/* Continuous Vertical Timeline Line arriving at School Dot */}
+                  <div
+                    aria-hidden="true"
+                    className="absolute -left-[14px] top-0 h-5 w-[2px] bg-brand-teal dark:bg-brand-teal z-0"
+                  />
+                  {/* School Timeline Dot */}
+                  <div
+                    aria-hidden="true"
+                    className="absolute -left-[17px] top-4 w-2 h-2 rounded-full bg-sky-500 dark:bg-sky-400 ring-2 ring-white dark:ring-slate-900 z-10"
+                  />
+
                   <div className="flex items-start justify-between gap-2">
                     <div className="space-y-0.5 flex-1 min-w-0">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 block">
