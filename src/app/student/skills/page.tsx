@@ -50,21 +50,25 @@ export default function SkillsHubPage() {
       (s) => s.id === item.id || s.name.toLowerCase() === item.name.toLowerCase()
     );
 
-    const isVerified = Boolean(liveSkill?.isVerified ?? item.isVerified);
+    const isVerified = Boolean(liveSkill?.isVerified);
     const progress = isVerified
       ? 100
       : liveSkill
       ? liveSkill.progress
-      : item.defaultProgress;
+      : 0;
 
     const status = isVerified
       ? 'Verified'
       : progress > 0
       ? 'In Progress'
-      : item.defaultStatus;
+      : 'Not Started';
 
     return { liveSkill, isVerified, progress, status };
   };
+
+  const recommendedTargetSkill = useMemo(() => {
+    return skills.find((s) => !s.isVerified && s.progress > 0) || skills.find((s) => !s.isVerified) || null;
+  }, [skills]);
 
   const filteredSkills = useMemo(() => {
     let list = SKILLS_DATA[activeLevel];
@@ -115,14 +119,16 @@ export default function SkillsHubPage() {
 
         <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 shrink-0 text-center sm:text-right">
           <span className="text-[11px] text-slate-300 uppercase tracking-wider block font-semibold">
-            Recommended Assessment
+            {recommendedTargetSkill ? 'Recommended Assessment' : 'Skill Verification'}
           </span>
-          <p className="text-sm font-bold text-white mt-1">Python Basic Assessment</p>
+          <p className="text-sm font-bold text-white mt-1">
+            {recommendedTargetSkill ? `${recommendedTargetSkill.name} Assessment` : 'Benchmark Your Skills'}
+          </p>
           <Link
-            href="/student/skills/python-basic"
+            href={recommendedTargetSkill ? `/student/skills/${recommendedTargetSkill.id}` : '#catalog'}
             className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-md transition-all"
           >
-            <span>Open Python Curriculum</span>
+            <span>{recommendedTargetSkill ? `Open ${recommendedTargetSkill.name}` : 'Select a Skill Below'}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
