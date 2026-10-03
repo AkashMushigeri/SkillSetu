@@ -39,8 +39,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Core Programming',
       icon: '⚙️',
       description: 'Master procedural programming, pointers, dynamic memory allocation (malloc/free), structs, and low-level algorithmic logic.',
-      defaultProgress: 35,
-      defaultStatus: 'In Progress',
+      defaultProgress: 0,
+      defaultStatus: 'Not Started',
       careerRoles: ['Systems Engineer', 'Firmware Engineer', 'Embedded Developer', 'Software Engineer'],
       recommendedAction: 'Continue Curriculum & Assessment',
       relatedOpportunityCount: 8,
@@ -53,8 +53,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'User-defined types (struct, union) and file I/O operations'
       ],
       resources: [
-        { id: 'c-1', title: 'C Fundamentals: Program Structure & Compilation', type: 'doc', duration: '35 min', completed: true, topic: 'Fundamentals' },
-        { id: 'c-2', title: 'Control Flow, Functions & Recursive Problem Solving', type: 'video', duration: '40 min', completed: true, topic: 'Functions' },
+        { id: 'c-1', title: 'C Fundamentals: Program Structure & Compilation', type: 'doc', duration: '35 min', completed: false, topic: 'Fundamentals' },
+        { id: 'c-2', title: 'Control Flow, Functions & Recursive Problem Solving', type: 'video', duration: '40 min', completed: false, topic: 'Functions' },
         { id: 'c-3', title: 'Pointers & Memory Addressing In-Depth', type: 'doc', duration: '45 min', completed: false, topic: 'Pointers' },
         { id: 'c-4', title: 'Dynamic Memory Allocation & Heap Management', type: 'practice', duration: '50 min', completed: false, topic: 'Memory' },
         { id: 'c-5', title: 'Mini Project: In-Memory Record Management Engine', type: 'mini_project', duration: '60 min', completed: false, topic: 'Project' }
@@ -68,8 +68,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Programming',
       icon: '🐍',
       description: 'Learn Python fundamentals, syntax, functions, collections, file handling, and basic problem solving.',
-      defaultProgress: 80,
-      defaultStatus: 'In Progress',
+      defaultProgress: 0,
+      defaultStatus: 'Not Started',
       careerRoles: ['Python Developer', 'Data Analyst', 'Backend Developer', 'Automation Engineer'],
       recommendedAction: 'Continue Curriculum & Assessment',
       relatedOpportunityCount: 14,
@@ -82,12 +82,12 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Understand class syntax, constructor __init__, and method definitions'
       ],
       resources: [
-        { id: 'py-1', title: 'Python Variables & Primitive Types', type: 'video', duration: '25 min', completed: true, topic: 'Variables' },
-        { id: 'py-2', title: 'Lists, Tuples, and Dictionaries Deep Dive', type: 'doc', duration: '35 min', completed: true, topic: 'Data Types' },
-        { id: 'py-3', title: 'Conditions & Control Flow in Real Apps', type: 'article', duration: '20 min', completed: true, topic: 'Conditions' },
-        { id: 'py-4', title: 'Loops & Iterators Practice Sandbox', type: 'practice', duration: '40 min', completed: true, topic: 'Loops' },
-        { id: 'py-5', title: 'Functions, Arguments, and Scope Rules', type: 'video', duration: '30 min', completed: true, topic: 'Functions' },
-        { id: 'py-6', title: 'Safe File Operations & CSV Parsing', type: 'doc', duration: '25 min', completed: true, topic: 'File Handling' },
+        { id: 'py-1', title: 'Python Variables & Primitive Types', type: 'video', duration: '25 min', completed: false, topic: 'Variables' },
+        { id: 'py-2', title: 'Lists, Tuples, and Dictionaries Deep Dive', type: 'doc', duration: '35 min', completed: false, topic: 'Data Types' },
+        { id: 'py-3', title: 'Conditions & Control Flow in Real Apps', type: 'article', duration: '20 min', completed: false, topic: 'Conditions' },
+        { id: 'py-4', title: 'Loops & Iterators Practice Sandbox', type: 'practice', duration: '40 min', completed: false, topic: 'Loops' },
+        { id: 'py-5', title: 'Functions, Arguments, and Scope Rules', type: 'video', duration: '30 min', completed: false, topic: 'Functions' },
+        { id: 'py-6', title: 'Safe File Operations & CSV Parsing', type: 'doc', duration: '25 min', completed: false, topic: 'File Handling' },
         { id: 'py-7', title: 'OOP Principles: Classes, Attributes, & Methods', type: 'article', duration: '45 min', completed: false, topic: 'OOP' },
         { id: 'py-8', title: 'Mini Project: Student Data Record Manager', type: 'mini_project', duration: '60 min', completed: false, topic: 'Mini Project' }
       ]
@@ -100,7 +100,7 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Web Development',
       icon: '🌐',
       description: 'Semantic HTML5 structure, accessibility best practices (WCAG & ARIA), metadata, forms, and multimedia integration.',
-      defaultProgress: 100,
+      defaultProgress: 0,
       defaultStatus: 'Verified',
       isVerified: true,
       verifiedDate: '10 Aug 2026',
@@ -116,9 +116,9 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Optimize SEO headers, open graph tags, and web accessibility standards'
       ],
       resources: [
-        { id: 'html-1', title: 'HTML5 Semantic Layout & Hierarchy', type: 'video', duration: '25 min', completed: true, topic: 'Semantics' },
-        { id: 'html-2', title: 'Accessible Forms & ARIA Roles', type: 'doc', duration: '35 min', completed: true, topic: 'Accessibility' },
-        { id: 'html-3', title: 'Mini Project: Responsive Developer Portfolio', type: 'mini_project', duration: '50 min', completed: true, topic: 'Projects' }
+        { id: 'html-1', title: 'HTML5 Semantic Layout & Hierarchy', type: 'video', duration: '25 min', completed: false, topic: 'Semantics' },
+        { id: 'html-2', title: 'Accessible Forms & ARIA Roles', type: 'doc', duration: '35 min', completed: false, topic: 'Accessibility' },
+        { id: 'html-3', title: 'Mini Project: Responsive Developer Portfolio', type: 'mini_project', duration: '50 min', completed: false, topic: 'Projects' }
       ]
     },
     {
@@ -129,7 +129,7 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Web Development',
       icon: '🎨',
       description: 'Modern CSS3 layouts with Flexbox, CSS Grid, animations, fluid typography, and responsive mobile-first design.',
-      defaultProgress: 100,
+      defaultProgress: 0,
       defaultStatus: 'Verified',
       isVerified: true,
       verifiedDate: '15 Aug 2026',
@@ -145,9 +145,9 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Create performant keyframe animations and smooth transitions'
       ],
       resources: [
-        { id: 'css-1', title: 'Box Model & Modern Selectors', type: 'doc', duration: '30 min', completed: true, topic: 'Selectors' },
-        { id: 'css-2', title: 'Flexbox & CSS Grid Mastery', type: 'practice', duration: '45 min', completed: true, topic: 'Layouts' },
-        { id: 'css-3', title: 'Mini Project: Responsive Product Showcase', type: 'mini_project', duration: '55 min', completed: true, topic: 'Projects' }
+        { id: 'css-1', title: 'Box Model & Modern Selectors', type: 'doc', duration: '30 min', completed: false, topic: 'Selectors' },
+        { id: 'css-2', title: 'Flexbox & CSS Grid Mastery', type: 'practice', duration: '45 min', completed: false, topic: 'Layouts' },
+        { id: 'css-3', title: 'Mini Project: Responsive Product Showcase', type: 'mini_project', duration: '55 min', completed: false, topic: 'Projects' }
       ]
     },
     {
@@ -158,8 +158,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Web Development',
       icon: '🟨',
       description: 'Core modern JavaScript, ES6+ syntax, DOM manipulation, asynchronous programming, Promises, and fetch API.',
-      defaultProgress: 65,
-      defaultStatus: 'In Progress',
+      defaultProgress: 0,
+      defaultStatus: 'Not Started',
       careerRoles: ['Frontend Developer', 'Full Stack Developer', 'Web Developer'],
       recommendedAction: 'Continue Curriculum & Assessment',
       relatedOpportunityCount: 24,
@@ -171,8 +171,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Manage asynchronous operations with Promises, async/await, and Fetch API'
       ],
       resources: [
-        { id: 'js-1', title: 'Modern ES6+ Syntax & Scoping Rules', type: 'video', duration: '30 min', completed: true, topic: 'ES6' },
-        { id: 'js-2', title: 'DOM Selection & Event Delegation', type: 'doc', duration: '35 min', completed: true, topic: 'DOM' },
+        { id: 'js-1', title: 'Modern ES6+ Syntax & Scoping Rules', type: 'video', duration: '30 min', completed: false, topic: 'ES6' },
+        { id: 'js-2', title: 'DOM Selection & Event Delegation', type: 'doc', duration: '35 min', completed: false, topic: 'DOM' },
         { id: 'js-3', title: 'Promises, Async/Await & Fetch API', type: 'practice', duration: '40 min', completed: false, topic: 'Async' },
         { id: 'js-4', title: 'Mini Project: Interactive Task Management App', type: 'mini_project', duration: '55 min', completed: false, topic: 'Projects' }
       ]
@@ -185,8 +185,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Databases',
       icon: '🗄️',
       description: 'Relational database querying, SELECT, WHERE, multi-table JOINs, aggregations, GROUP BY, and schema definitions.',
-      defaultProgress: 45,
-      defaultStatus: 'In Progress',
+      defaultProgress: 0,
+      defaultStatus: 'Not Started',
       careerRoles: ['Data Analyst', 'Business Analyst', 'Database Developer', 'Backend Engineer'],
       recommendedAction: 'Continue Curriculum & Assessment',
       relatedOpportunityCount: 16,
@@ -199,8 +199,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Design relational schemas with primary and foreign key constraints'
       ],
       resources: [
-        { id: 'sql-1', title: 'SQL Foundations: SELECT, WHERE, ORDER BY', type: 'video', duration: '25 min', completed: true, topic: 'Queries' },
-        { id: 'sql-2', title: 'Relational Joins: INNER, LEFT, RIGHT', type: 'doc', duration: '40 min', completed: true, topic: 'Joins' },
+        { id: 'sql-1', title: 'SQL Foundations: SELECT, WHERE, ORDER BY', type: 'video', duration: '25 min', completed: false, topic: 'Queries' },
+        { id: 'sql-2', title: 'Relational Joins: INNER, LEFT, RIGHT', type: 'doc', duration: '40 min', completed: false, topic: 'Joins' },
         { id: 'sql-3', title: 'Aggregations & GROUP BY Analysis', type: 'practice', duration: '35 min', completed: false, topic: 'Aggregations' },
         { id: 'sql-4', title: 'Mini Project: Clinic Analytics Query Sandbox', type: 'mini_project', duration: '50 min', completed: false, topic: 'Projects' }
       ]
@@ -213,8 +213,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Developer Tools',
       icon: '🐙',
       description: 'Version control lifecycle, branching workflows, merging, conflict resolution, pull requests, and GitHub collaboration.',
-      defaultProgress: 50,
-      defaultStatus: 'In Progress',
+      defaultProgress: 0,
+      defaultStatus: 'Not Started',
       careerRoles: ['Software Engineer', 'DevOps Intern', 'Open Source Contributor'],
       recommendedAction: 'Continue Curriculum & Assessment',
       relatedOpportunityCount: 25,
@@ -226,8 +226,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Open, review, and collaborate on GitHub Pull Requests'
       ],
       resources: [
-        { id: 'git-1', title: 'Git Lifecycle & Essential Commands', type: 'doc', duration: '25 min', completed: true, topic: 'Git' },
-        { id: 'git-2', title: 'Branching, Merging & Conflict Resolution', type: 'video', duration: '35 min', completed: true, topic: 'Branching' },
+        { id: 'git-1', title: 'Git Lifecycle & Essential Commands', type: 'doc', duration: '25 min', completed: false, topic: 'Git' },
+        { id: 'git-2', title: 'Branching, Merging & Conflict Resolution', type: 'video', duration: '35 min', completed: false, topic: 'Branching' },
         { id: 'git-3', title: 'GitHub PRs & Collaborative Workflows', type: 'practice', duration: '30 min', completed: false, topic: 'Collaboration' }
       ]
     },
@@ -326,8 +326,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Software Engineering',
       icon: '🧩',
       description: 'Core OOP tenets (encapsulation, abstraction, inheritance, polymorphism), SOLID principles, and clean design patterns.',
-      defaultProgress: 60,
-      defaultStatus: 'In Progress',
+      defaultProgress: 0,
+      defaultStatus: 'Not Started',
       careerRoles: ['Software Engineer', 'Backend Developer', 'System Architect'],
       recommendedAction: 'Continue Curriculum & Assessment',
       relatedOpportunityCount: 22,
@@ -340,8 +340,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Implement foundational Gang of Four design patterns (Factory, Singleton, Observer)'
       ],
       resources: [
-        { id: 'oop-1', title: 'Four Pillars of OOP & Class Architecture', type: 'doc', duration: '35 min', completed: true, topic: 'Pillars' },
-        { id: 'oop-2', title: 'Polymorphism & Dynamic Dispatch', type: 'video', duration: '40 min', completed: true, topic: 'Polymorphism' },
+        { id: 'oop-1', title: 'Four Pillars of OOP & Class Architecture', type: 'doc', duration: '35 min', completed: false, topic: 'Pillars' },
+        { id: 'oop-2', title: 'Polymorphism & Dynamic Dispatch', type: 'video', duration: '40 min', completed: false, topic: 'Polymorphism' },
         { id: 'oop-3', title: 'SOLID Design Principles with Production Examples', type: 'practice', duration: '50 min', completed: false, topic: 'SOLID' },
         { id: 'oop-4', title: 'Essential Design Patterns: Factory & Singleton', type: 'doc', duration: '45 min', completed: false, topic: 'Patterns' }
       ]
@@ -354,8 +354,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Programming',
       icon: '☕',
       description: 'Core Java syntax, JVM architecture, Java Collections framework, multithreading, Streams API, and Spring Boot foundations.',
-      defaultProgress: 55,
-      defaultStatus: 'In Progress',
+      defaultProgress: 0,
+      defaultStatus: 'Not Started',
       careerRoles: ['Java Developer', 'Backend Engineer', 'Enterprise Application Developer'],
       recommendedAction: 'Continue Curriculum & Assessment',
       relatedOpportunityCount: 19,
@@ -368,8 +368,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Build structured REST endpoints using Spring Boot microservices'
       ],
       resources: [
-        { id: 'java-1', title: 'Java Collections Framework In-Depth', type: 'video', duration: '45 min', completed: true, topic: 'Collections' },
-        { id: 'java-2', title: 'Streams API & Lambda Expressions', type: 'doc', duration: '40 min', completed: true, topic: 'Streams' },
+        { id: 'java-1', title: 'Java Collections Framework In-Depth', type: 'video', duration: '45 min', completed: false, topic: 'Collections' },
+        { id: 'java-2', title: 'Streams API & Lambda Expressions', type: 'doc', duration: '40 min', completed: false, topic: 'Streams' },
         { id: 'java-3', title: 'Concurrency & Thread Management in Java', type: 'practice', duration: '45 min', completed: false, topic: 'Concurrency' },
         { id: 'java-4', title: 'Spring Boot RESTful Microservices Setup', type: 'video', duration: '50 min', completed: false, topic: 'Spring Boot' }
       ]
@@ -382,8 +382,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Programming',
       icon: '🐍',
       description: 'Generators, decorators, context managers, concurrency (asyncio/multiprocessing), metaprogramming, and performance optimization.',
-      defaultProgress: 40,
-      defaultStatus: 'In Progress',
+      defaultProgress: 0,
+      defaultStatus: 'Not Started',
       careerRoles: ['Python Developer', 'Data Engineer', 'Backend Architect'],
       recommendedAction: 'Continue Curriculum & Assessment',
       relatedOpportunityCount: 17,
@@ -396,8 +396,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Profile Python runtime and optimize critical paths with vectorization'
       ],
       resources: [
-        { id: 'pyadv-1', title: 'Iterators, Generators & Memory Streaming', type: 'doc', duration: '35 min', completed: true, topic: 'Generators' },
-        { id: 'pyadv-2', title: 'Decorator Patterns & Metaprogramming', type: 'video', duration: '45 min', completed: true, topic: 'Decorators' },
+        { id: 'pyadv-1', title: 'Iterators, Generators & Memory Streaming', type: 'doc', duration: '35 min', completed: false, topic: 'Generators' },
+        { id: 'pyadv-2', title: 'Decorator Patterns & Metaprogramming', type: 'video', duration: '45 min', completed: false, topic: 'Decorators' },
         { id: 'pyadv-3', title: 'Asynchronous Python with asyncio & Aiohttp', type: 'practice', duration: '50 min', completed: false, topic: 'Asyncio' },
         { id: 'pyadv-4', title: 'Multiprocessing vs Multithreading Performance', type: 'doc', duration: '40 min', completed: false, topic: 'Concurrency' }
       ]
@@ -410,8 +410,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Computer Science',
       icon: '🧠',
       description: 'Stacks, queues, trees, graphs, dynamic programming, sorting algorithms, and Big-O computational complexity.',
-      defaultProgress: 70,
-      defaultStatus: 'In Progress',
+      defaultProgress: 0,
+      defaultStatus: 'Not Started',
       careerRoles: ['Software Development Engineer (SDE)', 'Algorithm Developer', 'Competitive Programmer'],
       recommendedAction: 'Continue Curriculum & Assessment',
       relatedOpportunityCount: 26,
@@ -424,9 +424,9 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Solve complex optimization problems with 1D/2D Dynamic Programming'
       ],
       resources: [
-        { id: 'dsa-1', title: 'Linear Structures: Arrays, Stacks, Queues', type: 'video', duration: '45 min', completed: true, topic: 'Linear' },
-        { id: 'dsa-2', title: 'Binary Trees & Binary Search Tree Algorithms', type: 'practice', duration: '55 min', completed: true, topic: 'Trees' },
-        { id: 'dsa-3', title: 'Graph Traversal & Shortest Path Algorithms', type: 'video', duration: '50 min', completed: true, topic: 'Graphs' },
+        { id: 'dsa-1', title: 'Linear Structures: Arrays, Stacks, Queues', type: 'video', duration: '45 min', completed: false, topic: 'Linear' },
+        { id: 'dsa-2', title: 'Binary Trees & Binary Search Tree Algorithms', type: 'practice', duration: '55 min', completed: false, topic: 'Trees' },
+        { id: 'dsa-3', title: 'Graph Traversal & Shortest Path Algorithms', type: 'video', duration: '50 min', completed: false, topic: 'Graphs' },
         { id: 'dsa-4', title: 'Dynamic Programming Patterns: Knapsack & Grid Paths', type: 'practice', duration: '60 min', completed: false, topic: 'DP' }
       ]
     },
@@ -438,8 +438,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Backend Architecture',
       icon: '🔌',
       description: 'HTTP methods, status codes, OpenAPI/Swagger specifications, authentication tokens, rate limiting, and webhook integrations.',
-      defaultProgress: 50,
-      defaultStatus: 'In Progress',
+      defaultProgress: 0,
+      defaultStatus: 'Not Started',
       careerRoles: ['API Developer', 'Backend Engineer', 'Integration Specialist'],
       recommendedAction: 'Continue Curriculum & Assessment',
       relatedOpportunityCount: 17,
@@ -452,8 +452,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Integrate outgoing webhooks and implement rate-limiting middleware'
       ],
       resources: [
-        { id: 'rest-1', title: 'REST Principles & HTTP Method Idempotency', type: 'doc', duration: '30 min', completed: true, topic: 'Principles' },
-        { id: 'rest-2', title: 'OpenAPI 3.0 & Interactive Swagger Documentation', type: 'practice', duration: '40 min', completed: true, topic: 'OpenAPI' },
+        { id: 'rest-1', title: 'REST Principles & HTTP Method Idempotency', type: 'doc', duration: '30 min', completed: false, topic: 'Principles' },
+        { id: 'rest-2', title: 'OpenAPI 3.0 & Interactive Swagger Documentation', type: 'practice', duration: '40 min', completed: false, topic: 'OpenAPI' },
         { id: 'rest-3', title: 'API Security, JWT Authentication & Rate Limiting', type: 'video', duration: '45 min', completed: false, topic: 'Security' },
         { id: 'rest-4', title: 'Postman Test Automation Collections', type: 'practice', duration: '40 min', completed: false, topic: 'Testing' }
       ]
@@ -466,8 +466,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Frontend Frameworks',
       icon: '⚛️',
       description: 'Functional components, React Hooks (useState, useEffect, useContext), custom hooks, routing, and component state management.',
-      defaultProgress: 65,
-      defaultStatus: 'In Progress',
+      defaultProgress: 0,
+      defaultStatus: 'Not Started',
       careerRoles: ['Frontend Developer', 'React Developer', 'UI Engineer', 'Web Developer'],
       recommendedAction: 'Continue Curriculum & Assessment',
       relatedOpportunityCount: 20,
@@ -480,8 +480,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Prevent performance regressions using React.memo and useCallback'
       ],
       resources: [
-        { id: 'react-1', title: 'Component Composition & State Hooks', type: 'video', duration: '35 min', completed: true, topic: 'Hooks' },
-        { id: 'react-2', title: 'Side Effects & Cleanup with useEffect', type: 'doc', duration: '40 min', completed: true, topic: 'Effects' },
+        { id: 'react-1', title: 'Component Composition & State Hooks', type: 'video', duration: '35 min', completed: false, topic: 'Hooks' },
+        { id: 'react-2', title: 'Side Effects & Cleanup with useEffect', type: 'doc', duration: '40 min', completed: false, topic: 'Effects' },
         { id: 'react-3', title: 'Custom Hooks Architecture & Data Fetching', type: 'practice', duration: '45 min', completed: false, topic: 'Custom Hooks' },
         { id: 'react-4', title: 'Global State Management with Context & Reducers', type: 'video', duration: '45 min', completed: false, topic: 'Context' }
       ]
@@ -494,8 +494,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Backend Development',
       icon: '🟢',
       description: 'Asynchronous event loop, Express.js microservices, middleware pipelines, authentication with JWT, and API development.',
-      defaultProgress: 45,
-      defaultStatus: 'In Progress',
+      defaultProgress: 0,
+      defaultStatus: 'Not Started',
       careerRoles: ['Backend Developer', 'Node.js Engineer', 'Full Stack Developer'],
       recommendedAction: 'Continue Curriculum & Assessment',
       relatedOpportunityCount: 18,
@@ -508,8 +508,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Secure endpoints with bcrypt password hashing and signed JWT tokens'
       ],
       resources: [
-        { id: 'node-1', title: 'Node Event Loop & Core Modules', type: 'doc', duration: '35 min', completed: true, topic: 'Event Loop' },
-        { id: 'node-2', title: 'Express.js Routing, Middleware & Controllers', type: 'video', duration: '40 min', completed: true, topic: 'Express' },
+        { id: 'node-1', title: 'Node Event Loop & Core Modules', type: 'doc', duration: '35 min', completed: false, topic: 'Event Loop' },
+        { id: 'node-2', title: 'Express.js Routing, Middleware & Controllers', type: 'video', duration: '40 min', completed: false, topic: 'Express' },
         { id: 'node-3', title: 'JWT Authentication & Security Best Practices', type: 'practice', duration: '45 min', completed: false, topic: 'Auth' },
         { id: 'node-4', title: 'Database Integration & Async Error Handling', type: 'practice', duration: '50 min', completed: false, topic: 'Database' }
       ]
@@ -578,8 +578,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Operating Systems & DevOps',
       icon: '🐧',
       description: 'Linux CLI commands, shell scripting (Bash), user permissions, systemd service management, networking, and SSH server administration.',
-      defaultProgress: 30,
-      defaultStatus: 'In Progress',
+      defaultProgress: 0,
+      defaultStatus: 'Not Started',
       careerRoles: ['Linux Administrator', 'DevOps Engineer', 'Cloud Operations Specialist'],
       recommendedAction: 'Continue Curriculum & Assessment',
       relatedOpportunityCount: 16,
@@ -592,7 +592,7 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Configure secure SSH key-based access and troubleshoot networking tools (netstat, curl)'
       ],
       resources: [
-        { id: 'linux-1', title: 'Linux CLI Essentials & Text Stream Processing', type: 'doc', duration: '35 min', completed: true, topic: 'CLI' },
+        { id: 'linux-1', title: 'Linux CLI Essentials & Text Stream Processing', type: 'doc', duration: '35 min', completed: false, topic: 'CLI' },
         { id: 'linux-2', title: 'Shell Scripting with Bash & Automation', type: 'practice', duration: '45 min', completed: false, topic: 'Bash' },
         { id: 'linux-3', title: 'Systemd Services, Daemons & Cron Jobs', type: 'video', duration: '40 min', completed: false, topic: 'Systemd' },
         { id: 'linux-4', title: 'SSH Hardening, Firewall (UFW) & Networking', type: 'doc', duration: '35 min', completed: false, topic: 'Security' }
@@ -634,8 +634,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Artificial Intelligence',
       icon: '📊',
       description: 'Supervised vs unsupervised learning, data preprocessing, regression, classification, Scikit-learn, and model validation.',
-      defaultProgress: 35,
-      defaultStatus: 'In Progress',
+      defaultProgress: 0,
+      defaultStatus: 'Not Started',
       careerRoles: ['ML Intern', 'Junior Data Scientist', 'Data Analyst'],
       recommendedAction: 'Continue Curriculum & Assessment',
       relatedOpportunityCount: 15,
@@ -648,8 +648,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Implement k-fold cross-validation and hyperparameter grid searching in Scikit-learn'
       ],
       resources: [
-        { id: 'mlf-1', title: 'ML Foundations: Problem Framing & Datasets', type: 'doc', duration: '35 min', completed: true, topic: 'Foundations' },
-        { id: 'mlf-2', title: 'Data Cleaning & Preprocessing with Scikit-learn', type: 'practice', duration: '45 min', completed: true, topic: 'Preprocessing' },
+        { id: 'mlf-1', title: 'ML Foundations: Problem Framing & Datasets', type: 'doc', duration: '35 min', completed: false, topic: 'Foundations' },
+        { id: 'mlf-2', title: 'Data Cleaning & Preprocessing with Scikit-learn', type: 'practice', duration: '45 min', completed: false, topic: 'Preprocessing' },
         { id: 'mlf-3', title: 'Supervised Learning: Regression & Decision Trees', type: 'video', duration: '50 min', completed: false, topic: 'Algorithms' },
         { id: 'mlf-4', title: 'Model Evaluation Metrics & Cross-Validation', type: 'practice', duration: '40 min', completed: false, topic: 'Evaluation' }
       ]
@@ -665,8 +665,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Artificial Intelligence',
       icon: '🤖',
       description: 'Ensemble modeling, gradient boosting (XGBoost/LightGBM), hyperparameter tuning, model explainability (SHAP), and production inference.',
-      defaultProgress: 40,
-      defaultStatus: 'In Progress',
+      defaultProgress: 0,
+      defaultStatus: 'Not Started',
       careerRoles: ['ML Engineer', 'Data Scientist', 'AI Engineer', 'Research Intern'],
       recommendedAction: 'Continue Curriculum & Assessment',
       relatedOpportunityCount: 18,
@@ -679,8 +679,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Export trained pipelines via ONNX and serve real-time predictions via FastAPI'
       ],
       resources: [
-        { id: 'ml-1', title: 'Advanced Gradient Boosting (XGBoost & LightGBM)', type: 'video', duration: '50 min', completed: true, topic: 'Boosting' },
-        { id: 'ml-2', title: 'Model Explainability with SHAP & Feature Attribution', type: 'practice', duration: '45 min', completed: true, topic: 'Explainability' },
+        { id: 'ml-1', title: 'Advanced Gradient Boosting (XGBoost & LightGBM)', type: 'video', duration: '50 min', completed: false, topic: 'Boosting' },
+        { id: 'ml-2', title: 'Model Explainability with SHAP & Feature Attribution', type: 'practice', duration: '45 min', completed: false, topic: 'Explainability' },
         { id: 'ml-3', title: 'Hyperparameter Tuning with Bayesian Optimization', type: 'doc', duration: '40 min', completed: false, topic: 'Optimization' },
         { id: 'ml-4', title: 'Production Model Serving with FastAPI & Docker', type: 'mini_project', duration: '60 min', completed: false, topic: 'Deployment' }
       ]
@@ -721,8 +721,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Artificial Intelligence',
       icon: '✨',
       description: 'Large Language Models (LLMs), prompt engineering, Retrieval-Augmented Generation (RAG), vector databases, and agentic workflows.',
-      defaultProgress: 25,
-      defaultStatus: 'In Progress',
+      defaultProgress: 0,
+      defaultStatus: 'Not Started',
       careerRoles: ['Generative AI Engineer', 'LLM Application Developer', 'AI Solutions Architect'],
       recommendedAction: 'Continue Curriculum & Assessment',
       relatedOpportunityCount: 22,
@@ -735,7 +735,7 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Fine-tune small language models (SLMs) using LoRA and QLoRA parameter-efficient tuning'
       ],
       resources: [
-        { id: 'genai-1', title: 'Transformer Architecture & Self-Attention Math', type: 'doc', duration: '45 min', completed: true, topic: 'Transformers' },
+        { id: 'genai-1', title: 'Transformer Architecture & Self-Attention Math', type: 'doc', duration: '45 min', completed: false, topic: 'Transformers' },
         { id: 'genai-2', title: 'Building Production RAG with Vector Search', type: 'practice', duration: '55 min', completed: false, topic: 'RAG' },
         { id: 'genai-3', title: 'Autonomous Agent Frameworks (LangChain & AutoGen)', type: 'video', duration: '50 min', completed: false, topic: 'Agents' },
         { id: 'genai-4', title: 'Parameter-Efficient Fine-Tuning with LoRA', type: 'practice', duration: '60 min', completed: false, topic: 'Fine-Tuning' }
@@ -833,8 +833,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Machine Learning Frameworks',
       icon: '🔥',
       description: 'Dynamic computational graphs, Autograd engine, custom neural network modules, DataLoader pipelines, and TorchScript deployment.',
-      defaultProgress: 30,
-      defaultStatus: 'In Progress',
+      defaultProgress: 0,
+      defaultStatus: 'Not Started',
       careerRoles: ['AI Research Engineer', 'PyTorch Developer', 'Deep Learning Specialist'],
       recommendedAction: 'Continue Curriculum & Assessment',
       relatedOpportunityCount: 16,
@@ -847,7 +847,7 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Trace and serialize models using TorchScript for C++ production runtimes'
       ],
       resources: [
-        { id: 'torch-1', title: 'Tensors, Autograd & Computational Graph Math', type: 'doc', duration: '40 min', completed: true, topic: 'Autograd' },
+        { id: 'torch-1', title: 'Tensors, Autograd & Computational Graph Math', type: 'doc', duration: '40 min', completed: false, topic: 'Autograd' },
         { id: 'torch-2', title: 'Building Modular Networks with nn.Module', type: 'practice', duration: '45 min', completed: false, topic: 'nn.Module' },
         { id: 'torch-3', title: 'High-Performance DataLoader & Mixed Precision', type: 'video', duration: '45 min', completed: false, topic: 'DataLoader' },
         { id: 'torch-4', title: 'Model Export & Production TorchScript', type: 'practice', duration: '50 min', completed: false, topic: 'TorchScript' }
@@ -861,8 +861,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Frontend Frameworks',
       icon: '⚛️',
       description: 'React Server Components (RSC), Next.js App Router, suspense architectures, micro-frontends, and performance optimization.',
-      defaultProgress: 45,
-      defaultStatus: 'In Progress',
+      defaultProgress: 0,
+      defaultStatus: 'Not Started',
       careerRoles: ['Senior Frontend Engineer', 'React Architect', 'Full Stack Lead'],
       recommendedAction: 'Continue Curriculum & Assessment',
       relatedOpportunityCount: 19,
@@ -875,8 +875,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Design micro-frontend integrations and robust enterprise design systems'
       ],
       resources: [
-        { id: 'radv-1', title: 'React Server Components & Next.js App Router Architecture', type: 'doc', duration: '45 min', completed: true, topic: 'RSC' },
-        { id: 'radv-2', title: 'Streaming Hydration & Suspense Boundaries', type: 'video', duration: '45 min', completed: true, topic: 'Suspense' },
+        { id: 'radv-1', title: 'React Server Components & Next.js App Router Architecture', type: 'doc', duration: '45 min', completed: false, topic: 'RSC' },
+        { id: 'radv-2', title: 'Streaming Hydration & Suspense Boundaries', type: 'video', duration: '45 min', completed: false, topic: 'Suspense' },
         { id: 'radv-3', title: 'Server Actions & Optimistic UI Updates', type: 'practice', duration: '50 min', completed: false, topic: 'Server Actions' },
         { id: 'radv-4', title: 'Performance Profiling & Bundle Splitting Optimization', type: 'practice', duration: '40 min', completed: false, topic: 'Performance' }
       ]
@@ -917,8 +917,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Cloud Computing',
       icon: '🟧',
       description: 'Amazon EC2, S3, Lambda serverless microservices, IAM security policies, VPC networking, CloudWatch, and CloudFormation.',
-      defaultProgress: 20,
-      defaultStatus: 'In Progress',
+      defaultProgress: 0,
+      defaultStatus: 'Not Started',
       careerRoles: ['Cloud Engineer', 'DevOps Engineer', 'Cloud Architect'],
       recommendedAction: 'Continue Curriculum & Assessment',
       relatedOpportunityCount: 20,
@@ -931,7 +931,7 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Monitor operational telemetry and configure alarms using Amazon CloudWatch'
       ],
       resources: [
-        { id: 'aws-1', title: 'AWS Global Infrastructure & IAM Policies', type: 'doc', duration: '40 min', completed: true, topic: 'IAM' },
+        { id: 'aws-1', title: 'AWS Global Infrastructure & IAM Policies', type: 'doc', duration: '40 min', completed: false, topic: 'IAM' },
         { id: 'aws-2', title: 'Amazon EC2, Auto Scaling & Security Groups', type: 'video', duration: '50 min', completed: false, topic: 'EC2' },
         { id: 'aws-3', title: 'Custom VPC Networking & Route Tables', type: 'practice', duration: '55 min', completed: false, topic: 'VPC' },
         { id: 'aws-4', title: 'Serverless Applications with AWS Lambda & API Gateway', type: 'practice', duration: '50 min', completed: false, topic: 'Serverless' }
@@ -945,8 +945,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'DevOps & Containers',
       icon: '🐳',
       description: 'Containerization principles, Dockerfile multi-stage optimization, container networking, storage volumes, and Docker Compose.',
-      defaultProgress: 35,
-      defaultStatus: 'In Progress',
+      defaultProgress: 0,
+      defaultStatus: 'Not Started',
       careerRoles: ['DevOps Engineer', 'Container Platform Engineer', 'Site Reliability Engineer'],
       recommendedAction: 'Continue Curriculum & Assessment',
       relatedOpportunityCount: 18,
@@ -959,8 +959,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Orchestrate multi-container microservice stacks using Docker Compose'
       ],
       resources: [
-        { id: 'docker-1', title: 'Container Internals vs Virtual Machines', type: 'doc', duration: '35 min', completed: true, topic: 'Internals' },
-        { id: 'docker-2', title: 'Production Multi-Stage Dockerfile Optimization', type: 'practice', duration: '50 min', completed: true, topic: 'Dockerfiles' },
+        { id: 'docker-1', title: 'Container Internals vs Virtual Machines', type: 'doc', duration: '35 min', completed: false, topic: 'Internals' },
+        { id: 'docker-2', title: 'Production Multi-Stage Dockerfile Optimization', type: 'practice', duration: '50 min', completed: false, topic: 'Dockerfiles' },
         { id: 'docker-3', title: 'Networking & Persistent Volume Management', type: 'video', duration: '45 min', completed: false, topic: 'Networking' },
         { id: 'docker-4', title: 'Multi-Tier Applications with Docker Compose', type: 'practice', duration: '45 min', completed: false, topic: 'Compose' }
       ]
@@ -1001,8 +1001,8 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
       category: 'Infrastructure & CI/CD',
       icon: '🚀',
       description: 'Automated CI/CD pipelines (GitHub Actions), Infrastructure as Code with Terraform, observability, monitoring, and GitOps.',
-      defaultProgress: 25,
-      defaultStatus: 'In Progress',
+      defaultProgress: 0,
+      defaultStatus: 'Not Started',
       careerRoles: ['DevOps Engineer', 'Release Engineer', 'Platform Engineer'],
       recommendedAction: 'Continue Curriculum & Assessment',
       relatedOpportunityCount: 17,
@@ -1015,7 +1015,7 @@ const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
         'Enforce GitOps workflows for continuous delivery using ArgoCD'
       ],
       resources: [
-        { id: 'devops-1', title: 'CI/CD Pipelines with GitHub Actions Workflows', type: 'video', duration: '50 min', completed: true, topic: 'CI/CD' },
+        { id: 'devops-1', title: 'CI/CD Pipelines with GitHub Actions Workflows', type: 'video', duration: '50 min', completed: false, topic: 'CI/CD' },
         { id: 'devops-2', title: 'Infrastructure as Code (IaC) with Terraform', type: 'practice', duration: '55 min', completed: false, topic: 'Terraform' },
         { id: 'devops-3', title: 'Observability & Monitoring with Prometheus & Grafana', type: 'doc', duration: '40 min', completed: false, topic: 'Observability' },
         { id: 'devops-4', title: 'Blue-Green & Canary Deployment Automation', type: 'practice', duration: '45 min', completed: false, topic: 'Deployments' }
@@ -1201,18 +1201,12 @@ export function getAllSkillsAsInitialSkills(): Skill[] {
     category: item.category,
     icon: item.icon,
     level: item.level,
-    progress: item.isVerified ? 100 : item.defaultProgress,
+    progress: item.isVerified ? 100 : 0,
     isVerified: Boolean(item.isVerified),
     verifiedDate: item.verifiedDate,
     bestScore: item.bestScore,
-    learningStatus: item.isVerified
-      ? 'completed'
-      : item.defaultProgress > 0
-      ? 'in_progress'
-      : 'not_started',
-    assessmentStatus: item.isVerified
-      ? 'passed'
-      : 'ready',
+    learningStatus: item.isVerified ? 'completed' : 'not_started',
+    assessmentStatus: item.isVerified ? 'passed' : 'ready',
     description: item.description,
     estimatedTime: item.estimatedTime,
     learningObjectives: item.learningObjectives,
