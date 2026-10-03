@@ -22,6 +22,7 @@ import {
   INITIAL_NOTIFICATIONS,
   CITIES_LIST,
 } from '@/data/mockStudentData';
+import { findCatalogSkill } from '@/data/skillsData';
 import { calculateHaversineDistance, computeOpportunityMatch } from '@/lib/matchUtils';
 import {
   subscribeToSync,
@@ -49,6 +50,14 @@ interface StudentContextType {
   updateProfile: (updates: Partial<StudentProfile>) => void;
   skills: Skill[];
   getSkillById: (id: string) => Skill | undefined;
+  addSkill: (skillData: {
+    name: string;
+    level: 'Basic' | 'Intermediate' | 'Advanced';
+    category?: string;
+    icon?: string;
+  }) => { success: boolean; message: string; skill?: Skill };
+  removeSkill: (skillId: string) => void;
+  updateSkillLevel: (skillId: string, newLevel: 'Basic' | 'Intermediate' | 'Advanced') => void;
   toggleResourceCompletion: (skillId: string, resourceId: string) => void;
   verifySkill: (
     skillId: string,
@@ -800,17 +809,156 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 
   const getSkillById = useCallback(
-    (id: string) => {
+    (id: string): Skill | undefined => {
       if (!id) return undefined;
       const lower = decodeURIComponent(id).toLowerCase().trim();
-      return (
+      const cleanLower = lower.replace(/[^a-z0-9]/g, '');
+
+      const found =
         skills.find((s) => s.id === id) ||
         skills.find((s) => s.id.toLowerCase() === lower) ||
         skills.find((s) => s.name.toLowerCase() === lower) ||
-        skills.find((s) => s.name.toLowerCase().replace(/[^a-z0-9]/g, '') === lower.replace(/[^a-z0-9]/g, ''))
-      );
+        skills.find((s) => s.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanLower) ||
+        skills.find((s) => s.aliases?.some((a) => a.toLowerCase() === lower || a.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanLower));
+
+      if (found) return found;
+
+      const catalogItem = findCatalogSkill(id);
+      if (!catalogItem) return undefined;
+
+      return {
+        id: catalogItem.id,
+        name: catalogItem.name,
+        tier: catalogItem.tier,
+        category: catalogItem.category,
+        icon: catalogItem.icon,
+        level: catalogItem.level,
+        progress: 0,
+        isVerified: false,
+        learningStatus: 'not_started' as const,
+        assessmentStatus: 'ready' as const,
+        description: catalogItem.description,
+        estimatedTime: catalogItem.estimatedTime,
+        learningObjectives: catalogItem.learningObjectives,
+        resources: catalogItem.resources,
+        careerRoles: catalogItem.careerRoles,
+        relatedOpportunityCount: catalogItem.relatedOpportunityCount,
+        aliases: catalogItem.aliases,
+        relatedSkills: catalogItem.relatedSkills,
+      };
     },
     [skills]
+  );
+
+  const addSkill = useCallback(
+    (skillData: {
+      name: string;
+      level: 'Basic' | 'Intermediate' | 'Advanced';
+      category?: string;
+      icon?: string;
+    }): { success: boolean; message: string; skill?: Skill } => {
+      const trimmedName = skillData.name.trim();
+      if (!trimmedName) {
+        return { success: false, message: 'Skill name is required.' };
+      }
+
+      const cleanTarget = trimmedName.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+      // Check if user already has this skill
+      const existing = skills.find(
+        (s) =>
+          s.name.toLowerCase() === trimmedName.toLowerCase() ||
+          s.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanTarget ||
+          s.aliases?.some(
+            (a) =>
+              a.toLowerCase() === trimmedName.toLowerCase() ||
+              a.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanTarget
+          )
+      );
+
+      if (existing) {
+        return {
+          success: false,
+          message: `"${existing.name}" is already in your active skills with proficiency level "${existing.level}".`,
+          skill: existing,
+        };
+      }
+
+      const catalogItem = findCatalogSkill(trimmedName);
+
+      const newSkill: Skill = {
+        id: catalogItem ? catalogItem.id : `custom-${Date.now()}-${cleanTarget.slice(0, 10)}`,
+        name: catalogItem ? catalogItem.name : trimmedName,
+        tier: skillData.level,
+        category: skillData.category || catalogItem?.category || 'General Technology',
+        icon: skillData.icon || catalogItem?.icon || '💡',
+        level: skillData.level,
+        progress: 0,
+        isVerified: false,
+        learningStatus: 'not_started',
+        assessmentStatus: 'ready',
+        description:
+          catalogItem?.description ||
+          `Competency in ${trimmedName} (${skillData.level} Level) for software and technical roles.`,
+        estimatedTime: catalogItem?.estimatedTime || '15 Hours',
+        learningObjectives: catalogItem?.learningObjectives || [
+          `Master core ${trimmedName} concepts and operational workflows`,
+          `Complete hands-on exercises and real-world project challenges`,
+          `Demonstrate capability in technical assessments and interviews`,
+        ],
+        resources: catalogItem?.resources || [
+          {
+            id: `res-${Date.now()}-1`,
+            title: `${trimmedName} Comprehensive Guide & Architecture`,
+            type: 'doc',
+            duration: '30 min',
+            completed: false,
+            topic: 'Overview',
+          },
+          {
+            id: `res-${Date.now()}-2`,
+            title: `${trimmedName} Practical Hands-On Workshop`,
+            type: 'practice',
+            duration: '45 min',
+            completed: false,
+            topic: 'Workshop',
+          },
+        ],
+        careerRoles: catalogItem?.careerRoles || ['Software Engineer', `${trimmedName} Specialist`],
+        relatedOpportunityCount: catalogItem?.relatedOpportunityCount || 10,
+        aliases: catalogItem?.aliases || [],
+        relatedSkills: catalogItem?.relatedSkills || [],
+      };
+
+      setSkills((prev) => [newSkill, ...prev]);
+
+      return {
+        success: true,
+        message: `Successfully added "${newSkill.name}" (${newSkill.level}) to your skills!`,
+        skill: newSkill,
+      };
+    },
+    [skills]
+  );
+
+  const removeSkill = useCallback((skillId: string) => {
+    setSkills((prev) => prev.filter((s) => s.id !== skillId));
+  }, []);
+
+  const updateSkillLevel = useCallback(
+    (skillId: string, newLevel: 'Basic' | 'Intermediate' | 'Advanced') => {
+      setSkills((prev) =>
+        prev.map((s) => {
+          if (s.id !== skillId) return s;
+          return {
+            ...s,
+            level: newLevel,
+            tier: newLevel,
+          };
+        })
+      );
+    },
+    []
   );
 
   // Save / Bookmark Opportunity
@@ -1063,6 +1211,9 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         updateProfile,
         skills,
         getSkillById,
+        addSkill,
+        removeSkill,
+        updateSkillLevel,
         toggleResourceCompletion,
         verifySkill,
         opportunities,

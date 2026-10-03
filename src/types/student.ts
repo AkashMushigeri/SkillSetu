@@ -113,6 +113,8 @@ export interface Skill {
   careerRoles: string[];
   relatedOpportunityCount: number;
   assessmentQuestions?: AssessmentQuestion[];
+  aliases?: string[];
+  relatedSkills?: string[];
 }
 
 export interface ExtractedSkillItem {

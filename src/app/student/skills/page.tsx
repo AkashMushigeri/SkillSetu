@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useStudent } from '@/context/StudentContext';
 import {
@@ -11,6 +11,10 @@ import {
   TrendingUp,
   Clock,
   ChevronRight,
+  Search,
+  X,
+  Sparkles,
+  BookOpen,
 } from 'lucide-react';
 import {
   SKILLS_DATA,
@@ -22,6 +26,8 @@ import {
 export default function SkillsHubPage() {
   const { skills } = useStudent();
   const [activeLevel, setActiveLevel] = useState<SkillLevelKey>('basic');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
   const verifiedCount = skills.filter((s) => s.isVerified).length;
 
@@ -30,6 +36,13 @@ export default function SkillsHubPage() {
     { key: 'intermediate', label: 'Intermediate Skills', count: SKILLS_DATA.intermediate.length },
     { key: 'advanced', label: 'Advanced Skills', count: SKILLS_DATA.advanced.length },
   ];
+
+  const categories = useMemo(() => {
+    const pool = SKILLS_DATA[activeLevel];
+    const set = new Set<string>();
+    pool.forEach((s) => set.add(s.category));
+    return ['All', ...Array.from(set).sort()];
+  }, [activeLevel]);
 
   // Helper to resolve live status and progress from StudentContext
   const getSkillLiveState = (item: SkillItem) => {
@@ -53,7 +66,27 @@ export default function SkillsHubPage() {
     return { liveSkill, isVerified, progress, status };
   };
 
-  const currentSkills = SKILLS_DATA[activeLevel];
+  const filteredSkills = useMemo(() => {
+    let list = SKILLS_DATA[activeLevel];
+
+    if (selectedCategory !== 'All') {
+      list = list.filter((s) => s.category.toLowerCase() === selectedCategory.toLowerCase());
+    }
+
+    const q = searchQuery.toLowerCase().trim();
+    if (q) {
+      list = list.filter((s) => {
+        if (s.name.toLowerCase().includes(q)) return true;
+        if (s.category.toLowerCase().includes(q)) return true;
+        if (s.description.toLowerCase().includes(q)) return true;
+        if (s.aliases?.some((a) => a.toLowerCase().includes(q))) return true;
+        if (s.careerRoles?.some((r) => r.toLowerCase().includes(q))) return true;
+        return false;
+      });
+    }
+
+    return list;
+  }, [activeLevel, selectedCategory, searchQuery]);
 
   return (
     <div className="w-full max-w-[1820px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 space-y-8">
@@ -103,7 +136,10 @@ export default function SkillsHubPage() {
               <button
                 key={tab.key}
                 type="button"
-                onClick={() => setActiveLevel(tab.key)}
+                onClick={() => {
+                  setActiveLevel(tab.key);
+                  setSelectedCategory('All');
+                }}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                   activeLevel === tab.key
                     ? 'bg-white dark:bg-slate-900 text-brand-dark dark:text-white shadow-sm'
@@ -122,9 +158,67 @@ export default function SkillsHubPage() {
           </p>
         </div>
 
-        {/* Skill Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 xl:gap-5">
-          {currentSkills.map((skill) => {
+        {/* Search & Category Filter Bar */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={`Search ${tabs.find((t) => t.key === activeLevel)?.label.toLowerCase()} by name, alias, role...`}
+              className="w-full pl-9 pr-9 py-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-teal border border-slate-200 dark:border-slate-700"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Category Dropdown */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-semibold text-slate-400 shrink-0 hidden md:inline">Category:</span>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 font-medium focus:outline-hidden focus:ring-2 focus:ring-brand-teal"
+            >
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat === 'All' ? 'All Categories' : cat}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Skill Cards Grid or Empty State */}
+        {filteredSkills.length === 0 ? (
+          <div className="text-center py-12 px-4 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 space-y-3">
+            <BookOpen className="w-8 h-8 text-slate-400 mx-auto" />
+            <h3 className="font-bold text-base text-slate-800 dark:text-slate-200">No skills found</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              No skills match your filter &ldquo;{searchQuery || selectedCategory}&rdquo; in {tabs.find((t) => t.key === activeLevel)?.label}.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedCategory('All');
+              }}
+              className="mt-2 px-4 py-2 bg-brand-teal text-white text-xs font-bold rounded-xl hover:bg-brand-dark transition-colors"
+            >
+              Reset Filters
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 xl:gap-5">
+            {filteredSkills.map((skill) => {
             const { isVerified, progress, status } = getSkillLiveState(skill);
 
             return (
@@ -237,6 +331,7 @@ export default function SkillsHubPage() {
             );
           })}
         </div>
+      )}
       </div>
 
       {/* 3. Skill -> Career Role Mapping Section */}

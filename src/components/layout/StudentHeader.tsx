@@ -65,11 +65,20 @@ export const StudentHeader: React.FC = () => {
     { name: 'Profile', href: '/student/profile', icon: User },
   ];
 
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+
+  // Sync / clear pending path when navigation finishes
+  useEffect(() => {
+    setPendingPath(null);
+  }, [pathname]);
+
+  const currentPath = pendingPath || pathname;
+
   const isActive = (href: string) => {
     if (href === '/student') {
-      return pathname === '/student' || pathname === '/student/dashboard';
+      return currentPath === '/student' || currentPath === '/student/dashboard';
     }
-    return pathname.startsWith(href);
+    return currentPath.startsWith(href);
   };
 
   return (
@@ -94,8 +103,13 @@ export const StudentHeader: React.FC = () => {
         <div className="flex items-center justify-between h-16 gap-3 lg:gap-4">
           {/* Logo & Subtitle */}
           <div className="flex items-center gap-3 shrink-0">
-            <Link href="/student" className="flex items-center gap-2.5 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-teal to-brand-emerald flex items-center justify-center text-white shadow-md shadow-brand-teal/20 group-hover:scale-105 transition-transform">
+            <Link
+              href="/student"
+              prefetch={true}
+              onClick={() => setPendingPath('/student')}
+              className="flex items-center gap-2.5 group select-none"
+            >
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-teal to-brand-emerald flex items-center justify-center text-white shadow-md shadow-brand-teal/20 group-hover:scale-105 transition-transform duration-200">
                 <Sparkles className="w-5 h-5" />
               </div>
               <div className="flex flex-col">
@@ -118,14 +132,22 @@ export const StudentHeader: React.FC = () => {
                 <Link
                   key={link.name}
                   href={link.href}
-                  className={`flex items-center gap-1.5 px-2.5 xl:px-3 py-2 rounded-xl text-xs xl:text-sm font-medium transition-all ${
+                  prefetch={true}
+                  onClick={() => setPendingPath(link.href)}
+                  className={`group relative flex items-center gap-1.5 px-2.5 xl:px-3 py-2 rounded-xl text-xs xl:text-sm font-medium transition-all duration-200 ease-out select-none ${
                     active
                       ? 'bg-brand-teal/10 dark:bg-brand-teal/20 text-brand-teal dark:text-teal-400 font-semibold shadow-xs'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98] motion-reduce:hover:translate-y-0'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${active ? 'text-brand-teal' : 'text-slate-500 dark:text-slate-400'}`} />
-                  <span>{link.name}</span>
+                  <Icon
+                    className={`w-4 h-4 transition-all duration-200 ease-out ${
+                      active
+                        ? 'text-brand-teal dark:text-teal-400 scale-105'
+                        : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 group-hover:scale-105 motion-reduce:group-hover:scale-100'
+                    }`}
+                  />
+                  <span className="transition-colors duration-200">{link.name}</span>
                 </Link>
               );
             })}
@@ -277,8 +299,12 @@ export const StudentHeader: React.FC = () => {
                   <div className="py-1">
                     <Link
                       href="/student/profile"
-                      onClick={() => setIsProfileMenuOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      prefetch={true}
+                      onClick={() => {
+                        setPendingPath('/student/profile');
+                        setIsProfileMenuOpen(false);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-150"
                     >
                       <User className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                       View Full Profile
@@ -349,15 +375,19 @@ export const StudentHeader: React.FC = () => {
               <Link
                 key={link.name}
                 href={link.href}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium ${
+                prefetch={true}
+                onClick={() => {
+                  setPendingPath(link.href);
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ease-out select-none active:scale-[0.98] ${
                   active
                     ? 'bg-brand-teal/10 dark:bg-brand-teal/20 text-brand-teal dark:text-teal-400 font-semibold'
                     : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
-                <Icon className={`w-5 h-5 ${active ? 'text-brand-teal dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'}`} />
-                {link.name}
+                <Icon className={`w-5 h-5 transition-all duration-200 ease-out ${active ? 'text-brand-teal dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'}`} />
+                <span className="transition-colors duration-200">{link.name}</span>
               </Link>
             );
           })}

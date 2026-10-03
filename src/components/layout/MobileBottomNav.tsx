@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { GraduationCap, Compass, Award, Bookmark, User } from 'lucide-react';
@@ -9,6 +9,13 @@ import { useStudent } from '@/context/StudentContext';
 export const MobileBottomNav: React.FC = () => {
   const pathname = usePathname();
   const { savedOpportunityIds } = useStudent();
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPendingPath(null);
+  }, [pathname]);
+
+  const currentPath = pendingPath || pathname;
 
   const navItems = [
     { name: 'Home', href: '/student', icon: GraduationCap },
@@ -20,9 +27,9 @@ export const MobileBottomNav: React.FC = () => {
 
   const isActive = (href: string) => {
     if (href === '/student') {
-      return pathname === '/student' || pathname === '/student/dashboard';
+      return currentPath === '/student' || currentPath === '/student/dashboard';
     }
-    return pathname.startsWith(href);
+    return currentPath.startsWith(href);
   };
 
   return (
@@ -35,19 +42,25 @@ export const MobileBottomNav: React.FC = () => {
             <Link
               key={item.name}
               href={item.href}
-              className={`flex flex-col items-center py-1 px-3 rounded-xl relative transition-all ${
+              prefetch={true}
+              onClick={() => setPendingPath(item.href)}
+              className={`flex flex-col items-center py-1 px-3 rounded-xl relative transition-all duration-200 ease-out select-none active:scale-95 ${
                 active ? 'text-brand-teal dark:text-teal-400 font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <div className="relative">
-                <Icon className={`w-5 h-5 ${active ? 'stroke-[2.5px] scale-110' : 'stroke-[1.75px]'}`} />
+                <Icon
+                  className={`w-5 h-5 transition-all duration-200 ease-out ${
+                    active ? 'stroke-[2.5px] scale-110 text-brand-teal dark:text-teal-400' : 'stroke-[1.75px] text-slate-500 dark:text-slate-400'
+                  }`}
+                />
                 {item.badge !== undefined && item.badge > 0 && (
                   <span className="absolute -top-1 -right-2 bg-brand-orange text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
                     {item.badge}
                   </span>
                 )}
               </div>
-              <span className="text-[11px] mt-0.5">{item.name}</span>
+              <span className="text-[11px] mt-0.5 transition-colors duration-200">{item.name}</span>
             </Link>
           );
         })}

@@ -1,4 +1,8 @@
 import { Skill, SkillTier, LearningResource } from '@/types/student';
+import { EXPANDED_BASIC_SKILLS } from './skillsCatalogBasic';
+import { EXPANDED_INTERMEDIATE_SKILLS } from './skillsCatalogIntermediate';
+import { EXPANDED_INTERMEDIATE_AI_CLOUD_SKILLS } from './skillsCatalogIntermediate2';
+import { EXPANDED_ADVANCED_SKILLS } from './skillsCatalogAdvanced';
 
 export interface SkillItem {
   id: string;
@@ -7,6 +11,8 @@ export interface SkillItem {
   level: 'Basic' | 'Intermediate' | 'Advanced';
   category: string;
   icon: string;
+  aliases?: string[];
+  relatedSkills?: string[];
   description: string;
   defaultProgress: number;
   defaultStatus: 'Not Started' | 'In Progress' | 'Verified';
@@ -23,7 +29,7 @@ export interface SkillItem {
 
 export type SkillLevelKey = 'basic' | 'intermediate' | 'advanced';
 
-export const SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
+const CORE_SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
   basic: [
     {
       id: 'c-basic',
@@ -1131,6 +1137,54 @@ export const SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
 };
 
 /**
+ * Merges core curriculum skills with the expanded taxonomy catalog,
+ * ensuring no duplicates while preserving rich curriculum and adding aliases.
+ */
+function mergeSkillsCatalog(core: SkillItem[], expanded: SkillItem[]): SkillItem[] {
+  const result: SkillItem[] = [...core];
+  const seenIds = new Set(core.map((s) => s.id.toLowerCase()));
+  const seenNames = new Set(core.map((s) => s.name.toLowerCase().replace(/[^a-z0-9]/g, '')));
+
+  for (const item of expanded) {
+    const idKey = item.id.toLowerCase();
+    const nameKey = item.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    if (seenIds.has(idKey) || seenNames.has(nameKey)) {
+      // Find matching core item and enhance it with aliases and relatedSkills
+      const existing = result.find(
+        (s) =>
+          s.id.toLowerCase() === idKey ||
+          s.name.toLowerCase().replace(/[^a-z0-9]/g, '') === nameKey
+      );
+      if (existing) {
+        if (item.aliases && item.aliases.length > 0) {
+          existing.aliases = Array.from(new Set([...(existing.aliases || []), ...item.aliases]));
+        }
+        if (item.relatedSkills && item.relatedSkills.length > 0) {
+          existing.relatedSkills = Array.from(new Set([...(existing.relatedSkills || []), ...item.relatedSkills]));
+        }
+      }
+      continue;
+    }
+
+    seenIds.add(idKey);
+    seenNames.add(nameKey);
+    result.push(item);
+  }
+
+  return result;
+}
+
+export const SKILLS_DATA: Record<SkillLevelKey, SkillItem[]> = {
+  basic: mergeSkillsCatalog(CORE_SKILLS_DATA.basic, EXPANDED_BASIC_SKILLS),
+  intermediate: mergeSkillsCatalog(CORE_SKILLS_DATA.intermediate, [
+    ...EXPANDED_INTERMEDIATE_SKILLS,
+    ...EXPANDED_INTERMEDIATE_AI_CLOUD_SKILLS,
+  ]),
+  advanced: mergeSkillsCatalog(CORE_SKILLS_DATA.advanced, EXPANDED_ADVANCED_SKILLS),
+};
+
+/**
  * Returns all skills across all 3 tiers formatted as the full Skill interface
  */
 export function getAllSkillsAsInitialSkills(): Skill[] {
@@ -1165,7 +1219,82 @@ export function getAllSkillsAsInitialSkills(): Skill[] {
     resources: item.resources,
     careerRoles: item.careerRoles,
     relatedOpportunityCount: item.relatedOpportunityCount,
+    aliases: item.aliases,
+    relatedSkills: item.relatedSkills,
   }));
+}
+
+/**
+ * Retrieve all skills in the catalog across all tiers
+ */
+export function getAllCatalogSkills(): SkillItem[] {
+  return [
+    ...SKILLS_DATA.basic,
+    ...SKILLS_DATA.intermediate,
+    ...SKILLS_DATA.advanced
+  ];
+}
+
+/**
+ * Find any skill in the catalog by ID, name, or alias
+ */
+export function findCatalogSkill(identifier: string): SkillItem | undefined {
+  if (!identifier) return undefined;
+  const target = identifier.toLowerCase().trim();
+  const cleanTarget = target.replace(/[^a-z0-9]/g, '');
+
+  const all = getAllCatalogSkills();
+  return all.find((item) => {
+    if (item.id.toLowerCase() === target) return true;
+    if (item.name.toLowerCase() === target) return true;
+    if (item.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanTarget) return true;
+    if (item.aliases?.some((a) => a.toLowerCase() === target || a.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanTarget)) return true;
+    return false;
+  });
+}
+
+/**
+ * Search the catalog by query, tier, and category
+ */
+export function searchCatalogSkills(
+  query: string,
+  tier?: SkillTier | 'All',
+  category?: string
+): SkillItem[] {
+  let pool = getAllCatalogSkills();
+
+  if (tier && tier !== 'All') {
+    pool = pool.filter((s) => s.tier === tier);
+  }
+
+  if (category && category !== 'All') {
+    pool = pool.filter((s) => s.category.toLowerCase() === category.toLowerCase());
+  }
+
+  const q = query.toLowerCase().trim();
+  if (!q) return pool;
+
+  return pool.filter((s) => {
+    if (s.name.toLowerCase().includes(q)) return true;
+    if (s.category.toLowerCase().includes(q)) return true;
+    if (s.description.toLowerCase().includes(q)) return true;
+    if (s.aliases?.some((a) => a.toLowerCase().includes(q))) return true;
+    if (s.careerRoles?.some((r) => r.toLowerCase().includes(q))) return true;
+    return false;
+  });
+}
+
+/**
+ * Get distinct categories in the catalog
+ */
+export function getCatalogCategories(tier?: SkillTier | 'All'): string[] {
+  let pool = getAllCatalogSkills();
+  if (tier && tier !== 'All') {
+    pool = pool.filter((s) => s.tier === tier);
+  }
+  const set = new Set<string>();
+  pool.forEach((s) => set.add(s.category));
+  return Array.from(set).sort();
 }
 
 /**
