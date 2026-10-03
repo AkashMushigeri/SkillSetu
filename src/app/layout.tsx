@@ -3,6 +3,7 @@ import '@/styles/globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { OnboardingGuard } from '@/components/auth/OnboardingGuard';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { Analytics } from '@vercel/analytics/next';
 
 export const metadata: Metadata = {
   title: 'SkillSetu — AYUSH Career Bridge | Academia–Industry Collaboration',
@@ -36,6 +37,7 @@ export default function RootLayout({
             <OnboardingGuard>{children}</OnboardingGuard>
           </AuthProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
