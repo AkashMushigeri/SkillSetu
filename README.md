@@ -286,12 +286,28 @@ npm install
 
 ### 4. Create `.env.local`
 
+You do not need to create this by hand. Run:
+
 ```bash
-cp .env.example .env.local
+npm run setup
 ```
+
+This copies `.env.example` → `.env.local`. The committed Firebase **web** config in
+`.env.example` is public by design (Firebase treats it as an identifier, not a
+credential — security comes from `firestore.rules` and App Check), so the app connects
+to Firebase immediately after this step.
+
+`npm run dev` and `npm run build` also run this automatically via npm `pre` hooks, so
+skipping the explicit call is safe. It **never overwrites** an existing `.env.local`, so
+your own keys are preserved.
+
+If you prefer to do it manually: `cp .env.example .env.local`
 
 `.env.local` is local-only and **gitignored** — never commit it. Keep real keys out of
 `.env.example` and the docs; use the `YOUR_...` placeholders below.
+
+`npm run setup` also prints which values still need attention, and warns if `.env.local`
+is somehow not gitignored.
 
 #### Environment variables
 
