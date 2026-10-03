@@ -99,27 +99,50 @@ interface StudentContextType {
 
 const StudentContext = createContext<StudentContextType | undefined>(undefined);
 
+export const EMPTY_STUDENT_PROFILE: StudentProfile = {
+  id: '',
+  name: '',
+  degree: '',
+  year: '',
+  college: '',
+  location: '',
+  careerGoal: '',
+  profileCompletion: 0,
+  avatar: '',
+  bio: '',
+  email: '',
+  phone: '',
+  github: '',
+  linkedin: '',
+  gpa: '',
+};
+
+const getStorageKey = (base: string, uid?: string | null) => {
+  if (uid) return `skillsetu_${uid}_${base}`;
+  return `skillsetu_guest_${base}`;
+};
+
 const calculateProfileCompletion = (
   prof: Partial<StudentProfile>,
   projectsCount: number,
   skillsCount: number
 ): number => {
   let score = 0;
-  if (prof.name) score += 15;
-  if (prof.email) score += 10;
-  if (prof.phone) score += 10;
-  if (prof.college || prof.education?.college?.institutionName) score += 15;
-  if (prof.degree || prof.education?.college?.degree) score += 10;
-  if (prof.year || prof.education?.college?.academicYear) score += 10;
-  if (prof.careerGoal) score += 10;
-  if (prof.location) score += 10;
-  if (prof.bio) score += 10;
+  if (prof.name && prof.name.trim() !== '' && prof.name !== 'Guest Student') score += 15;
+  if (prof.email && prof.email.trim() !== '') score += 10;
+  if (prof.phone && prof.phone.trim() !== '') score += 10;
+  if ((prof.college && prof.college.trim() !== '') || (prof.education?.college?.institutionName && prof.education.college.institutionName.trim() !== '')) score += 15;
+  if ((prof.degree && prof.degree.trim() !== '') || (prof.education?.college?.degree && prof.education.college.degree.trim() !== '')) score += 10;
+  if ((prof.year && prof.year.trim() !== '') || (prof.education?.college?.academicYear && prof.education.college.academicYear.trim() !== '')) score += 10;
+  if (prof.careerGoal && prof.careerGoal.trim() !== '') score += 10;
+  if (prof.location && prof.location.trim() !== '') score += 10;
+  if (prof.bio && prof.bio.trim() !== '') score += 10;
   if (projectsCount > 0) score += 5;
   if (skillsCount > 0) score += 5;
 
   // Contributing bonus for added PUC and School education
-  if (prof.education?.puc?.institutionName) score += 5;
-  if (prof.education?.school?.institutionName) score += 5;
+  if (prof.education?.puc?.institutionName && prof.education.puc.institutionName.trim() !== '') score += 5;
+  if (prof.education?.school?.institutionName && prof.education.school.institutionName.trim() !== '') score += 5;
 
   return Math.min(100, score);
 };
@@ -134,11 +157,11 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // 1. Profile State - deterministic initial state for SSR / hydration match
-  const [profile, setProfile] = useState<StudentProfile>(INITIAL_STUDENT_PROFILE);
+  // 1. Profile State - defaults to empty profile
+  const [profile, setProfile] = useState<StudentProfile>(EMPTY_STUDENT_PROFILE);
 
-  // 2. Skills State
-  const [skills, setSkills] = useState<Skill[]>(INITIAL_SKILLS);
+  // 2. Skills State - defaults to empty array (0 skills)
+  const [skills, setSkills] = useState<Skill[]>([]);
 
   // 3. Saved Opportunities IDs
   const [savedOpportunityIds, setSavedOpportunityIds] = useState<string[]>([]);
@@ -149,295 +172,200 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // 5. Projects State (empty by default for real students, loaded from user storage)
   const [projects, setProjects] = useState<Project[]>([]);
 
-  // Hydrate stored user data safely on client mount after SSR
+  // 6. Notifications State
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+
+  // Mirror of `notifications` for imperative access inside sync handlers.
+  const notificationsRef = React.useRef<NotificationItem[]>([]);
+  useEffect(() => {
+    notificationsRef.current = notifications;
+  }, [notifications]);
+
+  // Load and sync data when user or auth profile changes
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    try {
-      const savedProfile = localStorage.getItem('skillsetu_student_profile');
-      if (savedProfile) {
-        setProfile(JSON.parse(savedProfile));
-      }
-      const savedSkills = localStorage.getItem('skillsetu_student_skills');
-      if (savedSkills) {
-        try {
-          const parsed: Skill[] = JSON.parse(savedSkills);
-          const savedMap = new Map(parsed.map((s) => [s.id, s]));
-          const merged = INITIAL_SKILLS.map((initSkill) => {
-            const saved = savedMap.get(initSkill.id);
-            return saved ? { ...initSkill, ...saved } : initSkill;
-          });
-          parsed.forEach((s) => {
-            if (!merged.some((m) => m.id === s.id)) {
-              merged.push(s);
-            }
-          });
-          setSkills(merged);
-        } catch {
-          setSkills(INITIAL_SKILLS);
-        }
-      }
-      const savedOpps = localStorage.getItem('skillsetu_saved_opps');
-      if (savedOpps) {
-        setSavedOpportunityIds(JSON.parse(savedOpps));
-      }
-      const savedApps = localStorage.getItem('skillsetu_applications');
-      if (savedApps) {
-        setApplications(JSON.parse(savedApps));
-      }
-      const savedProjects = localStorage.getItem('skillsetu_student_projects');
-      if (savedProjects) {
-        setProjects(JSON.parse(savedProjects));
-      }
-      const savedNotifs = localStorage.getItem('skillsetu_notifications');
-      if (savedNotifs) {
-        setNotifications(JSON.parse(savedNotifs));
-      }
-      const synced = readStudentOpportunitiesFromIndustry();
-      if (synced && synced.length > 0) {
-        setSyncedOpportunities(synced);
-      }
-    } catch (e) {
-      console.warn('Error hydrating student state from localStorage:', e);
-    } finally {
-      setIsHydrated(true);
-    }
-  }, []);
 
-  // Sync profile & user data when authenticated userProfile changes from Firebase
-  useEffect(() => {
     const isDemo =
       userProfile?.email?.toLowerCase() === 'aarav.sharma@rvce.edu.in' ||
       user?.email?.toLowerCase() === 'aarav.sharma@rvce.edu.in' ||
       user?.uid === 'demo_student';
 
-    if (userProfile && userProfile.role === 'STUDENT') {
-      const displayName =
-        userProfile.displayName ||
-        user?.displayName ||
-        (userProfile.email ? userProfile.email.split('@')[0] : 'Student');
-
-      setProfile((prev) => {
-        const isDefaultMock =
-          prev.name === 'Aarav Sharma' ||
-          prev.id === 'GAT054-STD-2026' ||
-          prev.email === 'aarav.sharma@rvce.edu.in';
-        const shouldResetMock = !isDemo && isDefaultMock;
-
-        const updated: StudentProfile = {
-          ...prev,
-          id: userProfile.uid || user?.uid || prev.id,
-          name: displayName,
-          email: userProfile.email || user?.email || (shouldResetMock ? '' : prev.email),
-          phone:
-            userProfile.phone !== undefined && userProfile.phone !== ''
-              ? userProfile.phone
-              : shouldResetMock
-              ? ''
-              : prev.phone,
-          college:
-            userProfile.college !== undefined && userProfile.college !== ''
-              ? userProfile.college
-              : shouldResetMock
-              ? ''
-              : prev.college,
-          degree:
-            userProfile.degree !== undefined && userProfile.degree !== ''
-              ? userProfile.degree
-              : shouldResetMock
-              ? 'B.Tech'
-              : prev.degree,
-          year:
-            userProfile.year !== undefined && userProfile.year !== ''
-              ? userProfile.year
-              : shouldResetMock
-              ? '3rd Year'
-              : prev.year,
-          gpa:
-            userProfile.gpa !== undefined && userProfile.gpa !== ''
-              ? userProfile.gpa
-              : shouldResetMock
-              ? ''
-              : prev.gpa,
-          careerGoal:
-            userProfile.careerGoal !== undefined && userProfile.careerGoal !== ''
-              ? userProfile.careerGoal
-              : shouldResetMock
-              ? 'Software Development'
-              : prev.careerGoal,
-          location:
-            userProfile.location !== undefined && userProfile.location !== ''
-              ? userProfile.location
-              : shouldResetMock
-              ? 'Bengaluru'
-              : prev.location,
-          bio:
-            userProfile.bio !== undefined && userProfile.bio !== ''
-              ? userProfile.bio
-              : shouldResetMock
-              ? ''
-              : prev.bio,
-          github:
-            userProfile.github !== undefined && userProfile.github !== ''
-              ? userProfile.github
-              : shouldResetMock
-              ? ''
-              : prev.github,
-          linkedin:
-            userProfile.linkedin !== undefined && userProfile.linkedin !== ''
-              ? userProfile.linkedin
-              : shouldResetMock
-              ? ''
-              : prev.linkedin,
-          avatar: userProfile.photoURL || user?.photoURL || (shouldResetMock ? '' : prev.avatar),
-          education: userProfile.education || prev.education,
-          profileCompletion: 0,
-        };
-
-        updated.profileCompletion = calculateProfileCompletion(
-          updated,
-          projects.length,
-          skills.filter((s) => s.isVerified).length
-        );
-
-        return updated;
-      });
-
-      // Sync skills from student onboarding
-      if (userProfile.skills && userProfile.skills.length > 0) {
-        setSkills(() => {
-          const userSkillNames = userProfile.skills || [];
-          const icons = ['💻', '⚡', '🚀', '🧠', '🛠️', '🌐', '📊', '🔍', '⚙️', '📱'];
-          return userSkillNames.map((skillName, idx) => ({
-            id: `skill-user-${idx}-${skillName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
-            name: skillName,
-            tier: 'Intermediate' as const,
-            category: 'Technical',
-            icon: icons[idx % icons.length],
-            level: 'Intermediate',
-            progress: 0,
-            isVerified: false,
-            verifiedDate: undefined,
-            learningStatus: 'not_started' as const,
-            assessmentStatus: 'ready' as const,
-            bestScore: undefined,
-            description: `Practical competency and applied proficiency in ${skillName}.`,
-            estimatedTime: '2-3 weeks',
-            learningObjectives: [
-              `Master foundational principles of ${skillName}`,
-              `Complete applied industry challenge tasks`,
-              `Pass verified proctored assessment`,
-            ],
-            resources: [
-              { id: `r-${idx}-1`, title: `${skillName} Applied Fundamentals`, type: 'doc' as const, duration: '45 mins', completed: false, url: '#' },
-              { id: `r-${idx}-2`, title: `Industry Projects with ${skillName}`, type: 'video' as const, duration: '1.5 hrs', completed: false, url: '#' },
-            ],
-            careerRoles: ['Software Engineer', 'Full-Stack Developer', 'Specialist'],
-            relatedOpportunityCount: 6,
-          }));
-        });
-      }
+    if (isDemo) {
+      setProfile(INITIAL_STUDENT_PROFILE);
+      setSkills(INITIAL_SKILLS);
+      setSavedOpportunityIds(['opp-1', 'opp-4']);
+      setApplications(INITIAL_APPLICATIONS);
+      setProjects(INITIAL_PROJECTS);
+      setNotifications(INITIAL_NOTIFICATIONS);
+      setIsHydrated(true);
+      return;
     }
 
-    if (isDemo) {
-      setProjects((prev) => (prev.length === 0 ? INITIAL_PROJECTS : prev));
-      setApplications((prev) => (prev.length === 0 ? INITIAL_APPLICATIONS : prev));
-      setSavedOpportunityIds((prev) => (prev.length === 0 ? ['opp-1', 'opp-4'] : prev));
-    } else if (user?.uid) {
-      // Real user: Load their specific data without Aarav's fake projects & applications
+    if (user?.uid) {
+      // Real user: Load their specific data isolated by user ID
+      // 1. Profile
       try {
-        const userProjectsKey = `skillsetu_student_projects_${user.uid}`;
-        const savedProjects = localStorage.getItem(userProjectsKey);
-        if (savedProjects) {
-          setProjects(JSON.parse(savedProjects));
-        } else {
-          setProjects([]);
-          localStorage.setItem(userProjectsKey, JSON.stringify([]));
-          localStorage.setItem('skillsetu_student_projects', JSON.stringify([]));
-        }
-
-        const userAppsKey = `skillsetu_applications_${user.uid}`;
-        const savedApps = localStorage.getItem(userAppsKey);
-        if (savedApps) {
-          setApplications(JSON.parse(savedApps));
-        } else {
-          setApplications([]);
-          localStorage.setItem(userAppsKey, JSON.stringify([]));
-          localStorage.setItem('skillsetu_applications', JSON.stringify([]));
-        }
-
-        const userSavedKey = `skillsetu_saved_opps_${user.uid}`;
-        const savedOpps = localStorage.getItem(userSavedKey);
-        if (savedOpps) {
-          setSavedOpportunityIds(JSON.parse(savedOpps));
-        } else {
-          setSavedOpportunityIds([]);
-          localStorage.setItem(userSavedKey, JSON.stringify([]));
-          localStorage.setItem('skillsetu_saved_opps', JSON.stringify([]));
-        }
-
-        const userSkillsKey = `skillsetu_student_skills_${user.uid}`;
-        const savedSkills = localStorage.getItem(userSkillsKey);
-        if (savedSkills) {
-          try {
-            const parsed: Skill[] = JSON.parse(savedSkills);
-            const savedMap = new Map(parsed.map((s) => [s.id, s]));
-            const merged = INITIAL_SKILLS.map((initSkill) => {
-              const saved = savedMap.get(initSkill.id);
-              return saved ? { ...initSkill, ...saved } : initSkill;
-            });
-            parsed.forEach((s) => {
-              if (!merged.some((m) => m.id === s.id)) {
-                merged.push(s);
-              }
-            });
-            setSkills(merged);
-          } catch {
-            setSkills(INITIAL_SKILLS);
+        const savedProfStr = localStorage.getItem(getStorageKey('profile', user.uid));
+        if (savedProfStr) {
+          const parsed: StudentProfile = JSON.parse(savedProfStr);
+          if (parsed.name === 'Aarav Sharma' && userProfile?.displayName && userProfile.displayName !== 'Aarav Sharma') {
+            parsed.name = userProfile.displayName;
           }
-        } else if (!userProfile?.skills || userProfile.skills.length === 0) {
-          // Clean curriculum skills without fake 80% progress
-          setSkills(
-            INITIAL_SKILLS.map((s) => ({
-              ...s,
+          parsed.profileCompletion = calculateProfileCompletion(parsed, projects.length, skills.filter(s => s.isVerified).length);
+          setProfile(parsed);
+        } else {
+          const displayName = userProfile?.displayName || user?.displayName || (user?.email ? user.email.split('@')[0] : 'Student');
+          const cleanProf: StudentProfile = {
+            id: user.uid,
+            name: displayName,
+            email: userProfile?.email || user?.email || '',
+            phone: userProfile?.phone || '',
+            college: userProfile?.college || '',
+            degree: userProfile?.degree || '',
+            year: userProfile?.year || '',
+            gpa: userProfile?.gpa || '',
+            careerGoal: userProfile?.careerGoal || '',
+            location: userProfile?.location || '',
+            bio: userProfile?.bio || '',
+            github: userProfile?.github || '',
+            linkedin: userProfile?.linkedin || '',
+            avatar: userProfile?.photoURL || user?.photoURL || '',
+            education: userProfile?.education,
+            profileCompletion: 0,
+          };
+          cleanProf.profileCompletion = calculateProfileCompletion(cleanProf, 0, 0);
+          setProfile(cleanProf);
+        }
+      } catch (e) {
+        console.warn('Error hydrating real profile:', e);
+      }
+
+      // 2. Skills
+      try {
+        const savedSkillsStr = localStorage.getItem(getStorageKey('skills', user.uid));
+        if (savedSkillsStr) {
+          const parsedSkills: Skill[] = JSON.parse(savedSkillsStr);
+          setSkills(parsedSkills);
+        } else if (userProfile?.skills && userProfile.skills.length > 0) {
+          const initialUserSkills: Skill[] = userProfile.skills.map((skillName, idx) => {
+            const catalogItem = findCatalogSkill(skillName);
+            return {
+              id: catalogItem ? catalogItem.id : `skill-user-${idx}-${skillName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+              name: catalogItem ? catalogItem.name : skillName,
+              tier: catalogItem ? catalogItem.tier : 'Intermediate',
+              category: catalogItem ? catalogItem.category : 'Technical',
+              icon: catalogItem ? catalogItem.icon : '💡',
+              level: catalogItem ? catalogItem.level : 'Intermediate',
               progress: 0,
               isVerified: false,
               verifiedDate: undefined,
-              learningStatus: 'not_started' as const,
-              assessmentStatus: 'ready' as const,
+              learningStatus: 'not_started',
+              assessmentStatus: 'ready',
               bestScore: undefined,
-              resources: s.resources.map((r) => ({ ...r, completed: false })),
-            }))
-          );
+              description: catalogItem ? catalogItem.description : `Practical competency in ${skillName}.`,
+              estimatedTime: catalogItem ? catalogItem.estimatedTime : '2-3 weeks',
+              learningObjectives: catalogItem ? catalogItem.learningObjectives : [`Master foundations of ${skillName}`],
+              resources: catalogItem ? catalogItem.resources.map(r => ({ ...r, completed: false })) : [],
+              careerRoles: catalogItem ? catalogItem.careerRoles : ['Developer'],
+              relatedOpportunityCount: catalogItem ? catalogItem.relatedOpportunityCount : 5,
+            };
+          });
+          setSkills(initialUserSkills);
+        } else {
+          setSkills([]);
         }
-
-        setNotifications((prev) => {
-          const hasMock = prev.some((n) => n.title.includes('Aarav') || n.message.includes('Aarav'));
-          if (hasMock || prev.length === 0) {
-            return [
-              {
-                id: `notif-welcome-${Date.now()}`,
-                title: 'Welcome to SkillSetu!',
-                message: 'Your student profile is active. Add your projects and take skill assessments to get verified by top employers.',
-                time: 'Just now',
-                type: 'system',
-                read: false,
-                link: '/student/skills',
-              },
-            ];
-          }
-          return prev;
-        });
       } catch (e) {
-        console.warn('Error syncing real user isolated state:', e);
+        console.warn('Error hydrating real skills:', e);
+        setSkills([]);
       }
+
+      // 3. Projects
+      try {
+        const savedProjStr = localStorage.getItem(getStorageKey('projects', user.uid));
+        if (savedProjStr) {
+          setProjects(JSON.parse(savedProjStr));
+        } else {
+          setProjects([]);
+        }
+      } catch {
+        setProjects([]);
+      }
+
+      // 4. Applications
+      try {
+        const savedAppsStr = localStorage.getItem(getStorageKey('applications', user.uid));
+        if (savedAppsStr) {
+          setApplications(JSON.parse(savedAppsStr));
+        } else {
+          setApplications([]);
+        }
+      } catch {
+        setApplications([]);
+      }
+
+      // 5. Saved Opportunities
+      try {
+        const savedOppsStr = localStorage.getItem(getStorageKey('saved_opps', user.uid));
+        if (savedOppsStr) {
+          setSavedOpportunityIds(JSON.parse(savedOppsStr));
+        } else {
+          setSavedOpportunityIds([]);
+        }
+      } catch {
+        setSavedOpportunityIds([]);
+      }
+
+      // 6. Notifications
+      try {
+        const savedNotifsStr = localStorage.getItem(getStorageKey('notifications', user.uid));
+        if (savedNotifsStr) {
+          const parsed: NotificationItem[] = JSON.parse(savedNotifsStr);
+          const clean = parsed.filter(n => !n.title.includes('Aarav') && !n.message.includes('Aarav') && !n.message.includes('Swiggy'));
+          setNotifications(clean.length > 0 ? clean : [
+            {
+              id: `notif-welcome-${Date.now()}`,
+              title: 'Welcome to SkillSetu!',
+              message: 'Your student dashboard is active. Add your skills and complete assessments to get verified by top employers.',
+              time: 'Just now',
+              type: 'system',
+              read: false,
+              link: '/student/skills',
+            }
+          ]);
+        } else {
+          setNotifications([
+            {
+              id: `notif-welcome-${Date.now()}`,
+              title: 'Welcome to SkillSetu!',
+              message: 'Your student dashboard is active. Add your skills and complete assessments to get verified by top employers.',
+              time: 'Just now',
+              type: 'system',
+              read: false,
+              link: '/student/skills',
+            }
+          ]);
+        }
+      } catch {
+        setNotifications([]);
+      }
+    } else {
+      // Guest or logged-out user: clean zero / empty state
+      setProfile(EMPTY_STUDENT_PROFILE);
+      setSkills([]);
+      setProjects([]);
+      setApplications([]);
+      setSavedOpportunityIds([]);
+      setNotifications([]);
     }
+
+    // Load synced opportunities from Industry portal
+    const synced = readStudentOpportunitiesFromIndustry();
+    if (synced && synced.length > 0) {
+      setSyncedOpportunities(synced);
+    }
+
+    setIsHydrated(true);
   }, [user, userProfile]);
-
-  // 6. Notifications
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
-
-  // Mirror of `notifications` for imperative access inside sync handlers.
-  const notificationsRef = React.useRef<NotificationItem[]>(INITIAL_NOTIFICATIONS);
   useEffect(() => {
     notificationsRef.current = notifications;
   }, [notifications]);
@@ -496,34 +424,36 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [workModeFilter, setWorkModeFilter] = useState<'All' | 'Remote' | 'Hybrid' | 'On-site'>('All');
 
-  // Persistence effects - only persist to localStorage after initial client hydration completes
+  // Persistence effects - scoped to user ID (or guest)
   useEffect(() => {
     if (!isHydrated || typeof window === 'undefined') return;
-    localStorage.setItem('skillsetu_student_profile', JSON.stringify(profile));
-  }, [profile, isHydrated]);
+    if (isDemoUser) return;
+    localStorage.setItem(getStorageKey('profile', user?.uid), JSON.stringify(profile));
+  }, [profile, isHydrated, user?.uid, isDemoUser]);
 
   useEffect(() => {
     if (!isHydrated || typeof window === 'undefined') return;
-    localStorage.setItem('skillsetu_student_skills', JSON.stringify(skills));
-  }, [skills, isHydrated]);
+    if (isDemoUser) return;
+    localStorage.setItem(getStorageKey('skills', user?.uid), JSON.stringify(skills));
+  }, [skills, isHydrated, user?.uid, isDemoUser]);
 
   useEffect(() => {
     if (!isHydrated || typeof window === 'undefined') return;
-    localStorage.setItem('skillsetu_saved_opps', JSON.stringify(savedOpportunityIds));
-  }, [savedOpportunityIds, isHydrated]);
+    if (isDemoUser) return;
+    localStorage.setItem(getStorageKey('saved_opps', user?.uid), JSON.stringify(savedOpportunityIds));
+  }, [savedOpportunityIds, isHydrated, user?.uid, isDemoUser]);
 
   useEffect(() => {
     if (!isHydrated || typeof window === 'undefined') return;
-    localStorage.setItem('skillsetu_applications', JSON.stringify(applications));
-  }, [applications, isHydrated]);
+    if (isDemoUser) return;
+    localStorage.setItem(getStorageKey('applications', user?.uid), JSON.stringify(applications));
+  }, [applications, isHydrated, user?.uid, isDemoUser]);
 
   useEffect(() => {
     if (!isHydrated || typeof window === 'undefined') return;
-    if (user?.uid) {
-      localStorage.setItem(`skillsetu_student_projects_${user.uid}`, JSON.stringify(projects));
-    }
-    localStorage.setItem('skillsetu_student_projects', JSON.stringify(projects));
-  }, [projects, user?.uid, isHydrated]);
+    if (isDemoUser) return;
+    localStorage.setItem(getStorageKey('projects', user?.uid), JSON.stringify(projects));
+  }, [projects, user?.uid, isHydrated, isDemoUser]);
 
   const addProject = useCallback((newProj: Omit<Project, 'id'>) => {
     const proj: Project = {
@@ -545,8 +475,9 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   useEffect(() => {
     if (!isHydrated || typeof window === 'undefined') return;
-    localStorage.setItem('skillsetu_notifications', JSON.stringify(notifications));
-  }, [notifications, isHydrated]);
+    if (isDemoUser) return;
+    localStorage.setItem(getStorageKey('notifications', user?.uid), JSON.stringify(notifications));
+  }, [notifications, isHydrated, user?.uid, isDemoUser]);
 
   // ------------------------------------------------------------------
   // Cross-sector sync subscription (Industry -> Student)
