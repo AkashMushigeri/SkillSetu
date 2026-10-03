@@ -7,15 +7,8 @@ import { ApplicationModal } from '@/components/industry/ApplicationModal';
 import { ScheduleInterviewModal } from '@/components/industry/ScheduleInterviewModal';
 import { IndustryApplication } from '@/types/industry';
 import {
-  FileSpreadsheet,
+  
   Search,
-  Users,
-  Filter,
-  Sparkles,
-  CheckCircle2,
-  Calendar,
-  ExternalLink,
-  ChevronRight,
 } from 'lucide-react';
 
 export default function ApplicationsPage() {

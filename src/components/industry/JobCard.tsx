@@ -5,16 +5,12 @@ import Link from 'next/link';
 import { IndustryJob } from '@/types/industry';
 import { useIndustry } from '@/context/IndustryContext';
 import {
-  Briefcase,
+  
   MapPin,
   Users,
   Sparkles,
-  Calendar,
-  ChevronRight,
   Search,
-  CheckCircle2,
   Copy,
-  Clock,
 } from 'lucide-react';
 
 interface JobCardProps {

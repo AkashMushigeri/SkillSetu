@@ -31,6 +31,7 @@ import {
   collegeTrainingToSignal,
 } from '@/lib/syncConverters';
 import { writeSyncRecord, SYNC_DOMAINS } from '@/lib/syncBridge';
+import { subscribeToRealtimeNotifications } from '@/lib/realtimeNotifications';
 import { useAuth } from '@/context/AuthContext';
 import { saveUserProfile } from '@/lib/firebase';
 
@@ -106,7 +107,16 @@ export const CollegeProvider: React.FC<{ children: ReactNode }> = ({ children })
   useEffect(() => {
     try {
       const savedProfile = localStorage.getItem('skillsetu_college_profile');
-      if (savedProfile) setProfile(JSON.parse(savedProfile));
+      if (savedProfile) {
+        try {
+          const parsed = JSON.parse(savedProfile);
+          if (parsed && typeof parsed === 'object') {
+            setProfile((prev) => ({ ...prev, ...parsed }));
+          }
+        } catch {
+          // ignore corrupted profile
+        }
+      }
 
       const savedAuth = localStorage.getItem('skillsetu_college_auth');
       if (savedAuth === 'true') setIsLoggedIn(true);
@@ -156,7 +166,6 @@ export const CollegeProvider: React.FC<{ children: ReactNode }> = ({ children })
               time: n.time,
               read: !!n.read,
               type: 'internship' as const,
-              link: n.link,
               targetRoute: n.link || '/college/dashboard',
             }));
           if (!fresh.length) return prev;
@@ -173,7 +182,28 @@ export const CollegeProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   useEffect(() => {
     syncRefresh();
-    return subscribeToSync(syncRefresh);
+    const unsubSync = subscribeToSync(syncRefresh);
+    const unsubRealtime = subscribeToRealtimeNotifications('college', (notif) => {
+      setNotifications((prev) => {
+        if (prev.some((n) => n.id === notif.id)) return prev;
+        const newNotif: CollegeNotification = {
+          id: notif.id,
+          title: notif.title,
+          message: notif.message,
+          time: notif.time || 'Just now',
+          read: false,
+          type: 'internship',
+          targetRoute: notif.link || '/college/dashboard',
+        };
+        return [newNotif, ...prev];
+      });
+      showToast(notif.message, 'info');
+    });
+
+    return () => {
+      unsubSync();
+      unsubRealtime();
+    };
   }, [syncRefresh]);
 
   const showToast = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {

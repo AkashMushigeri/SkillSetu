@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useCollege } from '@/context/CollegeContext';
-import { BriefcaseBusiness, Rocket, Sparkles, CheckCircle2, Share2, Eye, Building2 } from 'lucide-react';
+import { BriefcaseBusiness, Rocket, Sparkles, Share2 } from 'lucide-react';
 
 export default function InternshipsPage() {
   const { internships, recommendInternship, showToast } = useCollege();

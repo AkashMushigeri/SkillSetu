@@ -2,9 +2,7 @@
 
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useIndustry } from '@/context/IndustryContext';
-import { SkillBadge } from '@/components/industry/SkillBadge';
 import { SkillMatchBreakdown } from '@/components/industry/SkillMatchBreakdown';
 import { ScheduleInterviewModal } from '@/components/industry/ScheduleInterviewModal';
 import {
@@ -12,7 +10,6 @@ import {
   GraduationCap,
   MapPin,
   Mail,
-  Phone,
   Calendar,
   CheckCircle2,
   Bookmark,
@@ -24,7 +21,6 @@ import {
   FileText,
   Download,
   ExternalLink,
-  Sparkles,
   Globe,
 } from 'lucide-react';
 import { GithubIcon, LinkedinIcon } from '@/components/icons/BrandIcons';

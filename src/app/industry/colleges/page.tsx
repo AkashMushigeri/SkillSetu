@@ -9,18 +9,13 @@ import {
   Sparkles,
   Users,
   MapPin,
-  TrendingUp,
   Award,
-  CheckCircle2,
   Clock,
-  ArrowRight,
-  ShieldCheck,
-  Plus,
   Send,
 } from 'lucide-react';
 
 export default function AcademiaCollaborationPage() {
-  const { colleges, requestCollegePartnership, showToast } = useIndustry();
+  const { colleges, requestCollegePartnership } = useIndustry();
   const [activeTab, setActiveTab] = useState<'All' | 'Active' | 'Pending' | 'Potential'>('All');
 
   const filteredColleges = colleges.filter((col) => {
@@ -146,7 +141,7 @@ export default function AcademiaCollaborationPage() {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setActiveTab(tab.id as 'All' | 'Active' | 'Pending' | 'Potential')}
                   className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
                     isSelected
                       ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-xs'

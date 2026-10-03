@@ -90,6 +90,8 @@ export interface Skill {
   name: string;
   tier: SkillTier;
   category: string;
+  resumeEvidence?: string;
+  resumeSource?: 'Skill' | 'Technology';
   icon: string;
   level: string;
   progress: number;
@@ -296,16 +298,20 @@ export interface AssessmentEvaluationResult {
 
 export interface Opportunity {
   id: string;
+  companyId?: string;
+  dataConnectId?: string;
   title: string;
   company: string;
   companyLogo?: string;
   type: OpportunityType;
   location: string;
   city: string;
-  coordinates: {
+  coordinates?: {
     lat: number;
     lng: number;
   };
+  /** A company marker is not a confirmed work site. */
+  coordinateSource?: 'company';
   distanceKm?: number;
   workMode: 'Remote' | 'Hybrid' | 'On-site';
   stipend: string;
@@ -328,14 +334,21 @@ export interface Opportunity {
   missingSkills?: string[];
   isMatchBoosted?: boolean;
   boostMessage?: string;
+  applicationUrl?: string;
+  companyWebsite?: string;
+  employerVerified?: boolean;
   matchExplanation?: string;
-  companyId?: string;
   industryId?: string;
 }
 
 export interface Application {
   id: string;
   opportunityId: string;
+  companyId?: string;
+  dataConnectId?: string;
+  applicationUrl?: string;
+  companyWebsite?: string;
+  employerVerified?: boolean;
   opportunityTitle: string;
   company: string;
   type: OpportunityType;
@@ -345,7 +358,6 @@ export interface Application {
   resumeUsed: string;
   matchScoreAtApply: number;
   stipend: string;
-  companyId?: string;
   institutionId?: string;
 }
 

@@ -19,6 +19,14 @@ env:
     value: 251000743509
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
     value: 1:251000743509:web:b120001a772e2ca85096dc
+  - variable: NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+    secret: recaptcha-enterprise-site-key
+
+  # Shared AI rate limiter (required in production; AI routes fail closed without it)
+  - variable: UPSTASH_REDIS_REST_URL
+    secret: upstash-redis-rest-url
+  - variable: UPSTASH_REDIS_REST_TOKEN
+    secret: upstash-redis-rest-token
 
   # Server-only secret — must be stored in Secret Manager
   # 1. gcloud secrets create gemini-api-key --data-file=<(echo -n "YOUR_KEY")

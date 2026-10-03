@@ -11,6 +11,7 @@ import {
   NotificationItem,
   CityLocation,
   OpportunityType,
+  AssessmentQuestion,
   AssessmentEvaluationResult,
 } from '@/types/student';
 import {
@@ -23,6 +24,9 @@ import {
   CITIES_LIST,
 } from '@/data/mockStudentData';
 import { calculateHaversineDistance, computeOpportunityMatch } from '@/lib/matchUtils';
+import { getCanonicalSkillName, matchSkillNames } from '@/lib/skillNormalization';
+import { isResumeSkill, replaceResumeSkills } from '@/lib/resumeSkillMapping';
+import type { ResumeCandidateSkill } from '@/lib/resumeAnalysis';
 import {
   subscribeToSync,
   readNotificationsFor,
@@ -42,12 +46,18 @@ import {
   fetchRemoteJobs,
   fetchRemoteInternships,
   syncApplicationToDataConnect,
+  syncCandidateSkillToDataConnect,
 } from '@/lib/dataConnectService';
+import {
+  subscribeToRealtimeNotifications,
+  publishRealtimeNotification,
+} from '@/lib/realtimeNotifications';
 
 interface StudentContextType {
   profile: StudentProfile;
   updateProfile: (updates: Partial<StudentProfile>) => void;
   skills: Skill[];
+  syncResumeSkills: (items: Pick<ResumeCandidateSkill, 'value' | 'evidence' | 'source'>[]) => Promise<{ synced: number; attempted: number }>;
   getSkillById: (id: string) => Skill | undefined;
   toggleResourceCompletion: (skillId: string, resourceId: string) => void;
   verifySkill: (
@@ -55,6 +65,7 @@ interface StudentContextType {
     score: number,
     evaluationResult?: Partial<AssessmentEvaluationResult>
   ) => boolean;
+  updateSkillQuestions: (skillId: string, questions: AssessmentQuestion[]) => void;
   opportunities: Opportunity[];
   savedOpportunityIds: string[];
   toggleSaveOpportunity: (oppId: string) => void;
@@ -117,82 +128,75 @@ const calculateProfileCompletion = (
 
 export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, userProfile } = useAuth();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const isDemoUser =
     userProfile?.email?.toLowerCase() === 'aarav.sharma@rvce.edu.in' ||
     user?.email?.toLowerCase() === 'aarav.sharma@rvce.edu.in' ||
     user?.uid === 'demo_student';
 
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  // 1. Profile State - deterministic initial state for SSR / hydration match
-  const [profile, setProfile] = useState<StudentProfile>(INITIAL_STUDENT_PROFILE);
+  // 1. Profile State
+  const [profile, setProfile] = useState<StudentProfile>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('skillsetu_student_profile');
+      if (saved) {
+        try { return JSON.parse(saved); } catch { /* ignore */ }
+      }
+    }
+    return INITIAL_STUDENT_PROFILE;
+  });
 
   // 2. Skills State
-  const [skills, setSkills] = useState<Skill[]>(INITIAL_SKILLS);
+  const [skills, setSkills] = useState<Skill[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('skillsetu_student_skills');
+      if (saved) {
+        try { return JSON.parse(saved); } catch { /* ignore */ }
+      }
+    }
+    return INITIAL_SKILLS;
+  });
+  const [skillsLoadedFor, setSkillsLoadedFor] = useState<string | null>(null);
 
   // 3. Saved Opportunities IDs
-  const [savedOpportunityIds, setSavedOpportunityIds] = useState<string[]>([]);
+  const [savedOpportunityIds, setSavedOpportunityIds] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('skillsetu_saved_opps');
+      if (saved) {
+        try { return JSON.parse(saved); } catch { /* ignore */ }
+      }
+    }
+    return [];
+  });
 
   // 4. Applications State
-  const [applications, setApplications] = useState<Application[]>([]);
+  const [applications, setApplications] = useState<Application[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('skillsetu_applications');
+      if (saved) {
+        try { return JSON.parse(saved); } catch { /* ignore */ }
+      }
+    }
+    return [];
+  });
 
   // 5. Projects State (empty by default for real students, loaded from user storage)
-  const [projects, setProjects] = useState<Project[]>([]);
-
-  // Hydrate stored user data safely on client mount after SSR
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const savedProfile = localStorage.getItem('skillsetu_student_profile');
-      if (savedProfile) {
-        setProfile(JSON.parse(savedProfile));
+  const [projects, setProjects] = useState<Project[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('skillsetu_student_projects');
+      if (saved) {
+        try { return JSON.parse(saved); } catch { /* ignore */ }
       }
-      const savedSkills = localStorage.getItem('skillsetu_student_skills');
-      if (savedSkills) {
-        try {
-          const parsed: Skill[] = JSON.parse(savedSkills);
-          const savedMap = new Map(parsed.map((s) => [s.id, s]));
-          const merged = INITIAL_SKILLS.map((initSkill) => {
-            const saved = savedMap.get(initSkill.id);
-            return saved ? { ...initSkill, ...saved } : initSkill;
-          });
-          parsed.forEach((s) => {
-            if (!merged.some((m) => m.id === s.id)) {
-              merged.push(s);
-            }
-          });
-          setSkills(merged);
-        } catch {
-          setSkills(INITIAL_SKILLS);
-        }
-      }
-      const savedOpps = localStorage.getItem('skillsetu_saved_opps');
-      if (savedOpps) {
-        setSavedOpportunityIds(JSON.parse(savedOpps));
-      }
-      const savedApps = localStorage.getItem('skillsetu_applications');
-      if (savedApps) {
-        setApplications(JSON.parse(savedApps));
-      }
-      const savedProjects = localStorage.getItem('skillsetu_student_projects');
-      if (savedProjects) {
-        setProjects(JSON.parse(savedProjects));
-      }
-      const savedNotifs = localStorage.getItem('skillsetu_notifications');
-      if (savedNotifs) {
-        setNotifications(JSON.parse(savedNotifs));
-      }
-      const synced = readStudentOpportunitiesFromIndustry();
-      if (synced && synced.length > 0) {
-        setSyncedOpportunities(synced);
-      }
-    } catch (e) {
-      console.warn('Error hydrating student state from localStorage:', e);
-    } finally {
-      setIsHydrated(true);
     }
-  }, []);
+    return [];
+  });
+  const projectsRef = React.useRef(projects);
+  const skillsRef = React.useRef(skills);
+  useEffect(() => {
+    projectsRef.current = projects;
+    skillsRef.current = skills;
+  }, [projects, skills]);
 
   // Sync profile & user data when authenticated userProfile changes from Firebase
   useEffect(() => {
@@ -286,8 +290,8 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         updated.profileCompletion = calculateProfileCompletion(
           updated,
-          projects.length,
-          skills.filter((s) => s.isVerified).length
+          projectsRef.current.length,
+          skillsRef.current.filter((s) => s.isVerified).length
         );
 
         return updated;
@@ -336,10 +340,20 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } else if (user?.uid) {
       // Real user: Load their specific data without Aarav's fake projects & applications
       try {
+        const safeParseArray = <T,>(raw: string | null, fallback: T[]): T[] => {
+          if (!raw) return fallback;
+          try {
+            const val = JSON.parse(raw);
+            return Array.isArray(val) ? val : fallback;
+          } catch {
+            return fallback;
+          }
+        };
+
         const userProjectsKey = `skillsetu_student_projects_${user.uid}`;
         const savedProjects = localStorage.getItem(userProjectsKey);
         if (savedProjects) {
-          setProjects(JSON.parse(savedProjects));
+          setProjects(safeParseArray(savedProjects, []));
         } else {
           setProjects([]);
           localStorage.setItem(userProjectsKey, JSON.stringify([]));
@@ -349,7 +363,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const userAppsKey = `skillsetu_applications_${user.uid}`;
         const savedApps = localStorage.getItem(userAppsKey);
         if (savedApps) {
-          setApplications(JSON.parse(savedApps));
+          setApplications(safeParseArray(savedApps, []));
         } else {
           setApplications([]);
           localStorage.setItem(userAppsKey, JSON.stringify([]));
@@ -359,7 +373,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const userSavedKey = `skillsetu_saved_opps_${user.uid}`;
         const savedOpps = localStorage.getItem(userSavedKey);
         if (savedOpps) {
-          setSavedOpportunityIds(JSON.parse(savedOpps));
+          setSavedOpportunityIds(safeParseArray(savedOpps, []));
         } else {
           setSavedOpportunityIds([]);
           localStorage.setItem(userSavedKey, JSON.stringify([]));
@@ -396,10 +410,11 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
               learningStatus: 'not_started' as const,
               assessmentStatus: 'ready' as const,
               bestScore: undefined,
-              resources: s.resources.map((r) => ({ ...r, completed: false })),
+              resources: (s.resources || []).map((r) => ({ ...r, completed: false })),
             }))
           );
         }
+        setSkillsLoadedFor(user.uid);
 
         setNotifications((prev) => {
           const hasMock = prev.some((n) => n.title.includes('Aarav') || n.message.includes('Aarav'));
@@ -425,7 +440,15 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [user, userProfile]);
 
   // 6. Notifications
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('skillsetu_notifications');
+      if (saved) {
+        try { return JSON.parse(saved); } catch { /* ignore */ }
+      }
+    }
+    return INITIAL_NOTIFICATIONS;
+  });
 
   // Mirror of `notifications` for imperative access inside sync handlers.
   const notificationsRef = React.useRef<NotificationItem[]>(INITIAL_NOTIFICATIONS);
@@ -433,8 +456,13 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     notificationsRef.current = notifications;
   }, [notifications]);
 
-  // 6b. Cross-sector synced opportunities (published by the Industry portal)
-  const [syncedOpportunities, setSyncedOpportunities] = useState<Opportunity[]>([]);
+   // 6b. Cross-sector synced opportunities (published by the Industry portal)
+  const [syncedOpportunities, setSyncedOpportunities] = useState<Opportunity[]>(() => {
+    if (typeof window !== 'undefined') {
+      return readStudentOpportunitiesFromIndustry();
+    }
+    return [];
+  });
 
   // 6c. Live API-fetched verified jobs
   const [liveApiJobs, setLiveApiJobs] = useState<Opportunity[]>([]);
@@ -456,7 +484,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [profile.name]);
 
   useEffect(() => {
     const loadLiveJobs = async () => {
@@ -487,34 +515,42 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [workModeFilter, setWorkModeFilter] = useState<'All' | 'Remote' | 'Hybrid' | 'On-site'>('All');
 
-  // Persistence effects - only persist to localStorage after initial client hydration completes
+  // Persistence effects
   useEffect(() => {
-    if (!isHydrated || typeof window === 'undefined') return;
-    localStorage.setItem('skillsetu_student_profile', JSON.stringify(profile));
-  }, [profile, isHydrated]);
-
-  useEffect(() => {
-    if (!isHydrated || typeof window === 'undefined') return;
-    localStorage.setItem('skillsetu_student_skills', JSON.stringify(skills));
-  }, [skills, isHydrated]);
-
-  useEffect(() => {
-    if (!isHydrated || typeof window === 'undefined') return;
-    localStorage.setItem('skillsetu_saved_opps', JSON.stringify(savedOpportunityIds));
-  }, [savedOpportunityIds, isHydrated]);
-
-  useEffect(() => {
-    if (!isHydrated || typeof window === 'undefined') return;
-    localStorage.setItem('skillsetu_applications', JSON.stringify(applications));
-  }, [applications, isHydrated]);
-
-  useEffect(() => {
-    if (!isHydrated || typeof window === 'undefined') return;
-    if (user?.uid) {
-      localStorage.setItem(`skillsetu_student_projects_${user.uid}`, JSON.stringify(projects));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('skillsetu_student_profile', JSON.stringify(profile));
     }
-    localStorage.setItem('skillsetu_student_projects', JSON.stringify(projects));
-  }, [projects, user?.uid, isHydrated]);
+  }, [profile]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('skillsetu_student_skills', JSON.stringify(skills));
+      if (user?.uid && skillsLoadedFor === user.uid) {
+        localStorage.setItem(`skillsetu_student_skills_${user.uid}`, JSON.stringify(skills));
+      }
+    }
+  }, [skills, skillsLoadedFor, user?.uid]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('skillsetu_saved_opps', JSON.stringify(savedOpportunityIds));
+    }
+  }, [savedOpportunityIds]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('skillsetu_applications', JSON.stringify(applications));
+    }
+  }, [applications]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (user?.uid) {
+        localStorage.setItem(`skillsetu_student_projects_${user.uid}`, JSON.stringify(projects));
+      }
+      localStorage.setItem('skillsetu_student_projects', JSON.stringify(projects));
+    }
+  }, [projects, user?.uid]);
 
   const addProject = useCallback((newProj: Omit<Project, 'id'>) => {
     const proj: Project = {
@@ -535,9 +571,10 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   useEffect(() => {
-    if (!isHydrated || typeof window === 'undefined') return;
-    localStorage.setItem('skillsetu_notifications', JSON.stringify(notifications));
-  }, [notifications, isHydrated]);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('skillsetu_notifications', JSON.stringify(notifications));
+    }
+  }, [notifications]);
 
   // ------------------------------------------------------------------
   // Cross-sector sync subscription (Industry -> Student)
@@ -584,8 +621,27 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
 
     refresh();
-    return subscribeToSync(refresh);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const unsubSync = subscribeToSync(refresh);
+    const unsubRealtime = subscribeToRealtimeNotifications('student', (realtimeNotif) => {
+      setNotifications((prev) => {
+        if (prev.some((n) => n.id === realtimeNotif.id)) return prev;
+        const newNotif: NotificationItem = {
+          id: realtimeNotif.id,
+          title: realtimeNotif.title,
+          message: realtimeNotif.message,
+          time: realtimeNotif.time || 'Just now',
+          read: false,
+          type: realtimeNotif.type === 'offer' ? 'opportunity' : 'system',
+          link: realtimeNotif.link || '/student/applications',
+        };
+        return [newNotif, ...prev];
+      });
+    });
+
+    return () => {
+      unsubSync();
+      unsubRealtime();
+    };
   }, []);
 
   // Request browser geolocation
@@ -658,12 +714,46 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [user, projects.length, skills]
   );
 
+  const syncResumeSkills = useCallback(async (items: Pick<ResumeCandidateSkill, 'value' | 'evidence' | 'source'>[]) => {
+    const accepted = items.map((item) => ({
+      name: item.value.trim().slice(0, 80),
+      evidence: item.evidence.trim().slice(0, 180),
+      source: item.source === 'Technology' ? 'Technology' as const : 'Skill' as const,
+    })).filter((item) => item.name && item.evidence)
+      .filter((item, index, all) => all.findIndex((other) => getCanonicalSkillName(other.name) === getCanonicalSkillName(item.name)) === index);
+    const previousResume = skills.filter(isResumeSkill);
+
+    const next = replaceResumeSkills(skills, accepted);
+    setSkills(next);
+    if (user?.uid && typeof window !== 'undefined') {
+      localStorage.setItem(`skillsetu_student_skills_${user.uid}`, JSON.stringify(next));
+    }
+
+    if (user?.uid) {
+      const oldResumeOnly = new Set(previousResume.filter((skill) => !skill.isVerified && (skill.resources?.length ?? 0) === 0)
+        .map((skill) => getCanonicalSkillName(skill.name)));
+      const namesToSave = [...(userProfile?.skills || []).filter((name) => !oldResumeOnly.has(getCanonicalSkillName(name))), ...accepted.map((item) => item.name)];
+      const unique = namesToSave.filter((name, index) => namesToSave.findIndex((other) => getCanonicalSkillName(other) === getCanonicalSkillName(name)) === index);
+      await saveUserProfile(user.uid, { skills: unique }).catch((error) => console.warn('Resume skills profile sync failed:', error));
+    }
+
+    const toSync = accepted.filter((item) => !skills.some((skill) =>
+      skill.isVerified && getCanonicalSkillName(skill.name) === getCanonicalSkillName(item.name)
+    ));
+    // ponytail: Data Connect has no source-aware delete mutation; old cloud skill rows may remain until that schema is added.
+    if (!user?.uid || isDemoUser) return { synced: 0, attempted: toSync.length };
+    const results = await Promise.all(toSync.map((item) =>
+      syncCandidateSkillToDataConnect(user.uid, item.name, 'Basic')
+    ));
+    return { synced: results.filter(Boolean).length, attempted: toSync.length };
+  }, [isDemoUser, skills, user?.uid, userProfile?.skills]);
+
   // Toggle resource completion for a skill
   const toggleResourceCompletion = useCallback((skillId: string, resourceId: string) => {
     setSkills((prev) =>
       prev.map((skill) => {
         if (skill.id !== skillId) return skill;
-        const updatedResources = skill.resources.map((res) => {
+        const updatedResources = (skill.resources || []).map((res) => {
           if (res.id !== resourceId) return res;
           return { ...res, completed: !res.completed };
         });
@@ -802,16 +892,75 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const getSkillById = useCallback(
     (id: string) => {
       if (!id) return undefined;
-      const lower = decodeURIComponent(id).toLowerCase().trim();
-      return (
-        skills.find((s) => s.id === id) ||
-        skills.find((s) => s.id.toLowerCase() === lower) ||
-        skills.find((s) => s.name.toLowerCase() === lower) ||
-        skills.find((s) => s.name.toLowerCase().replace(/[^a-z0-9]/g, '') === lower.replace(/[^a-z0-9]/g, ''))
+      const rawId = (() => {
+        try {
+          return decodeURIComponent(id);
+        } catch {
+          return id;
+        }
+      })();
+      const cleanId = rawId.trim().toLowerCase();
+      // 1. Direct match
+      const exact = skills.find((s) => s.id === id || s.id.toLowerCase() === cleanId);
+      if (exact) return exact;
+
+      // 2. Suffix matching (e.g. 'python' -> 'python-basic', 'react' -> 'react-int')
+      const byTierSuffix = skills.find(
+        (s) =>
+          s.id.toLowerCase() === `${cleanId}-basic` ||
+          s.id.toLowerCase() === `${cleanId}-int` ||
+          s.id.toLowerCase() === `${cleanId}-adv`
+      );
+      if (byTierSuffix) return byTierSuffix;
+
+      // 3. Resume prefix / suffix matching
+      const byResume = skills.find(
+        (s) =>
+          s.id.toLowerCase() === `resume-${cleanId}` ||
+          s.id.toLowerCase().replace(/^resume-/, '') === cleanId
+      );
+      if (byResume) return byResume;
+
+      // 4. Canonical name match
+      const canonicalTarget = getCanonicalSkillName(cleanId);
+      const byCanonical = skills.find(
+        (s) => getCanonicalSkillName(s.name) === canonicalTarget || matchSkillNames(s.name, cleanId)
+      );
+      if (byCanonical) return byCanonical;
+
+      // 5. Normalized name match (e.g. 'C++' <-> 'cplusplus')
+      const normalized = cleanId.replace(/[^a-z0-9]/g, '');
+      const byNormalizedName = skills.find(
+        (s) => s.name.toLowerCase() === cleanId || s.name.toLowerCase().replace(/[^a-z0-9]/g, '') === normalized
+      );
+      if (byNormalizedName) return byNormalizedName;
+
+      // 6. Fallback substring match
+      return skills.find(
+        (s) => s.name.toLowerCase().includes(cleanId) || cleanId.includes(s.name.toLowerCase())
       );
     },
     [skills]
   );
+
+  const updateSkillQuestions = useCallback((skillId: string, questions: AssessmentQuestion[]) => {
+    setSkills((prev) =>
+      prev.map((s) => {
+        if (
+          s.id === skillId ||
+          getCanonicalSkillName(s.name) === getCanonicalSkillName(skillId) ||
+          matchSkillNames(s.name, skillId)
+        ) {
+          return {
+            ...s,
+            assessmentQuestions: questions,
+            assessmentStatus: s.assessmentStatus === 'locked' ? 'ready' : s.assessmentStatus,
+          };
+        }
+        return s;
+      })
+    );
+  }, []);
 
   // Save / Bookmark Opportunity
   const toggleSaveOpportunity = useCallback((oppId: string) => {
@@ -834,11 +983,14 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     (oppId: string): boolean => {
       const opp =
         INITIAL_OPPORTUNITIES.find((o) => o.id === oppId) ||
-        syncedOpportunities.find((o) => o.id === oppId);
+        syncedOpportunities.find((o) => o.id === oppId) ||
+        dataConnectOpportunities.find((o) => o.id === oppId) ||
+        liveApiJobs.find((o) => o.id === oppId);
       if (!opp) return false;
 
       // Check if already applied (across both local & synced ids)
-      const existing = applications.find((a) => a.opportunityId === oppId);
+      const existing = applications.find((a) => a.opportunityId === oppId ||
+        (opp.dataConnectId && a.dataConnectId === opp.dataConnectId));
       if (existing) return true;
 
       const match = computeOpportunityMatch(opp, skills);
@@ -846,6 +998,11 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const newApp: Application = {
         id: `app-${Date.now()}`,
         opportunityId: opp.id,
+        companyId: opp.companyId || `comp-${opp.company.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+        dataConnectId: opp.dataConnectId,
+        applicationUrl: opp.applicationUrl,
+        companyWebsite: opp.companyWebsite,
+        employerVerified: opp.employerVerified ?? true,
         opportunityTitle: opp.title,
         company: opp.company,
         type: opp.type,
@@ -870,15 +1027,37 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         console.warn('[Sync] Failed to publish application:', e);
       }
 
-      // Sync application to Firebase Data Connect in background
-      syncApplicationToDataConnect({
-        title: opp.title,
-        jobType: opp.type,
-        matchScore: match.matchScore,
-        matchedSkills: match.matchedSkills,
-        missingSkills: match.missingSkills,
-        jobId: opp.id.startsWith('dc-') ? opp.id.replace('dc-', '') : undefined,
-        internshipId: opp.id.startsWith('dc-int-') ? opp.id.replace('dc-int-', '') : undefined,
+      // Only a Data Connect listing has a verified employer to receive a cloud application.
+      if (opp.companyId && opp.dataConnectId) {
+        const isInternship = opp.type === 'Internship';
+        void syncApplicationToDataConnect({
+          opportunityKey: `${isInternship ? 'dc-int' : 'dc'}-${opp.dataConnectId}`,
+          companyId: opp.companyId,
+          opportunityId: opp.dataConnectId,
+          opportunityType: isInternship ? 'internship' : 'job',
+          title: opp.title,
+          jobType: opp.type,
+          matchScore: match.matchScore,
+          matchedSkills: match.matchedSkills,
+          missingSkills: match.missingSkills,
+          jobId: isInternship ? undefined : opp.dataConnectId,
+          internshipId: isInternship ? opp.dataConnectId : undefined,
+        });
+      }
+
+      // Broadcast real-time notification to Industry recruiters across devices
+      publishRealtimeNotification({
+        target: 'industry',
+        type: 'application',
+        title: 'New Candidate Application',
+        message: `${profile?.name || 'Aarav Sharma'} applied for "${opp.title}" (${match.matchScore}% Match)`,
+        link: '/industry/pipeline',
+        read: false,
+        meta: {
+          opportunityId: opp.id,
+          studentName: profile?.name || 'Aarav Sharma',
+          matchScore: String(match.matchScore),
+        },
       });
 
       // Add notification
@@ -897,7 +1076,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       return true;
     },
-    [applications, skills, syncedOpportunities]
+    [applications, skills, syncedOpportunities, dataConnectOpportunities, liveApiJobs, profile]
   );
 
   // Notifications helpers
@@ -918,18 +1097,18 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Compute live opportunities with distances, skill match, and match boost
   const opportunities = useMemo(() => {
+    const distanceTo = (opp: Opportunity) => opp.coordinates
+      ? calculateHaversineDistance(userCoords.lat, userCoords.lng, opp.coordinates.lat, opp.coordinates.lng)
+      : undefined;
     const local = INITIAL_OPPORTUNITIES.map((opp) => {
-      const distance = calculateHaversineDistance(
-        userCoords.lat,
-        userCoords.lng,
-        opp.coordinates.lat,
-        opp.coordinates.lng
-      );
+      const distance = distanceTo(opp);
 
       const match = computeOpportunityMatch(opp, skills, projects, profile);
 
       return {
         ...opp,
+        companyId: opp.companyId || `comp-${opp.id}`,
+        employerVerified: opp.employerVerified ?? true,
         distanceKm: distance,
         matchScore: match.matchScore,
         matchedSkills: match.matchedSkills,
@@ -946,18 +1125,16 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     // Cross-sector opportunities published by the Industry portal.
     const synced = syncedOpportunities
       .filter((o) => !local.some((loc) => loc.id === o.id))
+      .filter((o) => !o.dataConnectId || !dataConnectOpportunities.some((remote) => remote.dataConnectId === o.dataConnectId))
       .map((opp) => {
-        const distance = calculateHaversineDistance(
-          userCoords.lat,
-          userCoords.lng,
-          opp.coordinates.lat,
-          opp.coordinates.lng
-        );
+        const distance = distanceTo(opp);
 
         const match = computeOpportunityMatch(opp, skills, projects, profile);
 
         return {
           ...opp,
+          companyId: opp.companyId || `comp-${opp.id}`,
+          employerVerified: true,
           distanceKm: distance,
           matchScore: match.matchScore,
           matchedSkills: match.matchedSkills,
@@ -976,17 +1153,14 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       .filter((o) => !local.some((loc) => loc.id === o.id))
       .filter((o) => !synced.some((s) => s.id === o.id))
       .map((opp) => {
-        const distance = calculateHaversineDistance(
-          userCoords.lat,
-          userCoords.lng,
-          opp.coordinates.lat,
-          opp.coordinates.lng
-        );
+        const distance = distanceTo(opp);
 
         const match = computeOpportunityMatch(opp, skills, projects, profile);
 
         return {
           ...opp,
+          companyId: opp.companyId || `comp-${opp.id}`,
+          employerVerified: opp.employerVerified ?? true,
           distanceKm: distance,
           matchScore: match.matchScore !== undefined && match.matchScore > 0 ? match.matchScore : opp.matchScore,
           matchedSkills: match.matchedSkills,
@@ -1006,12 +1180,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       .filter((o) => !synced.some((s) => s.id === o.id))
       .filter((o) => !apiJobs.some((a) => a.id === o.id))
       .map((opp) => {
-        const distance = calculateHaversineDistance(
-          userCoords.lat,
-          userCoords.lng,
-          opp.coordinates?.lat || 12.9716,
-          opp.coordinates?.lng || 77.5946
-        );
+        const distance = distanceTo(opp);
 
         const match = computeOpportunityMatch(opp, skills, projects, profile);
 
@@ -1038,11 +1207,13 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (typeof window !== 'undefined') {
       localStorage.removeItem('skillsetu_student_profile');
       localStorage.removeItem('skillsetu_student_skills');
+      if (user?.uid) localStorage.removeItem(`skillsetu_student_skills_${user.uid}`);
       localStorage.removeItem('skillsetu_saved_opps');
       localStorage.removeItem('skillsetu_applications');
       localStorage.removeItem('skillsetu_notifications');
     }
     setProfile(INITIAL_STUDENT_PROFILE);
+    setSkillsLoadedFor(null);
     setSkills(INITIAL_SKILLS);
     setSavedOpportunityIds(['opp-1', 'opp-4']);
     setApplications(INITIAL_APPLICATIONS);
@@ -1054,7 +1225,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setSelectedOpportunityType('All');
     setSearchQuery('');
     setWorkModeFilter('All');
-  }, []);
+  }, [user?.uid]);
 
   return (
     <StudentContext.Provider
@@ -1062,9 +1233,11 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         profile,
         updateProfile,
         skills,
+        syncResumeSkills,
         getSkillById,
         toggleResourceCompletion,
         verifySkill,
+        updateSkillQuestions,
         opportunities,
         savedOpportunityIds,
         toggleSaveOpportunity,
@@ -1098,7 +1271,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         liveApiLoading,
       }}
     >
-      {children}
+      {mounted ? children : null}
     </StudentContext.Provider>
   );
 };

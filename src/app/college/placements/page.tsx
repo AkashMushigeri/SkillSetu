@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useCollege } from '@/context/CollegeContext';
-import { Trophy, Filter, Building2, Users, CheckCircle2, ArrowRight, Bell, Calendar, Sparkles } from 'lucide-react';
+import { Trophy, Filter, Building2, Users, Bell } from 'lucide-react';
 import { EligibilityEngineModal } from '@/components/college/EligibilityEngineModal';
 import { PLACEMENT_PIPELINE } from '@/data/collegeData';
 

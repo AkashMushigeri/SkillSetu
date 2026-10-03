@@ -1,30 +1,84 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useStudent } from '@/context/StudentContext';
 import { AIInterviewModal } from '@/components/AIInterviewModal';
+import type { AIInterviewEval, InterviewTurn } from '@/server/ai/interviewService';
+import { auth, getAiAppCheckHeaders } from '@/lib/firebase';
 import {
   Sparkles,
   Bot,
   Video,
   Mic,
   ArrowLeft,
-  CheckCircle2,
-  Award,
   Play,
-  ShieldCheck,
   Zap,
-  HelpCircle
 } from 'lucide-react';
 
 export default function StudentAIInterviewPage() {
   const { profile } = useStudent();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [targetRole, setTargetRole] = useState('Full Stack Software Engineer');
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const [result, setResult] = useState<AIInterviewEval | null>(null);
+  const [resultError, setResultError] = useState('');
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const resultTranscriptRef = useRef<InterviewTurn[]>([]);
+
+  useEffect(() => {
+    const updateCooldown = () => setCooldownSeconds(Math.max(0, Math.ceil((Number(localStorage.getItem('aiInterviewCooldownUntil')) - Date.now()) / 1000)));
+    updateCooldown();
+    const timer = setInterval(updateCooldown, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const startInterview = () => {
+    if (isEvaluating || Number(localStorage.getItem('aiInterviewCooldownUntil')) > Date.now()) return;
+    setResult(null);
+    setResultError('');
+    resultTranscriptRef.current = [];
+    setIsModalOpen(true);
+  };
+
+  const generateResult = async (transcript: InterviewTurn[]) => {
+    resultTranscriptRef.current = transcript;
+    if (!transcript.some((turn) => turn.sender === 'user' && turn.text.trim())) {
+      setResultError('No spoken answers were captured, so this interview cannot be scored.');
+      return;
+    }
+    setIsEvaluating(true);
+    setResultError('');
+    try {
+      if (!auth?.currentUser) throw new Error('Sign in to evaluate the interview.');
+      const response = await fetch('/api/ai-interview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await auth.currentUser.getIdToken()}`, ...await getAiAppCheckHeaders() },
+        body: JSON.stringify({ action: 'evaluate', roleTitle: targetRole, transcript }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || errorData?.message || `Evaluation failed: ${response.status}`);
+      }
+      const data = await response.json();
+      if (!data.evaluation) throw new Error('Evaluation was missing');
+      setResult(data.evaluation);
+    } catch (error) {
+      console.error('[AI Interview] Evaluation failed:', error);
+      setResultError(`${error instanceof Error ? error.message : 'Could not generate the interview result.'} Your answers are kept here so you can retry.`);
+    } finally {
+      setIsEvaluating(false);
+    }
+  };
+
+  const closeInterview = () => {
+    localStorage.setItem('aiInterviewCooldownUntil', String(Date.now() + 10_000));
+    setCooldownSeconds(10);
+    setIsModalOpen(false);
+  };
 
   return (
-    <div className="w-full max-w-[1820px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 space-y-8">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
       {/* Back Link */}
       <Link
         href="/student/skills"
@@ -47,16 +101,17 @@ export default function StudentAIInterviewPage() {
           </h1>
 
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-            Practice real-time technical interview questions with voice microphone input, live speech-to-text transcription, camera posture evaluation, and instant AI skill feedback.
+            Practice technical interview questions with live voice input, a local camera preview, and a transcript-based AI evaluation.
           </p>
         </div>
 
         <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-6 py-3.5 bg-gradient-to-r from-brand-emerald to-emerald-500 hover:from-emerald-600 hover:to-emerald-500 text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-lg transition-all flex items-center gap-2 shrink-0 self-start md:self-auto hover:scale-105"
+          onClick={startInterview}
+          disabled={cooldownSeconds > 0 || isEvaluating}
+          className="px-6 py-3.5 bg-gradient-to-r from-brand-emerald to-emerald-500 hover:from-emerald-600 hover:to-emerald-500 text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-lg transition-all flex items-center gap-2 shrink-0 self-start md:self-auto hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Play className="w-4 h-4 fill-white" />
-          <span>Start AI Interview Session</span>
+          <span>{isEvaluating ? 'Preparing results...' : cooldownSeconds ? `Try again in ${cooldownSeconds}s` : 'Start AI Interview Session'}</span>
         </button>
       </div>
 
@@ -117,19 +172,55 @@ export default function StudentAIInterviewPage() {
         {/* Action Button */}
         <div className="pt-2 flex items-center justify-end">
           <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-6 py-3 bg-brand-teal hover:bg-brand-dark text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2"
+            onClick={startInterview}
+            disabled={cooldownSeconds > 0 || isEvaluating}
+            className="px-6 py-3 bg-brand-teal hover:bg-brand-dark text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Bot className="w-4 h-4" />
-            <span>Launch Practice Session Now</span>
+            <span>{isEvaluating ? 'Preparing results...' : cooldownSeconds ? `Try again in ${cooldownSeconds}s` : 'Launch Practice Session Now'}</span>
           </button>
         </div>
       </div>
 
+      {(isEvaluating || resultError || result) && (
+        <section className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-card space-y-4" aria-label="Interview result">
+          <h2 className="text-xl font-bold text-slate-900">Interview Result</h2>
+          {isEvaluating && <p role="status" className="text-slate-600">Analyzing your answers...</p>}
+          {resultError && <div role="alert" className="text-rose-700">{resultError}</div>}
+          {resultError && resultTranscriptRef.current.some((turn) => turn.sender === 'user') && (
+            <button type="button" onClick={() => generateResult(resultTranscriptRef.current)} className="px-4 py-2 rounded-xl bg-brand-teal text-white font-semibold">Retry result</button>
+          )}
+          {result && (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                {[
+                  ['Overall', result.overallScore],
+                  ['Technical', result.technicalScore],
+                  ['Communication', result.communicationScore],
+                  ['Answer confidence', result.confidenceScore],
+                ].map(([label, score]) => (
+                  <div key={label} className="rounded-xl bg-emerald-50 p-3"><div className="text-xs text-slate-600">{label}</div><strong className="text-xl text-emerald-800">{score}%</strong></div>
+                ))}
+              </div>
+              <p className="text-slate-700">{result.feedback}</p>
+              {result.source === 'rubric' && (
+                <p className="text-xs font-semibold text-amber-800">Transcript rubric fallback</p>
+              )}
+              <div className="grid sm:grid-cols-2 gap-4 text-sm">
+                <div><h3 className="font-bold text-slate-900 mb-2">Strengths</h3><ul className="list-disc pl-5 space-y-1">{result.strengths.map((item, index) => <li key={index}>{item}</li>)}</ul></div>
+                <div><h3 className="font-bold text-slate-900 mb-2">Improve next time</h3><ul className="list-disc pl-5 space-y-1">{result.improvements.map((item, index) => <li key={index}>{item}</li>)}</ul></div>
+              </div>
+              <p className="text-xs text-slate-500">Based on the captured interview transcript; camera posture and voice acoustics are not scored.</p>
+            </>
+          )}
+        </section>
+      )}
+
       {/* AI Interview Modal */}
       <AIInterviewModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={closeInterview}
+        onComplete={generateResult}
         candidateName={profile.name}
         roleTitle={targetRole}
       />

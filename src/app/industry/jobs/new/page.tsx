@@ -2,10 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useIndustry } from '@/context/IndustryContext';
 import { RequiredSkill, SkillLevel, SkillImportance } from '@/types/industry';
-import { popularTaxonomySkills } from '@/data/industry/industrySkills';
 import {
   Briefcase,
   ArrowLeft,
@@ -15,8 +13,6 @@ import {
   Sparkles,
   MapPin,
   Eye,
-  Sliders,
-  Calendar,
 } from 'lucide-react';
 
 export default function CreateJobPage() {
@@ -31,11 +27,11 @@ export default function CreateJobPage() {
   const [jobType, setJobType] = useState<'Full Time' | 'Part Time' | 'Contract'>('Full Time');
   const [salaryRange, setSalaryRange] = useState('₹8–14 LPA');
   const [experienceRequired, setExperienceRequired] = useState('0–2 Years');
-  const [education, setEducation] = useState('B.Tech / M.Tech in AIML, CSE, or Data Science');
-  const [graduationYear, setGraduationYear] = useState('2024 / 2025 / 2026');
-  const [minimumCgpa, setMinimumCgpa] = useState<number>(7.5);
+  const education = 'B.Tech / M.Tech in AIML, CSE, or Data Science';
+  const graduationYear = '2024 / 2025 / 2026';
+  const minimumCgpa = 7.5;
   const [openings, setOpenings] = useState<number>(3);
-  const [deadline, setDeadline] = useState('2026-11-30');
+  const deadline = '2026-11-30';
   const [description, setDescription] = useState(
     'We are seeking an enthusiastic AI/ML Engineer to train transformer architectures and build scalable machine learning deployment pipelines.'
   );
@@ -173,7 +169,7 @@ export default function CreateJobPage() {
                 <label className="block text-slate-700 font-semibold mb-1.5">Job Type</label>
                 <select
                   value={jobType}
-                  onChange={(e) => setJobType(e.target.value as any)}
+                  onChange={(e) => setJobType(e.target.value as 'Full Time' | 'Part Time' | 'Contract')}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-emerald-500 shadow-xs"
                 >
                   <option value="Full Time">Full Time</option>
@@ -186,7 +182,7 @@ export default function CreateJobPage() {
                 <label className="block text-slate-700 font-semibold mb-1.5">Work Mode</label>
                 <select
                   value={workMode}
-                  onChange={(e) => setWorkMode(e.target.value as any)}
+                  onChange={(e) => setWorkMode(e.target.value as 'Remote' | 'Hybrid' | 'On-site')}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-emerald-500 shadow-xs"
                 >
                   <option value="Hybrid">Hybrid</option>

@@ -9,9 +9,7 @@ import { OpportunityDetailModal } from '@/components/opportunities/OpportunityDe
 import { ApplyModal } from '@/components/opportunities/ApplyModal';
 import {
   Bookmark,
-  Sparkles,
-  ArrowRight,
-  FolderHeart
+  Sparkles
 } from 'lucide-react';
 
 export default function SavedOpportunitiesPage() {

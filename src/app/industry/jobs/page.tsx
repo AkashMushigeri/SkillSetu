@@ -5,21 +5,13 @@ import Link from 'next/link';
 import { useIndustry } from '@/context/IndustryContext';
 import { JobCard } from '@/components/industry/JobCard';
 import {
-  Briefcase,
+  
   Plus,
   Search,
-  Users,
-  Sparkles,
-  Calendar,
-  Copy,
-  XCircle,
-  ExternalLink,
-  MapPin,
-  CheckCircle2,
 } from 'lucide-react';
 
 export default function IndustryJobsPage() {
-  const { jobs, closeJob, duplicateJob } = useIndustry();
+  const { jobs } = useIndustry();
   const [activeTab, setActiveTab] = useState<'All' | 'Active' | 'Draft' | 'Closed'>('All');
   const [searchQuery, setSearchQuery] = useState('');
 

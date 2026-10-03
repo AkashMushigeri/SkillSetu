@@ -5,12 +5,10 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCollege } from '@/context/CollegeContext';
 import {
-  User,
+  
   ArrowLeft,
-  GraduationCap,
   BadgeCheck,
   Briefcase,
-  Trophy,
   Award,
   FileText,
   CheckCircle2,
@@ -18,8 +16,7 @@ import {
   Code,
   Sparkles,
   Mail,
-  Phone,
-  Building
+  Phone
 } from 'lucide-react';
 
 export default function StudentDetailPage() {

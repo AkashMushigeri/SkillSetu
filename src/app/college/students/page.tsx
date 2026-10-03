@@ -6,14 +6,8 @@ import { useCollege } from '@/context/CollegeContext';
 import {
   Users,
   Search,
-  Filter,
   Upload,
-  BadgeCheck,
-  Briefcase,
-  GraduationCap,
-  ChevronRight,
-  Sparkles,
-  Download
+  ChevronRight
 } from 'lucide-react';
 import { ImportStudentsModal } from '@/components/college/ImportStudentsModal';
 

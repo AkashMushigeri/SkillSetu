@@ -1,12 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useCollege } from '@/context/CollegeContext';
-import { BadgeCheck, Award, CheckCircle2, Search, Filter, BookOpen, Sparkles } from 'lucide-react';
+import { BadgeCheck, Award, Search } from 'lucide-react';
 import { MOCK_ASSESSMENTS } from '@/data/collegeData';
 
 export default function AssessmentsPage() {
-  const { showToast } = useCollege();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDept, setSelectedDept] = useState('All');
 

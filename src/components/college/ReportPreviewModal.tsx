@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useCollege } from '@/context/CollegeContext';
-import { FileSpreadsheet, Download, Printer, CheckCircle2, X, FileText } from 'lucide-react';
+import { FileSpreadsheet, Download, CheckCircle2, X, FileText } from 'lucide-react';
 
 interface ReportModalProps {
   isOpen: boolean;

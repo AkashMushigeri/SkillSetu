@@ -4,13 +4,9 @@ import React from 'react';
 import Link from 'next/link';
 import { IndustryInternship } from '@/types/industry';
 import {
-  GraduationCap,
+  
   MapPin,
-  Calendar,
-  Sparkles,
-  Users,
   Search,
-  CheckCircle2,
   TrendingUp,
   Award,
 } from 'lucide-react';

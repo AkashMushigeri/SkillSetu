@@ -6,11 +6,9 @@ import { useCollege } from '@/context/CollegeContext';
 import {
   Search,
   Users,
-  Cpu,
   GraduationCap,
   Briefcase,
   Trophy,
-  Building2,
   ArrowRight,
   X
 } from 'lucide-react';

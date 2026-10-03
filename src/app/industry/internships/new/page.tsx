@@ -3,35 +3,33 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useIndustry } from '@/context/IndustryContext';
-import { RequiredSkill, SkillLevel, SkillImportance } from '@/types/industry';
+import { RequiredSkill } from '@/types/industry';
 import {
   GraduationCap,
   ArrowLeft,
-  Plus,
   X,
   CheckCircle2,
-  Sparkles,
   Award,
   TrendingUp,
 } from 'lucide-react';
 
 export default function CreateInternshipPage() {
   const router = useRouter();
-  const { company, postNewInternship, showToast } = useIndustry();
+  const { company, postNewInternship } = useIndustry();
 
   const [title, setTitle] = useState('AI/ML Research Intern');
   const [department, setDepartment] = useState('Artificial Intelligence');
   const [duration, setDuration] = useState('12 weeks');
   const [stipend, setStipend] = useState('₹15,000 / month');
-  const [location, setLocation] = useState('Bengaluru, Karnataka');
+  const location = 'Bengaluru, Karnataka';
   const [workMode, setWorkMode] = useState<'Remote' | 'Hybrid' | 'On-site'>('Hybrid');
-  const [eligibility, setEligibility] = useState('3rd & 4th Year B.Tech / M.Tech AIML/CSE students');
+  const eligibility = '3rd & 4th Year B.Tech / M.Tech AIML/CSE students';
   const [startDate, setStartDate] = useState('2026-11-01');
   const [deadline, setDeadline] = useState('2026-10-25');
   const [mentor, setMentor] = useState('Dr. Srinivas Murthy (Principal AI Researcher)');
   const [openings, setOpenings] = useState(5);
   const [isStartupFriendly, setIsStartupFriendly] = useState(true);
-  const [targetAudience, setTargetAudience] = useState('Designed for 3rd-year students');
+  const targetAudience = 'Designed for 3rd-year students';
   const [eligibleForConversion, setEligibleForConversion] = useState(true);
   const [description, setDescription] = useState(
     'Work alongside senior deep learning engineers to build predictive AI healthcare pipelines and evaluate transformer architectures.'
@@ -165,7 +163,7 @@ export default function CreateInternshipPage() {
               <label className="block text-slate-700 font-semibold mb-1.5">Work Mode</label>
               <select
                 value={workMode}
-                onChange={(e) => setWorkMode(e.target.value as any)}
+                onChange={(e) => setWorkMode(e.target.value as 'Remote' | 'Hybrid' | 'On-site')}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-emerald-500 shadow-xs"
               >
                 <option value="Hybrid">Hybrid</option>

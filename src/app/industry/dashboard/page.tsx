@@ -8,7 +8,6 @@ import { JobCard } from '@/components/industry/JobCard';
 import { IndustryEcosystemMap } from '@/components/industry/IndustryEcosystemMap';
 import { ApplicationModal } from '@/components/industry/ApplicationModal';
 import { ScheduleInterviewModal } from '@/components/industry/ScheduleInterviewModal';
-import { SkillBadge } from '@/components/industry/SkillBadge';
 import { IndustryApplication } from '@/types/industry';
 import { skillGapInsights } from '@/data/industry/industrySkills';
 import {
@@ -23,22 +22,15 @@ import {
   TrendingUp,
   Search,
   Plus,
-  Compass,
   AlertCircle,
-  ExternalLink,
-  KanbanSquare,
-  Calendar,
 } from 'lucide-react';
 
 export default function IndustryDashboardPage() {
   const {
     company,
     jobs,
-    internships,
     applications,
-    colleges,
     candidates,
-    showToast,
   } = useIndustry();
 
   const [selectedApplication, setSelectedApplication] = useState<IndustryApplication | null>(null);

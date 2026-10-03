@@ -1,14 +1,18 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import { useCollege } from '@/context/CollegeContext';
-import { Building2, Plus, Sparkles, FolderGit2, Swords, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Building2, Plus } from 'lucide-react';
 import { MOCK_INDUSTRY_PARTNERS, MOCK_COLLEGE_PROJECTS, MOCK_INDUSTRY_CHALLENGES } from '@/data/collegeData';
 
 export default function IndustryCollaborationPage() {
   const { showToast } = useCollege();
   const [activeTab, setActiveTab] = useState<'partners' | 'projects' | 'challenges'>('partners');
+  const tabs: Array<{ id: typeof activeTab; label: string }> = [
+    { id: 'partners', label: 'Partner Companies (74)' },
+    { id: 'projects', label: 'College–Industry Projects (3)' },
+    { id: 'challenges', label: 'Industry Challenges (2)' },
+  ];
 
   return (
     <div className="space-y-6 animate-in fade-in">
@@ -36,14 +40,10 @@ export default function IndustryCollaborationPage() {
       {/* Tabs */}
       <div className="bg-white border border-slate-200 rounded-2xl p-2 shadow-card flex items-center justify-between">
         <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
-          {[
-            { id: 'partners', label: 'Partner Companies (74)' },
-            { id: 'projects', label: 'College–Industry Projects (3)' },
-            { id: 'challenges', label: 'Industry Challenges (2)' },
-          ].map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id)}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                 activeTab === tab.id
                   ? 'bg-brand-emerald text-white shadow-xs'

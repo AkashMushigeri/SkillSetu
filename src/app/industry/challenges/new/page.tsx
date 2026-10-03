@@ -6,15 +6,13 @@ import { useIndustry } from '@/context/IndustryContext';
 import {
   Trophy,
   ArrowLeft,
-  Plus,
   X,
   CheckCircle2,
-  Sparkles,
 } from 'lucide-react';
 
 export default function CreateChallengePage() {
   const router = useRouter();
-  const { createIndustryChallenge, showToast } = useIndustry();
+  const { createIndustryChallenge } = useIndustry();
 
   const [title, setTitle] = useState('AI Clinical Diagnosis & Prescription NLP Benchmark');
   const [description, setDescription] = useState(
@@ -128,7 +126,7 @@ export default function CreateChallengePage() {
               <label className="block text-slate-700 font-semibold mb-1.5">Difficulty</label>
               <select
                 value={difficulty}
-                onChange={(e) => setDifficulty(e.target.value as any)}
+                onChange={(e) => setDifficulty(e.target.value as 'Basic' | 'Intermediate' | 'Advanced')}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-emerald-500 shadow-xs"
               >
                 <option value="Basic">Basic</option>

@@ -32,7 +32,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem(THEME_STORAGE_KEY, newTheme);
-      } catch (e) {
+      } catch {
         /* ignore localStorage quota/privacy errors */
       }
       const root = document.documentElement;
@@ -59,7 +59,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const hasDarkClass = document.documentElement.classList.contains('dark');
         applyTheme(hasDarkClass ? 'dark' : 'light');
       }
-    } catch (e) {
+    } catch {
       applyTheme('light');
     }
   }, [applyTheme]);

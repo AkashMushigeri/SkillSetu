@@ -2,39 +2,29 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useIndustry } from '@/context/IndustryContext';
 import {
   Trophy,
   ArrowLeft,
   Calendar,
-  Users,
-  Award,
   ExternalLink,
-  CheckCircle2,
   Sparkles,
   Zap,
-  Code2,
-  Layers,
   Search,
-  Filter,
-  ArrowUpRight,
-  ShieldCheck,
   Check,
 } from 'lucide-react';
 import { GithubIcon } from '@/components/icons/BrandIcons';
 
 export default function ChallengeDetailPage() {
   const params = useParams();
-  const router = useRouter();
-  const { challenges, submissions, updateSubmissionStatus, fastTrackSubmissionToInterview } = useIndustry();
+  const { challenges, submissions, fastTrackSubmissionToInterview } = useIndustry();
 
   const challengeId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const challenge = challenges.find((c) => c.id === challengeId) || challenges[0];
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSubForReview, setSelectedSubForReview] = useState<any | null>(null);
 
   // Filter submissions for this challenge
   const challengeSubmissions = submissions.filter((s) => s.challengeId === challenge?.id || s.challengeId === 'chal-01');

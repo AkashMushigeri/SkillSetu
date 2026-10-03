@@ -1,25 +1,17 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import { useIndustry } from '@/context/IndustryContext';
 import {
   FileCheck,
   Plus,
-  ArrowLeft,
   CheckCircle2,
   Clock,
-  Download,
-  Building2,
-  Sparkles,
   Send,
   Eye,
   Check,
   X,
   Printer,
-  Calendar,
-  DollarSign,
-  ShieldCheck,
 } from 'lucide-react';
 import { IndustryOffer } from '@/types/industry';
 
@@ -34,13 +26,13 @@ export default function IndustryOffersPage() {
   const [candidateId, setCandidateId] = useState(candidates[0]?.id || '');
   const [roleTitle, setRoleTitle] = useState('Machine Learning Engineer');
   const [type, setType] = useState<IndustryOffer['type']>('Full-Time Employment');
-  const [department, setDepartment] = useState('AI & Data Platforms');
-  const [location, setLocation] = useState('Bengaluru, India');
+  const department = 'AI & Data Platforms';
+  const location = 'Bengaluru, India';
   const [workMode, setWorkMode] = useState<'Remote' | 'Hybrid' | 'On-site'>('Hybrid');
   const [compensation, setCompensation] = useState('₹14,50,000 / annum');
   const [baseFixed, setBaseFixed] = useState('₹12,00,000');
-  const [variableBonus, setVariableBonus] = useState('₹1,50,000');
-  const [retentionJoiningBonus, setRetentionJoiningBonus] = useState('₹1,00,000');
+  const variableBonus = '₹1,50,000';
+  const retentionJoiningBonus = '₹1,00,000';
   const [joiningDate, setJoiningDate] = useState('01 July 2026');
 
   const filteredOffers = offers.filter((off) => {
@@ -294,7 +286,7 @@ export default function IndustryOffersPage() {
                   <label className="text-[11px] font-bold text-slate-700 block mb-1">Offer Classification</label>
                   <select
                     value={type}
-                    onChange={(e) => setType(e.target.value as any)}
+                    onChange={(e) => setType(e.target.value as IndustryOffer['type'])}
                     className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-emerald-500 shadow-xs"
                   >
                     <option>Full-Time Employment</option>
@@ -341,7 +333,7 @@ export default function IndustryOffersPage() {
                   <label className="text-[11px] font-bold text-slate-700 block mb-1">Work Mode</label>
                   <select
                     value={workMode}
-                    onChange={(e) => setWorkMode(e.target.value as any)}
+                    onChange={(e) => setWorkMode(e.target.value as 'Remote' | 'Hybrid' | 'On-site')}
                     className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-emerald-500 shadow-xs"
                   >
                     <option>Hybrid</option>

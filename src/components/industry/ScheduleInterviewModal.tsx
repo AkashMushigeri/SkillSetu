@@ -5,13 +5,8 @@ import { useIndustry } from '@/context/IndustryContext';
 import { Candidate, IndustryJob } from '@/types/industry';
 import {
   Calendar,
-  Clock,
-  Video,
-  MapPin,
-  Users,
   X,
   CheckCircle2,
-  Sparkles,
 } from 'lucide-react';
 
 interface ScheduleInterviewModalProps {

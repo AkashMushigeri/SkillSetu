@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import { Opportunity } from '@/types/student';
 import { getOpportunityTypeBadgeColor } from '@/lib/styleUtils';
+import { getDirectionsUrl } from '@/lib/mapUrls';
 
 interface LeafletMapInnerProps {
   userCoords: { lat: number; lng: number };
@@ -31,8 +32,8 @@ export default function LeafletMapInner({
 
     if (!mapInstanceRef.current) {
       const map = L.map(mapContainerRef.current, {
-        center: [userCoords.lat, userCoords.lng],
-        zoom: radiusKm <= 5 ? 13 : radiusKm <= 15 ? 12 : 10,
+        center: [12.9784, 77.6408],
+        zoom: 11,
         zoomControl: true,
         attributionControl: false,
       });
@@ -118,8 +119,10 @@ export default function LeafletMapInner({
 
     // 2. Add Opportunities Markers
     opportunities.forEach((opp) => {
+      if (!opp.coordinates) return;
       const colors = getOpportunityTypeBadgeColor(opp.type);
       const isBoosted = opp.isMatchBoosted;
+      const isCompanyLocation = opp.coordinateSource === 'company';
 
       const oppIcon = L.divIcon({
         className: 'custom-opp-pin',
@@ -128,8 +131,8 @@ export default function LeafletMapInner({
             background: ${colors.hex};
             width: 28px;
             height: 28px;
-            border-radius: 50% 50% 50% 0;
-            transform: rotate(-45deg);
+            border-radius: ${isCompanyLocation ? '50%' : '50% 50% 50% 0'};
+            transform: rotate(${isCompanyLocation ? '0deg' : '-45deg'});
             border: 2.5px solid white;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             display: flex;
@@ -139,7 +142,7 @@ export default function LeafletMapInner({
             transition: transform 0.2s ease;
           ">
             <div style="
-              transform: rotate(45deg);
+              transform: rotate(${isCompanyLocation ? '0deg' : '45deg'});
               color: white;
               font-size: 10px;
               font-weight: 800;
@@ -149,8 +152,8 @@ export default function LeafletMapInner({
           </div>
         `,
         iconSize: [28, 28],
-        iconAnchor: [14, 28],
-        popupAnchor: [0, -28],
+        iconAnchor: [14, isCompanyLocation ? 14 : 28],
+        popupAnchor: [0, isCompanyLocation ? -14 : -28],
       });
 
       const popupHtml = `
@@ -170,9 +173,12 @@ export default function LeafletMapInner({
             ${opp.company}
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #64748B; margin-top: 6px; padding-top: 6px; border-top: 1px solid #E2E8F0;">
-            <span>📍 ${opp.distanceKm} km away</span>
+            <span>${opp.distanceKm === undefined ? 'Distance unavailable' : isCompanyLocation ? `~${opp.distanceKm} km to company` : `${opp.distanceKm} km away`}</span>
             <span style="font-weight: 700; color: #082F38;">${opp.stipend}</span>
           </div>
+          ${isCompanyLocation
+            ? '<div style="font-size: 10px; color: #92400E; margin-top: 5px;">Company location; exact work site unconfirmed</div>'
+            : ''}
           ${
             isBoosted
               ? `<div style="font-size: 10px; color: #047857; background: #ECFDF5; padding: 3px 6px; border-radius: 4px; margin-top: 6px; font-weight: 600;">
@@ -197,6 +203,13 @@ export default function LeafletMapInner({
           >
             View Opportunity Details
           </button>
+          ${opp.workMode === 'Remote'
+            ? `<button type="button" id="remote-directions-btn-${opp.id}" aria-live="polite"
+                style="display: block; width: 100%; margin-top: 6px; padding: 6px 10px; border: 1px solid #0D5C68; border-radius: 8px; background: white; color: #0D5C68; font-size: 11px; font-weight: bold; cursor: pointer;"
+              >Show Directions</button>`
+            : `<a href="${getDirectionsUrl(opp)}" target="_blank" rel="noopener noreferrer"
+                style="display: block; text-align: center; margin-top: 6px; padding: 6px 10px; border: 1px solid #0D5C68; border-radius: 8px; color: #0D5C68; font-size: 11px; font-weight: bold; text-decoration: none;"
+              >Show Directions</a>`}
         </div>
       `;
 
@@ -208,11 +221,20 @@ export default function LeafletMapInner({
         if (btn) {
           btn.onclick = () => onSelectOpportunity(opp);
         }
+        const remoteDirections = document.getElementById(`remote-directions-btn-${opp.id}`);
+        if (remoteDirections) {
+          remoteDirections.onclick = () => {
+            remoteDirections.textContent = 'No directions for remote jobs.';
+            remoteDirections.style.color = '#B91C1C';
+            remoteDirections.style.borderColor = '#FECACA';
+            remoteDirections.style.backgroundColor = '#FEF2F2';
+          };
+        }
       });
 
       markersLayerRef.current?.addLayer(marker);
     });
-  }, [userCoords, radiusKm, opportunities, isUsingGeolocation, onSelectOpportunity]);
+  }, [userCoords.lat, userCoords.lng, radiusKm, opportunities, isUsingGeolocation, onSelectOpportunity]);
 
   return (
     <div className="relative w-full h-full min-h-[380px] lg:min-h-[480px]">
@@ -229,6 +251,7 @@ export default function LeafletMapInner({
           <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-teal-500"></span> Full-Time Job</div>
           <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Industry Challenge</div>
         </div>
+        <span className="block pt-1 text-slate-600">Round markers show company locations.</span>
       </div>
     </div>
   );

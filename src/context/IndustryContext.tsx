@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import {
   Candidate,
   IndustryJob,
@@ -28,7 +28,7 @@ import { mockInterviews } from '@/data/industry/industryInterviews';
 import { mockSubmissions } from '@/data/industry/industrySubmissions';
 import { mockOffers } from '@/data/industry/industryOffers';
 import { mockCollegeMous } from '@/data/industry/industryMous';
-import { calculateCandidateMatch } from '@/lib/industryMatching';
+import { calculateCandidateMatch, MatchResult } from '@/lib/industryMatching';
 import {
   subscribeToSync,
   readNotificationsFor,
@@ -46,10 +46,18 @@ import { saveUserProfile } from '@/lib/firebase';
 import {
   fetchRemoteJobs,
   fetchRemoteInternships,
+  fetchRemoteCandidates,
   syncNewJobToDataConnect,
   syncNewInternshipToDataConnect,
   syncApplicationStageToDataConnect,
+  syncNewOfferToDataConnect,
+  syncInterviewToDataConnect,
+  syncCurriculumModuleToDataConnect,
 } from '@/lib/dataConnectService';
+import {
+  subscribeToRealtimeNotifications,
+  publishRealtimeNotification,
+} from '@/lib/realtimeNotifications';
 
 export interface ToastMessage {
   id: string;
@@ -126,6 +134,7 @@ interface IndustryContextType {
   
   // Candidate Matching Helper
   getCandidateMatchBreakdown: (candidateId: string, jobId?: string) => ReturnType<typeof calculateCandidateMatch>;
+  invalidateMatchCache: () => void;
   resetToDefaults: () => void;
 }
 
@@ -217,36 +226,46 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Load from localStorage on client mount
   useEffect(() => {
+    const safeParseArray = <T,>(raw: string | null, fallback: T[]): T[] => {
+      if (!raw) return fallback;
+      try {
+        const val = JSON.parse(raw);
+        return Array.isArray(val) ? val : fallback;
+      } catch {
+        return fallback;
+      }
+    };
+
     try {
       const savedJobs = localStorage.getItem('skillsetu_ind_jobs');
-      if (savedJobs) setJobs(JSON.parse(savedJobs));
+      if (savedJobs) setJobs((prev) => safeParseArray(savedJobs, prev));
 
       const savedInternships = localStorage.getItem('skillsetu_ind_internships');
-      if (savedInternships) setInternships(JSON.parse(savedInternships));
+      if (savedInternships) setInternships((prev) => safeParseArray(savedInternships, prev));
 
       const savedCandidates = localStorage.getItem('skillsetu_ind_candidates');
-      if (savedCandidates) setCandidates(JSON.parse(savedCandidates));
+      if (savedCandidates) setCandidates((prev) => safeParseArray(savedCandidates, prev));
 
       const savedApps = localStorage.getItem('skillsetu_ind_applications');
-      if (savedApps) setApplications(JSON.parse(savedApps));
+      if (savedApps) setApplications((prev) => safeParseArray(savedApps, prev));
 
       const savedInterviews = localStorage.getItem('skillsetu_ind_interviews');
-      if (savedInterviews) setInterviews(JSON.parse(savedInterviews));
+      if (savedInterviews) setInterviews((prev) => safeParseArray(savedInterviews, prev));
 
       const savedColleges = localStorage.getItem('skillsetu_ind_colleges');
-      if (savedColleges) setColleges(JSON.parse(savedColleges));
+      if (savedColleges) setColleges((prev) => safeParseArray(savedColleges, prev));
 
       const savedChallenges = localStorage.getItem('skillsetu_ind_challenges');
-      if (savedChallenges) setChallenges(JSON.parse(savedChallenges));
+      if (savedChallenges) setChallenges((prev) => safeParseArray(savedChallenges, prev));
 
       const savedSubmissions = localStorage.getItem('skillsetu_ind_submissions');
-      if (savedSubmissions) setSubmissions(JSON.parse(savedSubmissions));
+      if (savedSubmissions) setSubmissions((prev) => safeParseArray(savedSubmissions, prev));
 
       const savedOffers = localStorage.getItem('skillsetu_ind_offers');
-      if (savedOffers) setOffers(JSON.parse(savedOffers));
+      if (savedOffers) setOffers((prev) => safeParseArray(savedOffers, prev));
 
       const savedMous = localStorage.getItem('skillsetu_ind_mous');
-      if (savedMous) setCollegeMous(JSON.parse(savedMous));
+      if (savedMous) setCollegeMous((prev) => safeParseArray(savedMous, prev));
     } catch (e) {
       console.warn('LocalStorage error:', e);
     }
@@ -277,6 +296,17 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     });
 
+    fetchRemoteCandidates().then((remoteCandidates) => {
+      if (isMounted && remoteCandidates.length > 0) {
+        setCandidates((prev) => {
+          const map = new Map<string, Candidate>();
+          prev.forEach((c) => map.set(c.id, c));
+          remoteCandidates.forEach((c) => map.set(c.id, c));
+          return Array.from(map.values());
+        });
+      }
+    });
+
     return () => {
       isMounted = false;
     };
@@ -285,6 +315,16 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // ------------------------------------------------------------------
   // Cross-sector sync subscription (Student/College -> Industry)
   // ------------------------------------------------------------------
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
+
+  const showToast = useCallback((message: string, type: ToastMessage['type'] = 'success') => {
+    const id = 'toast-' + Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => removeToast(id), 4500);
+  }, [removeToast]);
+
   const syncRefresh = useCallback(() => {
     try {
       // 1. Pull applications submitted from the Student Portal
@@ -340,7 +380,6 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 : n.type === 'placement'
                 ? 'pipeline'
                 : 'partnership') as IndustryNotification['type'],
-              link: n.link,
             }));
           if (!fresh.length) return prev;
           const merged = [...fresh, ...prev];
@@ -355,8 +394,28 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     syncRefresh();
-    return subscribeToSync(syncRefresh);
-  }, [syncRefresh]);
+    const unsubSync = subscribeToSync(syncRefresh);
+    const unsubRealtime = subscribeToRealtimeNotifications('industry', (notif) => {
+      setNotifications((prev) => {
+        if (prev.some((n) => n.id === notif.id)) return prev;
+        const newNotif: IndustryNotification = {
+          id: notif.id,
+          title: notif.title,
+          message: notif.message,
+          time: notif.time || 'Just now',
+          read: false,
+          type: notif.type === 'challenge' ? 'challenge' : notif.type === 'placement' ? 'pipeline' : 'application',
+        };
+        return [newNotif, ...prev];
+      });
+      showToast(notif.message, 'info');
+    });
+
+    return () => {
+      unsubSync();
+      unsubRealtime();
+    };
+  }, [syncRefresh, showToast]);
 
   // Publish the full existing catalog once on mount so the Student &
   // College portals can surface them (idempotent via correlation ids).
@@ -380,18 +439,6 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch (e) {
       console.warn('LocalStorage save error:', e);
     }
-  };
-
-  const showToast = (message: string, type: ToastMessage['type'] = 'success') => {
-    const id = 'toast-' + Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      removeToast(id);
-    }, 4500);
-  };
-
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
   const markNotificationsAsRead = () => {
@@ -509,6 +556,22 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
         // Sync stage update to Firebase Data Connect in background
         syncApplicationStageToDataConnect(applicationId, nextStage, note);
+
+        // Real-time push notification across devices to student
+        publishRealtimeNotification({
+          target: 'student',
+          type: nextStage === 'Offer Sent' ? 'offer' : nextStage.includes('Interview') ? 'interview' : 'application',
+          title: `Application Update: ${nextStage}`,
+          message: `Your application for "${app.jobTitle}" has progressed to ${nextStage}!`,
+          link: '/student/applications',
+          read: false,
+          meta: {
+            applicationId,
+            stage: nextStage,
+            candidateName: app.candidateName,
+            jobTitle: app.jobTitle,
+          },
+        });
       }
       return updated;
     });
@@ -537,8 +600,17 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.warn('[Sync] Failed to publish job:', e);
     }
     showToast(`Job "${newJob.title}" published successfully!`, 'success');
-    // Sync newly created job to Firebase Data Connect in background
-    syncNewJobToDataConnect(newJobData);
+    // Replace the local opportunity's sync record once its cloud employer and job IDs are known.
+    void syncNewJobToDataConnect(newJobData).then((saved) => {
+      if (!saved) return;
+      const syncedJob = { ...newJob, companyId: saved.companyId, dataConnectId: saved.id };
+      setJobs((prev) => {
+        const next = prev.map((job) => job.id === newJob.id ? { ...job, companyId: saved.companyId, dataConnectId: saved.id } : job);
+        saveState('skillsetu_ind_jobs', next);
+        return next;
+      });
+      publishIndustryOpportunities({ jobs: [syncedJob] });
+    });
     return newJob;
   };
 
@@ -560,8 +632,16 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.warn('[Sync] Failed to publish internship:', e);
     }
     showToast(`Internship "${newInternship.title}" published successfully!`, 'success');
-    // Sync newly created internship to Firebase Data Connect in background
-    syncNewInternshipToDataConnect(newInternData);
+    void syncNewInternshipToDataConnect(newInternData).then((saved) => {
+      if (!saved) return;
+      const syncedInternship = { ...newInternship, companyId: saved.companyId, dataConnectId: saved.id };
+      setInternships((prev) => {
+        const next = prev.map((internship) => internship.id === newInternship.id ? { ...internship, companyId: saved.companyId, dataConnectId: saved.id } : internship);
+        saveState('skillsetu_ind_internships', next);
+        return next;
+      });
+      publishIndustryOpportunities({ internships: [syncedInternship] });
+    });
     return newInternship;
   };
 
@@ -607,6 +687,9 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (app && app.stage !== 'Technical Interview' && app.stage !== 'HR Interview') {
       moveApplicationStage(app.id, 'Technical Interview', `Interview scheduled for ${data.date} at ${data.time}`);
     }
+
+    // Sync to Data Connect PostgreSQL in background
+    syncInterviewToDataConnect(newInterview, undefined, data.candidateId);
 
     showToast(`Interview scheduled with ${data.candidateName} for ${data.date}!`, 'success');
     return newInterview;
@@ -679,8 +762,38 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     showToast('Hiring Preferences saved.', 'success');
   };
 
+  const matchCacheRef = useRef(new Map<string, ReturnType<typeof calculateCandidateMatch>>());
+
+  const getMatchCacheKey = (candidateId: string, jobId?: string, skillNames?: string[]): string => {
+    return `${candidateId}:${jobId || 'none'}:${skillNames ? skillNames.join(',') : 'none'}`;
+  };
+
+  const invalidateMatchCache = useCallback(() => {
+    matchCacheRef.current.clear();
+  }, []);
+
   const getCandidateMatchBreakdown = (candidateId: string, jobId?: string) => {
+    const cacheKey = getMatchCacheKey(candidateId, jobId);
+    const cached = matchCacheRef.current.get(cacheKey);
+    if (cached) return cached;
+
     const cand = candidates.find((c) => c.id === candidateId) || candidates[0];
+    if (!cand) {
+      // Fallback when no candidates are available
+      const emptyResult: MatchResult = {
+        overall: 0,
+        quality: 'POOR',
+        skillMatch: 0,
+        verifiedBonus: 0,
+        projectsMatch: 0,
+        experienceMatch: 0,
+        educationMatch: 0,
+        locationMatch: 0,
+        recommendedSkills: [],
+        details: [],
+      };
+      return emptyResult;
+    }
     const targetJob = jobId ? jobs.find((j) => j.id === jobId) || internships.find((i) => i.id === jobId) : jobs[0];
     const requiredSkills = targetJob?.requiredSkills || [
       { name: 'Python', level: 'Advanced', importance: 'Required' },
@@ -688,7 +801,9 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       { name: 'SQL', level: 'Intermediate', importance: 'Required' },
       { name: 'Git', level: 'Basic', importance: 'Preferred' },
     ];
-    return calculateCandidateMatch(cand, requiredSkills, company.location);
+    const result = calculateCandidateMatch(cand, requiredSkills, company.location);
+    matchCacheRef.current.set(cacheKey, result);
+    return result;
   };
 
   const updateSubmissionStatus = (submissionId: string, status: ChallengeSubmission['status']) => {
@@ -742,6 +857,20 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       moveApplicationStage(app.id, 'Offer Sent', `Formal offer letter issued for ${offerData.roleTitle}`);
     }
 
+    // Sync offer to Data Connect PostgreSQL
+    syncNewOfferToDataConnect(newOffer, offerData.candidateId);
+
+    // Push real-time notification to student
+    publishRealtimeNotification({
+      target: 'student',
+      type: 'offer',
+      title: '🎉 Formal Offer Letter Issued!',
+      message: `TechNova Labs has issued a formal digital offer letter for "${offerData.roleTitle}"!`,
+      link: '/student/applications',
+      read: false,
+      meta: { offerId: newOffer.id, roleTitle: offerData.roleTitle },
+    });
+
     showToast(`Offer letter generated for ${offerData.candidateName}!`, 'success');
     return newOffer;
   };
@@ -783,6 +912,23 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       saveState('skillsetu_ind_mous', updated);
       return updated;
     });
+
+    // Sync to Data Connect PostgreSQL
+    syncCurriculumModuleToDataConnect(undefined, undefined, {
+      id: `mod-${Date.now()}`,
+      ...feedback,
+    });
+
+    // Push real-time notification to College
+    publishRealtimeNotification({
+      target: 'college',
+      type: 'training',
+      title: 'Industry Curriculum Recommendation',
+      message: `TechNova Labs proposed updating "${feedback.currentSubject}" to "${feedback.industryRecommendation}".`,
+      link: '/college/skills',
+      read: false,
+    });
+
     showToast('Curriculum feedback submitted for college senate review!', 'success');
   };
 
@@ -864,6 +1010,7 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         updateCompanyProfile,
         updatePreferences,
         getCandidateMatchBreakdown,
+        invalidateMatchCache,
         resetToDefaults,
       }}
     >

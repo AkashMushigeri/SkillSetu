@@ -1,18 +1,16 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { CollegePartner } from '@/types/industry';
-import { useRouter } from 'next/navigation';
-import { Building2, School, Compass, RotateCcw, Plus, Minus, Layers } from 'lucide-react';
+import { RotateCcw, Plus, Minus } from 'lucide-react';
 
 interface IndustryMapInnerProps {
   companyCoords: { lat: number; lng: number };
   companyName: string;
   colleges: CollegePartner[];
   radiusKm: number;
-  onSelectCollege?: (college: CollegePartner) => void;
 }
 
 export default function IndustryMapInner({
@@ -20,33 +18,34 @@ export default function IndustryMapInner({
   companyName,
   colleges,
   radiusKm,
-  onSelectCollege,
 }: IndustryMapInnerProps) {
-  const router = useRouter();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const radiusCircleRef = useRef<L.Circle | null>(null);
   const [filterType, setFilterType] = useState<'all' | 'partner' | 'discovery'>('all');
 
-  const safeCoords =
-    companyCoords && typeof companyCoords.lat === 'number' && !isNaN(companyCoords.lat)
+  const safeCoords = useMemo(
+    () => companyCoords && typeof companyCoords.lat === 'number' && !isNaN(companyCoords.lat)
       ? companyCoords
-      : { lat: 12.9784, lng: 77.6408 };
+      : { lat: 12.9784, lng: 77.6408 },
+    [companyCoords]
+  );
 
   // Initialize Map
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
     // Reset leaflet id if attached previously
-    if ((mapContainerRef.current as any)._leaflet_id) {
-      (mapContainerRef.current as any)._leaflet_id = null;
+    const mapContainer = mapContainerRef.current as HTMLDivElement & { _leaflet_id?: number };
+    if (mapContainer._leaflet_id) {
+      mapContainer._leaflet_id = undefined;
     }
 
     if (!mapInstanceRef.current) {
       const map = L.map(mapContainerRef.current, {
-        center: [safeCoords.lat, safeCoords.lng],
-        zoom: radiusKm <= 5 ? 13 : radiusKm <= 10 ? 12 : radiusKm <= 25 ? 11 : 10,
+        center: [12.9784, 77.6408],
+        zoom: 11,
         zoomControl: false,
         attributionControl: false,
       });
@@ -259,7 +258,7 @@ export default function IndustryMapInner({
 
       markersLayerRef.current?.addLayer(marker);
     });
-  }, [safeCoords, radiusKm, colleges, companyName, filterType]);
+  }, [safeCoords.lat, safeCoords.lng, radiusKm, colleges, companyName, filterType]);
 
   const handleZoomIn = () => {
     mapInstanceRef.current?.zoomIn();

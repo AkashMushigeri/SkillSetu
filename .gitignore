@@ -15,7 +15,8 @@ firebase-debug.log
 .firebase/
 .dataconnect/
 .credentials/
-
+local_backups/
+skills
 # Environment - all env files (never commit secrets)
 .env
 .env.local
@@ -46,3 +47,9 @@ src/generated/dataconnect/
 
 # Build cache
 *.tsbuildinfo
+
+# Scratch & patch files
+patch-*.js
+test-*.js
+temp*.txt
+

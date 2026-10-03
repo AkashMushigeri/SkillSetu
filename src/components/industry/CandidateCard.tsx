@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Candidate } from '@/types/industry';
+import { Candidate, MatchQuality } from '@/types/industry';
 import { useIndustry } from '@/context/IndustryContext';
 import { SkillBadge } from './SkillBadge';
 import {
@@ -10,11 +10,9 @@ import {
   GraduationCap,
   Bookmark,
   BookmarkCheck,
-  Briefcase,
   ExternalLink,
   CheckCircle2,
   FolderGit2,
-  Calendar,
   Sparkles,
 } from 'lucide-react';
 
@@ -22,12 +20,16 @@ interface CandidateCardProps {
   candidate: Candidate;
   onOpenShortlistModal?: (candidate: Candidate) => void;
   calculatedMatchScore?: number;
+  qualityTier?: MatchQuality;
+  recommendedSkills?: Array<{ name: string; level: string; importance: 'Required' | 'Preferred' }>;
 }
 
 export const CandidateCard: React.FC<CandidateCardProps> = ({
   candidate,
   onOpenShortlistModal,
   calculatedMatchScore,
+  qualityTier,
+  recommendedSkills,
 }) => {
   const { toggleSaveCandidate, shortlistCandidateForJob, jobs } = useIndustry();
 
@@ -94,7 +96,7 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
           <div className="flex flex-col items-end gap-1.5">
             {/* Match Percentage Badge */}
             <div
-              className={`px-2.5 py-1 rounded-xl text-center border font-mono shadow-sm ${
+              className={`px-2.5 py-1 rounded-xl text-center border font-mono shadow-sm relative ${
                 match >= 85
                   ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                   : match >= 70
@@ -109,6 +111,23 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
               <div className="text-[9px] uppercase font-bold tracking-wider text-slate-500">
                 {match >= 85 ? 'Strong Match' : match >= 70 ? 'Good Match' : 'Potential'}
               </div>
+              {qualityTier && (
+                <span
+                  className={`absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase border ${
+                    qualityTier === 'EXCELLENT'
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                      : qualityTier === 'STRONG'
+                      ? 'bg-teal-100 text-teal-800 border-teal-200'
+                      : qualityTier === 'GOOD'
+                      ? 'bg-blue-100 text-blue-800 border-blue-200'
+                      : qualityTier === 'FAIR'
+                      ? 'bg-amber-100 text-amber-800 border-amber-200'
+                      : 'bg-rose-100 text-rose-800 border-rose-200'
+                  }`}
+                >
+                  {qualityTier}
+                </span>
+              )}
             </div>
 
             {/* Save to Talent Pool */}
@@ -148,6 +167,35 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
             )}
           </div>
         </div>
+
+        {/* Recommended Skills (Gap Analysis) */}
+        {recommendedSkills && recommendedSkills.length > 0 && (
+          <div className="space-y-1.5 pt-1">
+            <div className="flex items-center justify-between text-[11px] text-slate-500">
+              <span className="font-semibold uppercase tracking-wider text-[10px] text-slate-500">
+                Skills to Target for Role Fit
+              </span>
+              <span className="text-[10px] text-amber-700 font-semibold">
+                {recommendedSkills.length > 1 ? `${recommendedSkills.length} Gaps` : '1 Gap'}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {recommendedSkills.slice(0, 6).map((skill, idx) => (
+                <span
+                  key={idx}
+                  className="px-2 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-medium"
+                >
+                  {skill.name} • {skill.importance}
+                </span>
+              ))}
+              {recommendedSkills.length > 6 && (
+                <span className="text-[10px] text-slate-500 self-center px-1">
+                  +{recommendedSkills.length - 6} more
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Featured Project */}
         {candidate.projects.length > 0 && (

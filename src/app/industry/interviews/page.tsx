@@ -1,22 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import { useIndustry } from '@/context/IndustryContext';
 import { ScheduleInterviewModal } from '@/components/industry/ScheduleInterviewModal';
 import { AIInterviewModal } from '@/components/AIInterviewModal';
 import {
-  CalendarCheck,
+  
   Calendar,
   Clock,
   Video,
   MapPin,
-  Users,
   Plus,
-  ExternalLink,
-  CheckCircle2,
-  CheckCircle,
-  AlertCircle,
   Sparkles,
 } from 'lucide-react';
 

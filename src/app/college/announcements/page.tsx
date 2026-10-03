@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useCollege } from '@/context/CollegeContext';
-import { Megaphone, Plus, Trash2, Edit, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Megaphone, Plus, Trash2, Edit, AlertCircle } from 'lucide-react';
 import { CreateAnnouncementModal } from '@/components/college/CreateAnnouncementModal';
 
 export default function CampusAnnouncementsPage() {

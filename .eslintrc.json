@@ -1,3 +1,15 @@
 {
-  "extends": "next/core-web-vitals"
+	"extends": [
+		"plugin:@next/next/core-web-vitals",
+		"plugin:@typescript-eslint/recommended",
+		"plugin:react-hooks/recommended"
+	],
+	"plugins": ["@next/next", "@typescript-eslint", "react-hooks"],
+	"parser": "@typescript-eslint/parser",
+	"parserOptions": {
+		"ecmaVersion": 2020,
+		"sourceType": "module",
+		"ecmaFeatures": { "jsx": true }
+	},
+	"rules": {}
 }

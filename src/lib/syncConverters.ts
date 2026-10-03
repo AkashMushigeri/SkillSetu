@@ -16,7 +16,6 @@ import type {
   IndustryApplication,
   IndustryOffer,
   IndustryChallenge,
-  ApplicationStage,
 } from '@/types/industry';
 import type {
   InternshipOpportunity,
@@ -68,15 +67,16 @@ function oppTypeForJob(job: IndustryJob): Opportunity['type'] {
  * Map an industry internship into a student-side opportunity.
  */
 export function industryInternshipToOpportunity(internship: IndustryInternship): Opportunity {
-  const city = (internship.location || 'Bengaluru').split(',')[0].trim();
+  const city = (internship.location || 'Location not specified').split(',')[0].trim();
   return {
     id: `sync-int-${internship.id}`,
+    companyId: internship.companyId,
+    dataConnectId: internship.dataConnectId,
     title: internship.title || 'Internship',
     company: internship.company || 'TechNova Labs',
     type: 'Internship',
-    location: internship.location || 'Bengaluru, Karnataka',
+    location: internship.location || 'Location not specified',
     city,
-    coordinates: { lat: 12.9716, lng: 77.5946 },
     workMode: workMode(internship.workMode),
     stipend: internship.stipend || 'Unpaid',
     duration: internship.duration || '3 Months',
@@ -96,15 +96,16 @@ export function industryInternshipToOpportunity(internship: IndustryInternship):
  * full/part-time job).
  */
 export function industryJobToOpportunity(job: IndustryJob): Opportunity {
-  const city = (job.location || 'Bengaluru').split(',')[0].trim();
+  const city = (job.location || 'Location not specified').split(',')[0].trim();
   return {
     id: `sync-job-${job.id}`,
+    companyId: job.companyId,
+    dataConnectId: job.dataConnectId,
     title: job.title || 'Job Opening',
     company: job.company || 'TechNova Labs',
     type: oppTypeForJob(job),
-    location: job.location || 'Bengaluru, Karnataka',
+    location: job.location || 'Location not specified',
     city,
-    coordinates: { lat: 12.9716, lng: 77.5946 },
     workMode: workMode(job.workMode),
     stipend: job.salaryRange || 'Competitive',
     duration: 'Full-Time',
@@ -130,7 +131,6 @@ export function industryChallengeToOpportunity(challenge: IndustryChallenge): Op
     type: 'Industry Challenge',
     location: 'Remote',
     city: 'Remote',
-    coordinates: { lat: 12.9716, lng: 77.5946 },
     workMode: 'Remote',
     stipend: challenge.prize || 'Cash Prize',
     duration: 'Challenge Sprint',
@@ -497,10 +497,12 @@ function mapSyncNotifType(t: SyncNotification['type']): NotificationItem['type']
 /* ------------------------------------------------------------------ */
 
 export function readStudentOpportunitiesFromIndustry(): Opportunity[] {
-  const jobs = readSyncRecords<Opportunity>(SYNC_DOMAINS.INDUSTRY_JOBS);
+  const withoutLegacyPlaceholder = (opportunity: Opportunity): Opportunity =>
+    opportunity.coordinateSource === 'company' ? opportunity : { ...opportunity, coordinates: undefined, distanceKm: undefined };
+  const jobs = readSyncRecords<Opportunity>(SYNC_DOMAINS.INDUSTRY_JOBS).map(withoutLegacyPlaceholder);
   const internships = readSyncRecords<Opportunity>(SYNC_DOMAINS.INDUSTRY_INTERNSHIPS).filter(
     (o) => !(o as Opportunity & { __college?: boolean }).__college
-  );
+  ).map(withoutLegacyPlaceholder);
   const challenges = readSyncRecords<Opportunity>(SYNC_DOMAINS.CHALLENGES);
   return [...jobs, ...internships, ...challenges];
 }

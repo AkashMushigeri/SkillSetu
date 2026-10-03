@@ -15,10 +15,6 @@ import {
   Settings,
   LogOut,
   ChevronDown,
-  Sparkles,
-  HelpCircle,
-  Briefcase,
-  Trophy,
 } from 'lucide-react';
 
 interface NavbarProps {

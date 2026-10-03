@@ -2,38 +2,56 @@
 
 import React from 'react';
 import { MatchResult } from '@/lib/industryMatching';
-import { CheckCircle2, ShieldCheck, Star } from 'lucide-react';
+import { ShieldCheck, Star } from 'lucide-react';
 
 interface SkillMatchBreakdownProps {
   match: MatchResult;
   candidateName?: string;
 }
 
-export const SkillMatchBreakdown: React.FC<SkillMatchBreakdownProps> = ({ match, candidateName }) => {
+export const SkillMatchBreakdown: React.FC<SkillMatchBreakdownProps> = ({ match }) => {
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-card text-slate-900">
       <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-        <div>
-          <h4 className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
-            <Star className="w-4 h-4 text-emerald-500 fill-emerald-500" />
-            Candidate Skill-Matching Engine
-          </h4>
-          <p className="text-[11px] text-slate-500">
-            Weighted algorithm comparing requirements vs verified candidate benchmarks
-          </p>
-        </div>
+          <div>
+            <h4 className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+              <Star className="w-4 h-4 text-emerald-500 fill-emerald-500" />
+              Candidate Skill-Matching Engine
+            </h4>
+            <p className="text-[11px] text-slate-500">
+              Weighted algorithm comparing requirements vs verified candidate benchmarks
+            </p>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <div className="text-right">
-            <div className="text-2xl font-black text-brand-dark">
-              {match.overall}%
-            </div>
-            <div className="text-[9px] uppercase font-bold tracking-widest text-emerald-600">
-              Overall Match
+          <div className="flex items-center gap-2.5">
+            {match.quality && (
+              <span
+                className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                  match.quality === 'EXCELLENT'
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                    : match.quality === 'STRONG'
+                    ? 'bg-teal-100 text-teal-800 border-teal-200'
+                    : match.quality === 'GOOD'
+                    ? 'bg-blue-100 text-blue-800 border-blue-200'
+                    : match.quality === 'FAIR'
+                    ? 'bg-amber-100 text-amber-800 border-amber-200'
+                    : 'bg-rose-100 text-rose-800 border-rose-200'
+                }`}
+              >
+                {match.quality}
+              </span>
+            )}
+
+            <div className="text-right">
+              <div className="text-2xl font-black text-brand-dark">
+                {match.overall}%
+              </div>
+              <div className="text-[9px] uppercase font-bold tracking-widest text-emerald-600">
+                Overall Match
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
       {/* Breakdown categories */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -168,6 +186,32 @@ export const SkillMatchBreakdown: React.FC<SkillMatchBreakdownProps> = ({ match,
                   </span>
                 </div>
               </div>
+             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recommended Skills (Gap Analysis) */}
+      {match.recommendedSkills && match.recommendedSkills.length > 0 && (
+        <div className="pt-3 border-t border-slate-100">
+          <h5 className="text-xs font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+            Skill Gap Recommendations
+          </h5>
+          <p className="text-[10px] text-slate-500 mb-2">
+            Skills this candidate should develop to strengthen their match:
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {match.recommendedSkills.map((skill, idx) => (
+              <span
+                key={idx}
+                className="px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-medium flex items-center gap-1"
+              >
+                <ShieldCheck className="w-3 h-3 text-amber-600" />
+                <span>
+                  {skill.name} ({skill.level}) {skill.importance === 'Required' ? 'Required' : 'Preferred'}
+                </span>
+              </span>
             ))}
           </div>
         </div>

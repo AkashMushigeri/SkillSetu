@@ -6,7 +6,13 @@
   "dataconnect": {
     "source": "dataconnect"
   },
+  "functions": {
+    "source": "functions"
+  },
   "emulators": {
+    "functions": {
+      "port": 5001
+    },
     "dataconnect": {
       "port": 9399,
       "dataDir": "dataconnect/.dataconnect/pgliteData"

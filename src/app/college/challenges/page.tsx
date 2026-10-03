@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useCollege } from '@/context/CollegeContext';
-import { Swords, Sparkles, CheckCircle2, Trophy, Clock } from 'lucide-react';
+import { Swords, Sparkles, Clock } from 'lucide-react';
 import { MOCK_INDUSTRY_CHALLENGES } from '@/data/collegeData';
 
 export default function IndustryChallengesPage() {

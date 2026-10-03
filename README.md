@@ -42,7 +42,7 @@ SkillSetu Platform
 │   ├── Interactive Skill Assessments & Verification
 │   ├── Geolocation Opportunity Radar (Leaflet Distance Map)
 │   ├── Resume Builder & PDF Text Ingestion (pdf-parse)
-│   └── AI Mock Interview Engine (Gemini 1.5 Flash + Fallback)
+│   └── AI Mock Interview Engine (Gemini Live + Gemini Flash + Fallbacks)
 │
 ├── 🏢 Industry Portal (/industry/*)
 │   ├── Transparent 100-Point Candidate Match Engine
@@ -89,9 +89,10 @@ SkillSetu Platform
   * Responsive resume viewer with print and PDF export capabilities.
   * PDF resume upload with automated text and skill extraction powered by `pdf-parse`.
 * **AI Mock Interview (`/student/ai-interview`)**:
-  * Interactive interview simulator evaluating candidate responses for specific job roles.
-  * Powered by Google Gemini 1.5 Flash with built-in NLP heuristics as a fallback.
+  * Interactive voice interview simulator evaluating candidate responses for specific job roles.
+  * Powered by the Gemini Live API for conversation and Gemini Flash for structured scoring, with multi-provider and offline rubric fallbacks.
   * Generates scoring metrics across technical accuracy, communication, and confidence.
+  * See [AI Features](#-ai-features) for the full breakdown.
 
 ---
 
@@ -176,7 +177,7 @@ The onboarding flow includes a dedicated directory containing over 200 Indian un
 | **Backend & Auth** | [Firebase 12](https://firebase.google.com/) (Authentication, Cloud Firestore, Firebase Data Connect) |
 | **Interactive Maps** | [Leaflet 1.9](https://leafletjs.com/), OpenStreetMap API (Nominatim Geocoding) |
 | **Document Processing** | [pdf-parse](https://www.npmjs.com/package/pdf-parse) (Resume text extraction) |
-| **AI Integration** | [Google Gemini API](https://ai.google.dev/) (Gemini 1.5 Flash via Server Route with local NLP fallback) |
+| **AI Integration** | [Google Gemini API](https://ai.google.dev/) (Gemini Live + Gemini Flash via server routes; multi-provider and offline fallbacks) — see [AI Features](#-ai-features) |
 | **Visual Effects** | [Canvas Confetti](https://www.npmjs.com/package/canvas-confetti) |
 | **State Management** | React Context API (`AuthContext`, `StudentContext`, `IndustryContext`, `CollegeContext`, `ThemeContext`) with local synchronization |
 
@@ -244,77 +245,277 @@ SkillSetu/
 
 ---
 
-## ⚡ Installation & Local Setup
+## ⚡ Full Local Setup
 
 ### Prerequisites
-* [Node.js](https://nodejs.org/) `>= 20.0.0`
-* [npm](https://www.npmjs.com/) `>= 9.0.0`
-* [Git](https://git-scm.com/)
 
-### 1. Clone the Repository
+| Requirement | Version | Needed for |
+|:---|:---|:---|
+| [Node.js](https://nodejs.org/) | `>= 20.0.0` | Everything |
+| [npm](https://www.npmjs.com/) | `>= 9.0.0` | Everything |
+| [Git](https://git-scm.com/) | latest | Clone / branch |
+| [Firebase CLI](https://firebase.google.com/docs/cli) | `>= 13` | Data Connect SDK generation + emulators (auto-run via `npx firebase-tools`) |
+| Google Gemini API key | — | The AI features listed in [AI Features](#-ai-features) |
+
+### 1. Clone the repository
+
 ```bash
 git clone https://github.com/AkashMushigeri/SkillSetu.git
 cd SkillSetu
 ```
 
-### 2. Install Dependencies
+### 2. Generate the Firebase Data Connect SDK — **do this before `npm install`**
+
+`src/generated/dataconnect/` is **gitignored**, so a fresh clone does not contain it.
+`package.json` depends on it via `"@skillsetu/dataconnect": "file:src/generated/dataconnect"`, so
+installing first leaves you with a broken/empty package and dozens of
+`Cannot find module '@skillsetu/dataconnect'` type errors.
+
+```bash
+firebase dataconnect:sdk:generate
+```
+
+This reads `dataconnect/schema/schema.gql` and writes the typed SDK to
+`src/generated/dataconnect/`. Re-run it after any schema change.
+
+### 3. Install dependencies
+
 ```bash
 npm install
 ```
 
-### 3. Configure Environment Variables
-Create a `.env.local` file in the project root:
+### 4. Create `.env.local`
 
 ```bash
 cp .env.example .env.local
 ```
 
-Configure your environment variables as required:
+`.env.local` is local-only and **gitignored** — never commit it. Keep real keys out of
+`.env.example` and the docs; use the `YOUR_...` placeholders below.
+
+#### Environment variables
+
+**Required for AI features**
 
 ```env
-# Firebase Client SDK Configuration (Frontend-safe)
-NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
-
-# Server-only: Google Gemini API Key for AI features (Optional for local dev)
-GEMINI_API_KEY=your_gemini_api_key
-
-# Environment & Emulator Settings
-NEXT_PUBLIC_ENV=development
-NEXT_PUBLIC_USE_FIREBASE_EMULATOR=false
+# Server-only. Get one at https://aistudio.google.com/apikey
+# Never expose this in client code or commit it.
+GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
 ```
 
-> **Note**: If `GEMINI_API_KEY` is omitted, the AI Interview and Resume Extraction features automatically use built-in NLP fallback engines without crashing.
+**Required (Firebase client config)**
 
-### 4. Run the Development Server
+The Firebase *web* config is public by design and safe to commit; the values below are the
+shared project's and work out of the box. Override them to point at your own project.
+
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
+```
+
+**Optional — local development**
+
+```env
+NEXT_PUBLIC_ENV=development              # environment indicator
+NEXT_PUBLIC_USE_FIREBASE_EMULATOR=false  # 'true' to point client SDKs at local emulators
+NEXT_PUBLIC_APPCHECK_DEBUG=false         # 'true' on localhost to auto-fetch an App Check debug token
+```
+
+**Optional — extra AI providers for the live interview**
+
+The interview tries providers in order (`openai` → `gemini` → `openrouter` → `huggingface` →
+`together`) and uses the first whose key is present *and* which returns successfully.
+Supply any one of these to widen the pool; `GEMINI_API_KEY` alone is enough.
+
+```env
+OPENAI_API_KEY="YOUR_OPENAI_API_KEY"        # also enables Whisper audio transcription
+OPENROUTER_API_KEY="YOUR_OPENROUTER_KEY"
+HF_API_KEY="YOUR_HUGGINGFACE_KEY"
+TOGETHER_API_KEY="YOUR_TOGETHER_API_KEY"
+```
+
+**Production-only** (not needed locally; configured as App Hosting secrets)
+
+```env
+UPSTASH_REDIS_REST_URL=                     # shared rate limiter; AI routes FAIL CLOSED without it
+UPSTASH_REDIS_REST_TOKEN=
+NEXT_PUBLIC_RECAPTCHA_SITE_KEY=             # Firebase App Check (reCAPTCHA Enterprise)
+ADMIN_SEED_TOKEN=                           # only required for POST /api/admin/seed in production
+REQUIRE_APP_CHECK=true                      # enforce App Check outside production too
+```
+
+### 5. Run the development server
+
 ```bash
 npm run dev
 ```
 
-Open your browser and navigate to:  
-👉 **`http://localhost:3000`**
+Open 👉 **`http://localhost:3000`**
 
-### 5. Build for Production
+### 6. Verify the setup
+
 ```bash
-# Verify TypeScript types
-npm run type-check
-
-# Build optimized production bundle
-npm run build
-
-# Start production server
-npm run start
+npm run type-check   # must report 0 errors
+npm run build        # must succeed
 ```
 
-### 6. Firebase Emulators (Optional)
-To test Firebase Auth, Firestore, and Data Connect locally:
+Run the project's check suite (21 assertions covering auth, AI rate limits,
+assessments, resume parsing, seeding, and matching):
+
+```bash
+for f in scripts/check-*.cjs; do node "$f" || echo "FAILED: $f"; done
+```
+
+Then confirm in the browser:
+
+- Landing page loads and the dark/light theme persists across reloads.
+- Sign-up / sign-in works for a Student role.
+- `/student/skills` renders the tiered catalog; open a skill and run its assessment.
+- `/student/ai-interview` starts an interview. If `GEMINI_API_KEY` is unset the
+  route reports Gemini Live is not configured (503) — set the key to enable it.
+
+### 7. Firebase emulators (optional)
+
+Runs Auth, Firestore and Data Connect locally. Data Connect is required to seed
+locally, because the seeder aborts when there is no Data Connect connection.
+
 ```bash
 npm run emulators
 ```
+
+| Service | Port |
+|:---|:---|
+| Auth | 9099 |
+| Firestore | 8080 |
+| Data Connect | 9399 |
+| Functions | 5001 |
+
+Set `NEXT_PUBLIC_USE_FIREBASE_EMULATOR=true`, then seed:
+
+```bash
+npm run db:seed
+```
+
+> **Note:** `db:seed` requires a live server-side Data Connect connection. It exits
+> non-zero with `Data Connect is unavailable in this server runtime` rather than
+> reporting a successful seed that wrote nothing.
+
+---
+
+## 🤖 AI Features
+
+All AI runs **server-side only**; no model is ever called from the browser, and
+`GEMINI_API_KEY` is read exclusively from `process.env` in API routes and
+`src/server/ai/*`.
+
+### AI Mock Interview — `/student/ai-interview`
+
+Voice-based mock interview with live conversational feedback.
+
+- **Live voice mode** uses the Gemini Live API (`gemini-3.8-live`). The browser
+  requests a short-lived token from `/api/ai-interview/live-token`.
+- **Post-interview evaluation** (`src/server/ai/interviewService.ts`, `gemini-3.6-flash`)
+  scores overall, technical, communication and confidence, returning structured JSON
+  with strengths and improvements.
+- **Multi-provider fallback**: if Gemini is unavailable it retries, then tries
+  OpenRouter / HuggingFace / Together free models, and can transcribe audio via
+  OpenAI Whisper when `OPENAI_API_KEY` is set.
+- **Offline rubric fallback**: with no key or after a failed call, evaluation still
+  returns via a transcript-only rubric. The response is tagged `source: 'rubric'`
+  (vs `source: 'gemini'`) and the UI labels it as a practice rubric, *not* an AI
+  judgement of technical correctness.
+- **Requires `GEMINI_API_KEY`** for live voice and Gemini evaluation. Works in a
+  degraded, clearly-labelled mode without it.
+- Retries only transient errors (408/429/500/502/503/504); a 400 is not retried.
+
+### Dynamic AI Skill Assessments — `/student/skills/[id]`
+
+- `/api/skills/generate-assessment` generates 10–15 original, topic-specific
+  diagnostic questions via Gemini (`gemini-3.6-flash`, falling back to
+  `gemini-flash-lite-latest`), then grades the submitted answers.
+- Attempts are recorded server-side so a score cannot be forged client-side.
+- **Requires `GEMINI_API_KEY`.** Without it the service throws
+  *"AI assessment generation is temporarily unavailable."*
+
+### Resume Parsing & Analysis — `/student/resume`
+
+- Upload a **PDF, DOCX, or TXT** resume; `pdf-parse` extracts the text and Gemini
+  (`gemini-1.5-flash`) extracts skills, projects, experience and education.
+- Falls back to a high-fidelity offline NLP extractor if Gemini is unavailable or the
+  file cannot be parsed, so the feature degrades rather than fails.
+- `/api/resume-analysis` (`gemini-3.6-flash`) produces an ATS score, normalised
+  skills, and a job-match score with missing skills.
+
+### AI Opportunity Recommendations — `/api/ai/recommendations`
+
+Ranks opportunities against the student's verified skills, projects and career goals.
+Scores are computed **deterministically** — no LLM and **no API key required**.
+
+### Skill Gap Analysis — `/api/ai/skill-gap`
+
+Compares an opportunity's requirements against the student's evidence to produce
+verification-aware gaps and a learning plan. **Deterministic — no API key required.**
+
+### Explainable Skill Matching — `src/server/ai/skillMatchingService.ts`
+
+The shared matching engine behind opportunity and candidate scoring. Combines
+required/preferred skills, verified-vs-claimed weighting, project relevance, role
+alignment and proximity into a score with a human-readable explanation, using a
+domain taxonomy (`skillTaxonomy.ts`) to recognise synonyms such as `React.js` → `React`.
+**Deterministic — no API key required.**
+
+---
+
+## 🆕 New Features
+
+### AI
+- Dynamic Gemini-generated skill assessments with server-side attempt tracking.
+- Gemini Live voice mock interview, with multi-provider and offline rubric fallbacks.
+- AI resume parsing (PDF/DOCX/TXT) with ATS scoring and job-match analysis.
+- AI opportunity recommendations and verification-aware skill-gap analysis.
+
+### Other
+- **Skills curriculum refactor** — the catalog moved into `src/data/skillsData.ts`
+  with tiered navigation (Basic/Intermediate/Advanced) and career-role mappings.
+- **Skills ↔ resume mapping** — resume skills are matched onto catalog skills and
+  mapped to target roles with coverage and missing-skill breakdowns.
+- **Education history** — multi-tier records (College / PUC / Secondary) with modal
+  add/edit in `/student/profile`.
+- **College directory & autocomplete** — searchable directory of 200+ Indian
+  institutions with fuzzy matching, short codes, and city normalisation
+  (`src/data/collegesData.ts`, `src/components/onboarding/CollegeAutocomplete.tsx`).
+- **Application-wide dark mode** with persistent `localStorage` preference and
+  `ThemeToggle` in every portal header.
+- **Database seeder runtime guard** — the seeder now fails loudly instead of
+  reporting success when Data Connect is unavailable.
+
+---
+
+## 🌐 External Services
+
+| Service | Required locally | Credentials / config | Emulator | Used by |
+|:---|:---|:---|:---|:---|
+| **Firebase Authentication** | Yes | `NEXT_PUBLIC_FIREBASE_*` | `9099` | All three portals, Google OAuth, role registration |
+| **Cloud Firestore** | Yes | `NEXT_PUBLIC_FIREBASE_*` | `8080` | Profiles, skills, applications, pipeline, offers |
+| **Firebase Data Connect** | Yes | Generated SDK from `dataconnect/schema` | `9399` | Opportunities, colleges, companies, user skills, seeding |
+| **Google Gemini API** | For AI features | `GEMINI_API_KEY` (server-only) | — | Mock interview, skill assessments, resume parsing |
+| **Firebase App Check** | Production | `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` | — | Protects AI routes; enforced in production |
+| **Upstash Redis REST** | Production | `UPSTASH_REDIS_REST_URL` / `_TOKEN` | — | Shared rate limiter. **AI routes fail closed without it in production** |
+| **Firebase Cloud Functions** | Optional | Service account via `gcloud auth application-default login` | `5001` | `registerUserWithRole` / `updateUserRole` approval workflow |
+| **OpenStreetMap Nominatim** | Optional | None (public endpoint) | — | City autocomplete via `/api/locations/autocomplete` |
+
+Notes:
+
+- Firebase **web** config values are public identifiers, not secrets; they are committed
+  in `.env.example`. Real secrets belong in `.env.local` (gitignored) or App Hosting secrets.
+- Cloud Functions are only needed for the INDUSTRY/COLLEGE registration approval flow.
+  Without them deployed, those sign-ups fall back to the client's behaviour.
+- The AI routes are rate-limited. Locally the limiter falls back to in-memory; in
+  production it throws if Redis is unreachable.
 
 ---
 
@@ -327,12 +528,14 @@ npm run emulators
 | **Student Profile** | In-place modal editing for bio, header, GPA, career goals, links, and projects |
 | **Education History** | Multi-tier records: College/University, PUC / 12th / Intermediate, and High School / 10th with verification badges |
 | **Skills Catalog** | Tiered levels (**Basic**, **Intermediate**, **Advanced**) covering 16+ core skills with structured learning checklists |
-| **Skill Assessment** | Topic-specific quizzes with instant scoring, answer explanations, and verified badge unlock |
+| **Skill Assessment** | Topic-specific quizzes with instant scoring, answer explanations, and verified badge unlock. AI mode generates 10–15 fresh questions per attempt via Gemini and grades answers server-side |
+| **AI Recommendations** | Opportunities ranked against verified skills, projects and career goals (`/api/ai/recommendations`) — deterministic, no API key needed |
+| **Skill Gap Analysis** | Verification-aware gap report and learning plan for a target role (`/api/ai/skill-gap`) — deterministic, no API key needed |
 | **College Directory** | Built-in directory of 200+ Indian institutions with fuzzy search, short-code matching, and city normalization |
 | **Location & Radar** | Nominatim city autocomplete, Haversine distance calculations, and Leaflet interactive map with radius filters (5–100+ km) |
 | **Opportunity Matching**| Transparent match breakdown displaying shared skills, missing competencies, verified boosts, and project relevance |
-| **Resume Handling** | Interactive resume viewer, print/PDF export, and automated PDF resume text extraction (`pdf-parse`) |
-| **AI Mock Interview** | Role-based interview simulator with scoring feedback via Gemini 1.5 Flash (with offline NLP fallback) |
+| **Resume Handling** | Interactive resume viewer, print/PDF export, and automated PDF/DOCX/TXT resume text extraction (`pdf-parse` + Gemini) |
+| **AI Mock Interview** | Role-based voice interview via Gemini Live with structured Gemini Flash scoring, multi-provider fallback, and an offline practice rubric |
 | **Industry Portal** | 100-point candidate scoring engine, multi-skill filtering, job/internship posting, and 5-stage Kanban hiring pipeline |
 | **Interview & Offers** | Interview scheduling center with meeting links and digital offer letter generator with itemized salary breakdowns |
 | **College Portal** | Institutional placement tracking, department skill heatmaps, drive coordinators, and bilateral MoU records |
@@ -354,12 +557,13 @@ npm run emulators
 
 The following capabilities represent planned future enhancements:
 
-- [ ] **AI-Powered Career Trajectory Mapping**: Predictive career path recommendations based on academic background and acquired skills.
+- [ ] **Predictive Career Trajectory Mapping**: Forecasting career paths over time. (Today's
+  `/api/ai/recommendations` ranks current opportunities; it does not yet project trajectories.)
 - [ ] **Proctored Coding Assessments**: Integrated in-browser code editor and automated test runner for real-time coding evaluations.
 - [ ] **Enterprise ATS Integrations**: Webhook and API connectors for major applicant tracking systems (Greenhouse, Lever, Workday).
 - [ ] **Automated University Placement Reports**: One-click generation of institutional accreditation and NIRF/NAAC placement audit reports.
 - [ ] **Bilateral MoU Digital Signatures**: Cryptographic signing and tracking of corporate-college partnership agreements.
-- [ ] **Video Mock Interviews**: Video and audio metric evaluation analyzing pacing, clarity, and presentation skills.
+- [ ] **Video Mock Interviews**: Video-based evaluation of pacing, clarity, and presentation. (Voice mode already ships via Gemini Live; webcam capture and visual metrics are not implemented.)
 
 ---
 

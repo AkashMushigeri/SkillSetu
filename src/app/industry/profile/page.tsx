@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import { useIndustry } from '@/context/IndustryContext';
 import {
   Building2,
@@ -9,15 +8,10 @@ import {
   Globe,
   Users,
   Calendar,
-  Briefcase,
-  GraduationCap,
   Sparkles,
   Edit,
   Save,
   CheckCircle2,
-  ExternalLink,
-  ShieldCheck,
-  Check,
   Rocket,
 } from 'lucide-react';
 
@@ -28,7 +22,7 @@ export default function IndustryProfilePage() {
   const [tagline, setTagline] = useState(company.tagline);
   const [about, setAbout] = useState(company.about);
   const [mission, setMission] = useState(company.mission);
-  const [website, setWebsite] = useState(company.website);
+  const website = company.website;
 
   const handleSave = () => {
     updateCompanyProfile({
@@ -41,7 +35,7 @@ export default function IndustryProfilePage() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-6 w-full">
       {/* Cover & Brand Banner */}
       <div className="relative rounded-3xl overflow-hidden bg-white border border-slate-200 shadow-card text-slate-900">
         {/* Banner Image */}

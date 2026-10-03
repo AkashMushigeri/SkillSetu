@@ -3,7 +3,7 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 import { useIndustry } from '@/context/IndustryContext';
-import { Compass, MapPin, Building2, Users, Loader2, Sparkles } from 'lucide-react';
+import { Compass, Building2, Users, Loader2, Sparkles } from 'lucide-react';
 
 const DynamicMap = dynamic(() => import('./IndustryMapInner'), {
   ssr: false,

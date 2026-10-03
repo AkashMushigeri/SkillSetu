@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useCollege } from '@/context/CollegeContext';
-import { Cpu, AlertTriangle, Plus, Search, CheckCircle2, TrendingUp } from 'lucide-react';
+import { Cpu, AlertTriangle, Plus, Search } from 'lucide-react';
 import { SKILL_ECOSYSTEM_DATA } from '@/data/collegeData';
 import { CreateTrainingModal } from '@/components/college/CreateTrainingModal';
 

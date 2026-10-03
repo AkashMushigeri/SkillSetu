@@ -30,27 +30,31 @@ service cloud.firestore {
       return role in ['STUDENT', 'INDUSTRY', 'COLLEGE'];
     }
 
+    function hasTrustedRole(role) {
+      return isValidRole(role)
+        && request.auth.token.role == role
+        && request.auth.token.userRole == role;
+    }
+
     // ------------------------------------------------------------------
     // Users Collection: Profiles for Students, Industry Recruiters, Colleges
     // ------------------------------------------------------------------
     match /users/{userId} {
-      // 1. A user can read their own profile
-      // 2. Verified Industry recruiters and College placement officers can read Student profiles
-      allow get: if isOwner(userId)
-        || (isAuthenticated() && (isIndustry() || isCollege()) && resource.data.role == 'STUDENT');
-
-      // Allow Industry & College to search/list student talent pools
-      allow list: if isAuthenticated() && (isIndustry() || isCollege());
+      // Profiles contain contact details and are private to their owner.
+      allow get: if isOwner(userId);
+      allow list: if false;
 
       // Create: Users can only provision their own profile with a recognized role
       allow create: if isOwner(userId)
         && request.resource.data.uid == userId
-        && isValidRole(request.resource.data.role);
+        && hasTrustedRole(request.resource.data.role);
 
-      // Update: Users can update their own profile; UID cannot be changed
+      // Role changes require matching server-issued claims; UID cannot change.
       allow update: if isOwner(userId)
         && request.resource.data.uid == userId
-        && isValidRole(request.resource.data.role);
+        && isValidRole(request.resource.data.role)
+        && (request.resource.data.role == resource.data.role
+          || hasTrustedRole(request.resource.data.role));
 
       // Delete: Users can delete their own profile
       allow delete: if isOwner(userId);
@@ -72,6 +76,19 @@ service cloud.firestore {
       allow read: if isOwner(userId);
       // Client-side direct writes disallowed; handled via registerUserWithRole callable function
       allow write: if false;
+    }
+
+    // ------------------------------------------------------------------
+    // Global notification access stays disabled until a trusted publisher
+    // scopes records to their intended recipients.
+    // ------------------------------------------------------------------
+    match /notifications/{notificationId} {
+      // No trusted recipient-scoped publisher exists yet; deny direct client access.
+      allow read, write: if false;
+    }
+
+    match /users/{userId}/notifications/{notificationId} {
+      allow read, write: if isOwner(userId);
     }
   }
 }

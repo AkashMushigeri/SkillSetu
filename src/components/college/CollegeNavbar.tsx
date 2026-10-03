@@ -11,7 +11,6 @@ import {
   HelpCircle,
   Menu,
   ChevronDown,
-  User,
   Settings,
   LogOut,
   Calendar,

@@ -5,28 +5,22 @@ import { useSearchParams } from 'next/navigation';
 import { useIndustry } from '@/context/IndustryContext';
 import { CandidateCard } from '@/components/industry/CandidateCard';
 import { CandidateTable } from '@/components/industry/CandidateTable';
-import { SkillBadge } from '@/components/industry/SkillBadge';
 import { calculateCandidateMatch } from '@/lib/industryMatching';
 import { popularTaxonomySkills } from '@/data/industry/industrySkills';
 import {
   Search,
-  Filter,
   ShieldCheck,
   Sparkles,
   LayoutGrid,
   List,
-  SlidersHorizontal,
   X,
   Plus,
-  CheckCircle2,
-  GraduationCap,
-  MapPin,
   RefreshCw,
 } from 'lucide-react';
 
 function FindTalentContent() {
   const searchParams = useSearchParams();
-  const { candidates, company, jobs, showToast } = useIndustry();
+  const { candidates, company, showToast } = useIndustry();
 
   // Skill query pills
   const [selectedSkills, setSelectedSkills] = useState<string[]>(['Python', 'Machine Learning', 'SQL']);

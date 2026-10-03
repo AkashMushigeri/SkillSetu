@@ -40,47 +40,86 @@ const functionsV1 = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
 admin.initializeApp();
 const ALLOWED_ROLES = ["STUDENT", "INDUSTRY", "COLLEGE"];
+async function setUserRoleClaims(uid, role) {
+    const user = await admin.auth().getUser(uid);
+    await admin.auth().setCustomUserClaims(uid, {
+        ...(user.customClaims || {}),
+        role,
+        userRole: role,
+    });
+}
 exports.registerUserWithRole = (0, https_1.onCall)({ enforceAppCheck: false }, async (request) => {
     if (!request.auth) {
         throw new https_1.HttpsError("unauthenticated", "You must be signed in to register.");
     }
     const { role, displayName, college, location, phone } = request.data;
-    if (!role || !ALLOWED_ROLES.includes(role)) {
+    if (typeof role !== "string" || !ALLOWED_ROLES.includes(role)) {
         throw new https_1.HttpsError("invalid-argument", `Invalid role. Must be one of: ${ALLOWED_ROLES.join(", ")}`);
     }
-    if (!displayName) {
-        throw new https_1.HttpsError("invalid-argument", "Display name is required.");
+    if (typeof displayName !== "string" || !displayName.trim() || displayName.length > 120) {
+        throw new https_1.HttpsError("invalid-argument", "Display name must be between 1 and 120 characters.");
+    }
+    const optionalFields = [
+        ["photoUrl", request.data.photoUrl, 2048],
+        ["college", college, 160],
+        ["location", location, 160],
+        ["phone", phone, 32],
+    ];
+    for (const [field, value, maxLength] of optionalFields) {
+        if (value !== undefined && (typeof value !== "string" || value.length > maxLength)) {
+            throw new https_1.HttpsError("invalid-argument", `${field} must be a string of at most ${maxLength} characters.`);
+        }
     }
     try {
-        await admin.auth().setCustomUserClaims(request.auth.uid, {
-            role: role,
-        });
         const updateData = {
-            displayName,
+            displayName: displayName.trim(),
         };
         if (request.data.photoUrl) {
             updateData.photoURL = request.data.photoUrl;
         }
+        const requestedRole = role;
+        const currentUser = await admin.auth().getUser(request.auth.uid);
+        const approvedRole = currentUser.customClaims?.userRole;
+        if (requestedRole !== "STUDENT" && approvedRole !== requestedRole) {
+            await admin
+                .firestore()
+                .collection("pendingRegistrations")
+                .doc(request.auth.uid)
+                .set({
+                uid: request.auth.uid,
+                email: request.auth.token.email || null,
+                displayName: displayName.trim(),
+                role: requestedRole,
+                college: college || null,
+                location: location || null,
+                phone: phone || null,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                processed: false,
+            });
+            await admin.auth().updateUser(request.auth.uid, updateData);
+            return {
+                success: true,
+                pendingApproval: true,
+                message: "Your organization role request is pending approval.",
+                uid: request.auth.uid,
+            };
+        }
+        await setUserRoleClaims(request.auth.uid, requestedRole);
         await admin.auth().updateUser(request.auth.uid, updateData);
         await admin
             .firestore()
-            .collection("pendingRegistrations")
+            .collection("userRoles")
             .doc(request.auth.uid)
             .set({
             uid: request.auth.uid,
-            email: request.auth.token.email,
-            displayName,
-            role: role,
-            college: college || null,
-            location: location || null,
-            phone: phone || null,
+            email: request.auth.token.email || null,
+            role: requestedRole,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            processed: false,
         });
-        functionsV2.logger.info(`Role '${role}' assigned to user ${request.auth.uid}`, { uid: request.auth.uid, role });
+        functionsV2.logger.info(`Role '${requestedRole}' assigned to user ${request.auth.uid}`, { uid: request.auth.uid, role: requestedRole });
         return {
             success: true,
-            message: `Role '${role}' assigned successfully!`,
+            message: `Role '${requestedRole}' assigned successfully!`,
             uid: request.auth.uid,
         };
     }
@@ -93,21 +132,25 @@ exports.updateUserRole = (0, https_1.onCall)({ enforceAppCheck: false }, async (
     if (!request.auth) {
         throw new https_1.HttpsError("unauthenticated", "You must be signed in.");
     }
-    const caller = await admin
-        .auth()
-        .getUser(request.auth.uid)
-        .then((u) => u.customClaims);
-    if (caller?.role !== "INDUSTRY" && caller?.role !== "COLLEGE") {
-        throw new https_1.HttpsError("permission-denied", "Only authorized users can assign roles.");
+    if (request.auth.token.admin !== true) {
+        throw new https_1.HttpsError("permission-denied", "Only administrators can assign roles.");
     }
     const { targetUid, role } = request.data;
-    if (!targetUid || !ALLOWED_ROLES.includes(role)) {
+    if (typeof targetUid !== "string" || !targetUid || targetUid.length > 128 ||
+        typeof role !== "string" || !ALLOWED_ROLES.includes(role)) {
         throw new https_1.HttpsError("invalid-argument", `Invalid role or target UID. Must be one of: ${ALLOWED_ROLES.join(", ")}`);
     }
     try {
-        await admin.auth().setCustomUserClaims(targetUid, {
+        await setUserRoleClaims(targetUid, role);
+        await admin
+            .firestore()
+            .collection("userRoles")
+            .doc(targetUid)
+            .set({
+            uid: targetUid,
             role: role,
-        });
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
         return {
             success: true,
             message: `Role '${role}' assigned to user ${targetUid}`,

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useCollege } from '@/context/CollegeContext';
-import { Building, Globe, Mail, Phone, MapPin, Edit, CheckCircle2, Award, Users, ShieldCheck, X } from 'lucide-react';
+import { Building, Edit, Users, ShieldCheck, X } from 'lucide-react';
 
 export default function CollegeProfilePage() {
   const { profile, updateProfile } = useCollege();
@@ -12,11 +12,11 @@ export default function CollegeProfilePage() {
   const [location, setLocation] = useState(profile.location);
   const [address, setAddress] = useState(profile.address);
   const [website, setWebsite] = useState(profile.website);
-  const [email, setEmail] = useState(profile.email);
+  const email = profile.email;
   const [phone, setPhone] = useState(profile.phone);
   const [principalName, setPrincipalName] = useState(profile.principalName);
-  const [naacGrade, setNaacGrade] = useState(profile.naacGrade);
-  const [nirfRank, setNirfRank] = useState(profile.nirfRank);
+  const naacGrade = profile.naacGrade;
+  const nirfRank = profile.nirfRank;
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();

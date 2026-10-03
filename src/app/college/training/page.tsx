@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useCollege } from '@/context/CollegeContext';
-import { GraduationCap, Plus, Users, Award, Calendar, CheckCircle2, Building, Eye } from 'lucide-react';
+import { GraduationCap, Plus, Eye } from 'lucide-react';
 import { CreateTrainingModal } from '@/components/college/CreateTrainingModal';
 
 export default function TrainingProgramsPage() {

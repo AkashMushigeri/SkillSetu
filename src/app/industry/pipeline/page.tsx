@@ -7,15 +7,9 @@ import { ApplicationStage, IndustryApplication } from '@/types/industry';
 import { ApplicationModal } from '@/components/industry/ApplicationModal';
 import { ScheduleInterviewModal } from '@/components/industry/ScheduleInterviewModal';
 import {
-  KanbanSquare,
-  Sparkles,
-  ArrowRight,
+  
   ArrowLeft,
   Calendar,
-  ShieldCheck,
-  CheckCircle2,
-  Users,
-  Search,
 } from 'lucide-react';
 
 export default function HiringPipelinePage() {

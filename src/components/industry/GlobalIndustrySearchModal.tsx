@@ -7,13 +7,10 @@ import { useIndustry } from '@/context/IndustryContext';
 import {
   Search,
   X,
-  User,
   Briefcase,
-  GraduationCap,
   School,
   Trophy,
   Sparkles,
-  ArrowRight,
 } from 'lucide-react';
 
 interface GlobalSearchModalProps {

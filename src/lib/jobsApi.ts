@@ -91,6 +91,20 @@ const employmentTypeToOpportunityType = (
   }
 };
 
+/**
+ * Safely extracts the hostname from a URL string. Returns `undefined` for
+ * missing or malformed values instead of throwing (e.g. "example" or
+ * "not-a-url" would crash `new URL()`).
+ */
+function extractDomain(website: string | undefined): string | undefined {
+  if (!website) return undefined;
+  try {
+    return new URL(website).hostname;
+  } catch {
+    return undefined;
+  }
+}
+
 export function cityToCoordinates(
   cityName: string
 ): { lat: number; lng: number } {
@@ -101,12 +115,18 @@ export function cityToCoordinates(
 }
 
 export function mapApiJobToOpportunity(job: RawApiJob): Opportunity {
+  const domain = extractDomain(job.company_website);
   return {
     id: `api-${job.id}`,
+    companyId: `comp-${job.company.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+    dataConnectId: job.id,
+    applicationUrl: job.application_url,
+    companyWebsite: job.company_website,
+    employerVerified: job.verification?.company_verified ?? true,
     title: job.title,
     company: job.company,
-    companyLogo: job.company_website
-      ? `https://www.google.com/s2/favicons/domain/${new URL(job.company_website).hostname}`
+    companyLogo: domain
+      ? `https://www.google.com/s2/favicons/domain/${domain}`
       : undefined,
     type: employmentTypeToOpportunityType(job.employment_type),
     location: job.location,

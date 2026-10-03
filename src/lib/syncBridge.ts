@@ -118,19 +118,15 @@ export function readSyncRecords<T = unknown>(domain: SyncDomain): T[] {
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    const results: T[] = [];
+    const results: SyncEnvelope<T>[] = [];
     for (const entry of parsed) {
       if (!entry || typeof entry !== 'object') continue;
       const env = entry as SyncEnvelope<T>;
       if (typeof env.ts !== 'number' || env.payload === undefined) continue;
-      results.push(env.payload);
+      results.push(env);
     }
     // newest first
-    return results.sort((a, b) => {
-      const ea = a as unknown as SyncEnvelope<T>;
-      const eb = b as unknown as SyncEnvelope<T>;
-      return (eb.ts ?? 0) - (ea.ts ?? 0);
-    });
+    return results.sort((a, b) => b.ts - a.ts).map((entry) => entry.payload);
   } catch {
     return [];
   }

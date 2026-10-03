@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useCollege } from '@/context/CollegeContext';
-import { Filter, Users, CheckCircle2, AlertTriangle, XCircle, X } from 'lucide-react';
+import { Filter, CheckCircle2, AlertTriangle, XCircle, X } from 'lucide-react';
 
 interface EligibilityModalProps {
   isOpen: boolean;

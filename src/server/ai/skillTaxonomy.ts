@@ -271,11 +271,11 @@ export function calculateSkillSimilarity(
 
   if (!isFalseSubstringConflict) {
     const studentWords = normStudent.split(/\s+/);
-    const reqWords = normReq.split(/\s+/);
-    const hasFullWordMatch =
-      studentWords.includes(normReq) ||
-      reqWords.includes(normStudent) ||
-      (normStudent.length >= 4 && normReq.length >= 4 && (normStudent.includes(normReq) || normReq.includes(normStudent)));
+    // Only the student-is-more-specific direction is a synonym. A required skill
+    // that merely contains the student's skill (raw substring or as one word)
+    // is a different, narrower skill: "React" must not satisfy
+    // "React Testing Library", "SQL" must not satisfy "PostgreSQL".
+    const hasFullWordMatch = studentWords.includes(normReq);
 
     if (hasFullWordMatch) {
       return { matched: true, score: 0.8, relation: 'synonym', canonical: requiredSkill };

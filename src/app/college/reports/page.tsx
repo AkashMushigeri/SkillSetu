@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useCollege } from '@/context/CollegeContext';
-import { FileSpreadsheet, Download, FileText, CheckCircle2, Sparkles, Filter } from 'lucide-react';
+import { FileSpreadsheet, Download, FileText } from 'lucide-react';
 import { ReportPreviewModal } from '@/components/college/ReportPreviewModal';
 
 export default function ReportsPage() {

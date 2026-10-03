@@ -1,5 +1,6 @@
 export type SkillLevel = 'Basic' | 'Intermediate' | 'Advanced';
 export type SkillImportance = 'Required' | 'Preferred';
+export type MatchQuality = 'EXCELLENT' | 'STRONG' | 'GOOD' | 'FAIR' | 'POOR';
 
 export interface RequiredSkill {
   name: string;
@@ -82,6 +83,8 @@ export type JobStatus = 'Active' | 'Draft' | 'Closed' | 'Expired';
 
 export interface IndustryJob {
   id: string;
+  companyId?: string;
+  dataConnectId?: string;
   title: string;
   company: string;
   department: string;
@@ -108,6 +111,8 @@ export interface IndustryJob {
 
 export interface IndustryInternship {
   id: string;
+  companyId?: string;
+  dataConnectId?: string;
   title: string;
   company: string;
   department: string;

@@ -5,14 +5,10 @@ import Link from 'next/link';
 import { useIndustry } from '@/context/IndustryContext';
 import { InternshipCard } from '@/components/industry/InternshipCard';
 import {
-  GraduationCap,
+  
   Plus,
   Search,
   Award,
-  TrendingUp,
-  Sparkles,
-  School,
-  CheckCircle2,
 } from 'lucide-react';
 
 export default function IndustryInternshipsPage() {

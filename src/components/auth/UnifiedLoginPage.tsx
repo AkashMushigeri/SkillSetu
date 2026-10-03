@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import {
   Sparkles,
   ShieldCheck,
@@ -150,7 +150,6 @@ interface UnifiedLoginPageProps {
 }
 
 function UnifiedLoginContent({ initialRole = 'student' }: UnifiedLoginPageProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const {
     signInWithGoogle,
@@ -180,10 +179,11 @@ function UnifiedLoginContent({ initialRole = 'student' }: UnifiedLoginPageProps)
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
   const [displayName, setDisplayName] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
-  const [college, setCollege] = useState<string>('');
+  const college = '';
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isResetLoading, setIsResetLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [signupNotice, setSignupNotice] = useState<string | null>(null);
   const [resetSuccess, setResetSuccess] = useState<string | null>(null);
 
   // Sync role if query parameter changes externally
@@ -212,6 +212,7 @@ function UnifiedLoginContent({ initialRole = 'student' }: UnifiedLoginPageProps)
     setShowConfirmPassword(false);
     setIsForgotPassword(false);
     setError(null);
+    setSignupNotice(null);
     setResetSuccess(null);
 
     // Update browser URL query parameter without triggering page reload/flicker
@@ -253,7 +254,7 @@ function UnifiedLoginContent({ initialRole = 'student' }: UnifiedLoginPageProps)
 
     try {
       if (isSignup) {
-        await signUpWithEmailPassword(
+        const result = await signUpWithEmailPassword(
           email,
           password,
           displayName || (selectedRole === 'student' ? 'Student' : config.name),
@@ -261,6 +262,10 @@ function UnifiedLoginContent({ initialRole = 'student' }: UnifiedLoginPageProps)
           selectedRole === 'student' ? '' : phone,
           selectedRole === 'student' ? '' : college
         );
+        if (result.pendingApproval) {
+          setSignupNotice('Your organization access request was submitted. You can sign in after an administrator approves it.');
+          return;
+        }
       } else {
         try {
           await signInWithEmailPassword(email, password);
@@ -272,7 +277,7 @@ function UnifiedLoginContent({ initialRole = 'student' }: UnifiedLoginPageProps)
             loginErr.message?.includes('wrong-password')
           ) {
             // Auto-provision uncreated accounts cleanly
-            await signUpWithEmailPassword(
+            const result = await signUpWithEmailPassword(
               email,
               password,
               displayName || config.name,
@@ -280,6 +285,10 @@ function UnifiedLoginContent({ initialRole = 'student' }: UnifiedLoginPageProps)
               phone,
               college
             );
+            if (result.pendingApproval) {
+              setSignupNotice('Your organization access request was submitted. You can sign in after an administrator approves it.');
+              return;
+            }
           } else {
             throw loginErr;
           }
@@ -321,7 +330,10 @@ function UnifiedLoginContent({ initialRole = 'student' }: UnifiedLoginPageProps)
 
     try {
       if (isSignup) {
-        await signUpWithGoogle(fbRole, displayName || config.name, phone, college);
+        const result = await signUpWithGoogle(fbRole, displayName || config.name, phone, college);
+        if (result.pendingApproval) {
+          setSignupNotice('Your organization access request was submitted. You can sign in after an administrator approves it.');
+        }
       } else {
         await signInWithGoogle();
       }
@@ -561,6 +573,13 @@ function UnifiedLoginContent({ initialRole = 'student' }: UnifiedLoginPageProps)
               {/* Reusable Portal Selector Component: [ Student ] [ Industry ] [ College ] */}
               <PortalSelector selectedRole={selectedRole} onRoleChange={handleRoleChange} />
 
+              {signupNotice && (
+                <div className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs leading-relaxed text-emerald-900" role="status">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+                  <span>{signupNotice}</span>
+                </div>
+              )}
+
               {/* Sign In vs Sign Up Tabs */}
               <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100/90 rounded-xl border border-slate-200 text-xs font-semibold">
                 <button
@@ -568,6 +587,7 @@ function UnifiedLoginContent({ initialRole = 'student' }: UnifiedLoginPageProps)
                   onClick={() => {
                     setIsSignup(false);
                     setError(null);
+                    setSignupNotice(null);
                   }}
                   className={`py-1.5 rounded-lg transition-all ${
                     !isSignup
@@ -582,6 +602,7 @@ function UnifiedLoginContent({ initialRole = 'student' }: UnifiedLoginPageProps)
                   onClick={() => {
                     setIsSignup(true);
                     setError(null);
+                    setSignupNotice(null);
                   }}
                   className={`py-1.5 rounded-lg transition-all ${
                     isSignup

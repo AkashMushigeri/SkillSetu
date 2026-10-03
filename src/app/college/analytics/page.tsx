@@ -1,14 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useCollege } from '@/context/CollegeContext';
-import { BarChart3, TrendingUp, DollarSign, Trophy, FileSpreadsheet, Calendar, Filter } from 'lucide-react';
+import { BarChart3, TrendingUp, DollarSign, FileSpreadsheet } from 'lucide-react';
 import { HISTORICAL_ANALYTICS_DATA } from '@/data/collegeData';
 import { ReportPreviewModal } from '@/components/college/ReportPreviewModal';
 
 export default function AnalyticsPage() {
-  const { profile } = useCollege();
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState('2026–27');
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   return (

@@ -5,14 +5,9 @@ import Link from 'next/link';
 import { useIndustry } from '@/context/IndustryContext';
 import { CandidateCard } from '@/components/industry/CandidateCard';
 import {
-  BookmarkCheck,
+  
   Search,
-  Sparkles,
-  Users,
   FolderHeart,
-  Briefcase,
-  ExternalLink,
-  Plus,
 } from 'lucide-react';
 
 export default function TalentPoolPage() {

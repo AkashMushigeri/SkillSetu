@@ -2,24 +2,14 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useIndustry } from '@/context/IndustryContext';
 import {
-  BarChart3,
+  
   TrendingUp,
-  Users,
-  Award,
-  CheckCircle2,
-  Clock,
-  Briefcase,
   GraduationCap,
-  Sparkles,
-  ArrowRight,
   ShieldCheck,
 } from 'lucide-react';
 
 export default function IndustryAnalyticsPage() {
-  const { company, applications, colleges } = useIndustry();
-
   const funnelStages = [
     { label: 'Applications', count: 684, pct: '100%', color: 'bg-blue-500' },
     { label: 'Screened', count: 412, pct: '60.2%', color: 'bg-indigo-500' },

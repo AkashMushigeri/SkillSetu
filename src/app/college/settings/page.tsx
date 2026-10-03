@@ -2,22 +2,31 @@
 
 import React, { useState } from 'react';
 import { useCollege } from '@/context/CollegeContext';
-import { Settings, Shield, Bell, Lock, Calendar, Building, ToggleLeft, ToggleRight, CheckCircle2 } from 'lucide-react';
+import { Settings, ToggleLeft, ToggleRight, CheckCircle2 } from 'lucide-react';
+
+type SettingsTab = 'account' | 'institution' | 'notifications' | 'privacy' | 'placements';
 
 export default function CollegeSettingsPage() {
   const { showToast } = useCollege();
-  const [activeTab, setActiveTab] = useState<'account' | 'institution' | 'notifications' | 'privacy' | 'placements'>('account');
+  const [activeTab, setActiveTab] = useState<SettingsTab>('account');
 
   // Toggle states
   const [emailAlerts, setEmailAlerts] = useState(true);
   const [autoVerifyBadges, setAutoVerifyBadges] = useState(true);
   const [startupFirstPreference, setStartupFirstPreference] = useState(true);
-  const [publicProfile, setPublicProfile] = useState(true);
   const [shareSkillAnalytics, setShareSkillAnalytics] = useState(true);
 
   const handleSaveSettings = () => {
     showToast('College settings saved successfully.', 'success');
   };
+
+  const tabs: Array<{ id: SettingsTab; label: string }> = [
+    { id: 'account', label: 'Account & Administrator' },
+    { id: 'institution', label: 'Institution & Departments' },
+    { id: 'notifications', label: 'Notifications & Alerts' },
+    { id: 'privacy', label: 'Privacy & Sharing' },
+    { id: 'placements', label: 'Placement Preferences' },
+  ];
 
   return (
     <div className="space-y-6 animate-in fade-in">
@@ -44,16 +53,10 @@ export default function CollegeSettingsPage() {
 
       {/* Tabs */}
       <div className="bg-white border border-slate-200 rounded-3xl p-3 shadow-card flex flex-wrap items-center gap-2">
-        {[
-          { id: 'account', label: 'Account & Administrator' },
-          { id: 'institution', label: 'Institution & Departments' },
-          { id: 'notifications', label: 'Notifications & Alerts' },
-          { id: 'privacy', label: 'Privacy & Sharing' },
-          { id: 'placements', label: 'Placement Preferences' },
-        ].map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab(tab.id)}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
               activeTab === tab.id
                 ? 'bg-brand-emerald text-white shadow-xs'

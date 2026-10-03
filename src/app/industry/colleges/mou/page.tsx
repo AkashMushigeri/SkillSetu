@@ -6,24 +6,17 @@ import { useIndustry } from '@/context/IndustryContext';
 import {
   School,
   FileCheck2,
-  FileText,
   Plus,
   ArrowLeft,
   CheckCircle2,
-  Clock,
   BookOpen,
   Sparkles,
-  Layers,
-  GraduationCap,
   Download,
-  Building2,
   Send,
-  AlertCircle,
-  Award,
 } from 'lucide-react';
 
 export default function CollegeMoUStudioPage() {
-  const { collegeMous, addCurriculumFeedback, updateMoUStatus, showToast } = useIndustry();
+  const { collegeMous, addCurriculumFeedback, showToast } = useIndustry();
   const [selectedMoUId, setSelectedMoUId] = useState<string>(collegeMous[0]?.id || 'mou-01');
   const [isProposing, setIsProposing] = useState(false);
 

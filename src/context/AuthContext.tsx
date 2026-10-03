@@ -14,7 +14,6 @@ import {
   signInWithEmail,
   signUpWithEmail,
   signOutFirebase,
-  getUserRole,
   onAuthChange,
   saveUserRole,
   clearUserRole,
@@ -26,7 +25,12 @@ import {
   ExtendedUser,
   UserProfileData,
   sendPasswordReset as sendPasswordResetFirebase,
+  requestRoleRegistration,
 } from '@/lib/firebase';
+
+interface SignUpResult {
+  pendingApproval: boolean;
+}
 
 interface AuthContextType {
   user: ExtendedUser | null;
@@ -42,8 +46,8 @@ interface AuthContextType {
     role: UserRole,
     phone?: string,
     college?: string
-  ) => Promise<void>;
-  signUpWithGoogle: (role: UserRole, displayName?: string, phone?: string, college?: string) => Promise<void>;
+  ) => Promise<SignUpResult>;
+  signUpWithGoogle: (role: UserRole, displayName?: string, phone?: string, college?: string) => Promise<SignUpResult>;
   sendPasswordReset: (email: string) => Promise<void>;
   completeOnboarding: (details: Partial<UserProfileData>) => Promise<void>;
   refreshUserProfile: () => Promise<UserProfileData | null>;
@@ -71,10 +75,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Load and sync user profile from Firebase Firestore
   const syncProfile = useCallback(
-    async (authUser: ExtendedUser, preferredRole?: UserRole) => {
+    async (authUser: ExtendedUser) => {
       try {
+        const token = await authUser.getIdTokenResult(true);
+        const tokenRole = token.claims.userRole || token.claims.role;
+        const trustedRole: UserRole | null = tokenRole === 'STUDENT' || tokenRole === 'INDUSTRY' || tokenRole === 'COLLEGE'
+          ? tokenRole
+          : null;
         let profile = await getUserProfile(authUser.uid);
-        const effectiveRole = preferredRole || profile?.role || getUserRole(authUser) || 'STUDENT';
+        const effectiveRole = trustedRole || 'STUDENT';
+
+        if (profile && profile.role !== effectiveRole) {
+          profile = await saveUserProfile(authUser.uid, { ...profile, role: effectiveRole });
+        }
 
         if (!profile) {
           // Initialize pending user profile in Firebase database
@@ -183,6 +196,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     async (selectedRole: UserRole, displayName?: string, phone?: string, college?: string) => {
       const u = await signInWithGoogle();
       if (u && u.uid) {
+        const registration = await requestRoleRegistration({
+          role: selectedRole,
+          displayName: displayName || u.displayName || 'New User',
+          photoUrl: u.photoURL || undefined,
+          phone: phone || '',
+          college: college || '',
+        });
+        if (registration.pendingApproval) {
+          await signOutFirebase();
+          setUser(null);
+          setRole(null);
+          setUserProfile(null);
+          clearUserRole();
+          return { pendingApproval: true };
+        }
+        await u.getIdToken(true);
         setUser(u);
         const profile = await saveUserProfile(u.uid, {
           uid: u.uid,
@@ -197,7 +226,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setRole(selectedRole);
         saveUserRole(selectedRole);
         router.push('/onboarding');
+        return { pendingApproval: false };
       }
+      return { pendingApproval: false };
     },
     [router]
   );
@@ -252,8 +283,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       phone?: string,
       college?: string
     ) => {
+      let createdUser: ExtendedUser | null = null;
       try {
         const u = await signUpWithEmail(email, password, displayName);
+        createdUser = u;
+        const registration = await requestRoleRegistration({
+          role: selectedRole,
+          displayName,
+          phone: phone || '',
+          college: college || '',
+        });
+        if (registration.pendingApproval) {
+          await signOutFirebase();
+          setUser(null);
+          setRole(null);
+          setUserProfile(null);
+          clearUserRole();
+          return { pendingApproval: true };
+        }
+        await u.getIdToken(true);
         setUser(u);
         const profile = await saveUserProfile(u.uid, {
           uid: u.uid,
@@ -268,8 +316,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setRole(selectedRole);
         saveUserRole(selectedRole);
         router.push('/onboarding');
+        return { pendingApproval: false };
       } catch (err: any) {
-        if (isNetworkError(err)) {
+        if (createdUser) {
+          await signOutFirebase().catch(() => {});
+          setUser(null);
+          setRole(null);
+          setUserProfile(null);
+        }
+        if (!createdUser && isNetworkError(err)) {
           console.warn('Network unreachable during signup, creating offline provisional session');
           const mockUid = `offline_${Date.now()}`;
           const mockUser = {
@@ -291,7 +346,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           setRole(selectedRole);
           saveUserRole(selectedRole);
           router.push('/onboarding');
-          return;
+          return { pendingApproval: false };
         }
         throw err;
       }
@@ -324,6 +379,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       localStorage.removeItem('skillsetu_applications');
       localStorage.removeItem('skillsetu_saved_opps');
       localStorage.removeItem('skillsetu_notifications');
+      localStorage.removeItem('skillsetu_college_auth');
     }
     setUser(null);
     setRole(null);

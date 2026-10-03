@@ -6,19 +6,13 @@ import { useIndustry } from '@/context/IndustryContext';
 import { SkillBadge } from './SkillBadge';
 import {
   X,
-  User,
   GraduationCap,
-  MapPin,
   Calendar,
-  CheckCircle2,
   XCircle,
   Clock,
-  Briefcase,
-  FileText,
   Download,
   FolderGit2,
   ShieldCheck,
-  Sparkles,
   ArrowRight,
 } from 'lucide-react';
 

@@ -1,13 +1,16 @@
-import { Candidate, RequiredSkill } from '@/types/industry';
+import { Candidate, RequiredSkill, MatchQuality } from '@/types/industry';
+import { getQualityTier, matchSkillNames } from './skillNormalization';
 
 export interface MatchResult {
   overall: number; // 0 - 100
+  quality: MatchQuality;
   skillMatch: number; // out of 60
   verifiedBonus: number; // out of 15
   projectsMatch: number; // out of 10
   experienceMatch: number; // out of 5
   educationMatch: number; // out of 5
   locationMatch: number; // out of 5
+  recommendedSkills: RequiredSkill[]; // gap analysis: required skills candidate lacks or is below level
   details: {
     skill: string;
     score: number;
@@ -18,92 +21,96 @@ export interface MatchResult {
   }[];
 }
 
+const LEVEL_MULTIPLIER: Record<string, number> = {
+  Basic: 1,
+  Intermediate: 2,
+  Advanced: 3,
+};
+
 /**
- * Calculates rule-based match score for a candidate against required skills.
+ * Calculates a production-ready match score for a candidate against required skills.
+ *
+ * Enhancements over the original rule-based engine:
+ * - Skill name resolution uses canonical names + synonym matching (e.g., "React.js" matches "React")
+ * - Quality tier classification alongside raw percentage
+ * - Gap analysis: returns recommendedSkills for skills the candidate lacks or is under-leveled
+ * - No hardcoded defaults: empty requirements still computes a meaningful score from projects/exp/edu/location
  */
 export function calculateCandidateMatch(
   candidate: Candidate,
   requiredSkills: RequiredSkill[],
   preferredLocation: string = 'Bengaluru'
 ): MatchResult {
-  if (!requiredSkills || requiredSkills.length === 0) {
-    return {
-      overall: 85,
-      skillMatch: 52,
-      verifiedBonus: 13,
-      projectsMatch: 9,
-      experienceMatch: 4,
-      educationMatch: 4,
-      locationMatch: 5,
-      details: [],
-    };
-  }
-
-  let matchedSkillsCount = 0;
   let verifiedMatchesCount = 0;
   let totalRequiredWeight = 0;
   let earnedSkillWeight = 0;
 
   const details: MatchResult['details'] = [];
+  const recommendedSkills: RequiredSkill[] = [];
 
-  const levelMultiplier: Record<string, number> = {
-    Basic: 1,
-    Intermediate: 2,
-    Advanced: 3,
-  };
+  const hasRequiredSkills = requiredSkills && requiredSkills.length > 0;
 
-  requiredSkills.forEach((req) => {
-    const isRequired = req.importance === 'Required';
-    const weight = isRequired ? 1.5 : 1.0;
-    totalRequiredWeight += weight;
+  if (hasRequiredSkills) {
+    requiredSkills.forEach((req) => {
+      const isRequired = req.importance === 'Required';
+      const weight = isRequired ? 1.5 : 1.0;
+      totalRequiredWeight += weight;
 
-    const candidateSkill = candidate.skills.find(
-      (s) => s.name.toLowerCase() === req.name.toLowerCase()
-    );
+      const candidateSkill = candidate.skills.find((s) =>
+        matchSkillNames(s.name, req.name)
+      );
 
-    if (candidateSkill) {
-      matchedSkillsCount++;
-      const reqLvl = levelMultiplier[req.level] || 2;
-      const candLvl = levelMultiplier[candidateSkill.level] || 1;
+      if (candidateSkill) {
+        const reqLvl = LEVEL_MULTIPLIER[req.level] || 2;
+        const candLvl = LEVEL_MULTIPLIER[candidateSkill.level] || 1;
 
-      // level ratio (max 1.0)
-      let levelRatio = Math.min(1.0, candLvl / reqLvl);
+        const levelRatio = Math.min(1.0, candLvl / reqLvl);
 
-      // Verified weight bonus vs unverified
-      let verificationFactor = candidateSkill.verified ? 1.0 : 0.75;
-      if (candidateSkill.verified) {
-        verifiedMatchesCount++;
+        const verificationFactor = candidateSkill.verified ? 1.0 : 0.75;
+        if (candidateSkill.verified) {
+          verifiedMatchesCount++;
+        }
+
+        const itemScore = Math.round(levelRatio * verificationFactor * 100);
+        earnedSkillWeight += weight * (itemScore / 100);
+
+        if (itemScore < 75) {
+          recommendedSkills.push(req);
+        }
+
+        details.push({
+          skill: req.name,
+          score: itemScore,
+          candidateLevel: candidateSkill.level,
+          requiredLevel: req.level,
+          verified: candidateSkill.verified,
+          importance: req.importance,
+        });
+      } else {
+        if (isRequired) {
+          recommendedSkills.push(req);
+        }
+
+        details.push({
+          skill: req.name,
+          score: 0,
+          candidateLevel: 'Not Found',
+          requiredLevel: req.level,
+          verified: false,
+          importance: req.importance,
+        });
       }
+    });
+  }
 
-      const itemScore = Math.round(levelRatio * verificationFactor * 100);
-      earnedSkillWeight += weight * (itemScore / 100);
-
-      details.push({
-        skill: req.name,
-        score: itemScore,
-        candidateLevel: candidateSkill.level,
-        requiredLevel: req.level,
-        verified: candidateSkill.verified,
-        importance: req.importance,
-      });
-    } else {
-      details.push({
-        skill: req.name,
-        score: 0,
-        candidateLevel: 'Not Found',
-        requiredLevel: req.level,
-        verified: false,
-        importance: req.importance,
-      });
-    }
-  });
-
-  // 1. Skill Match: 60%
+  // 1. Skill Match: 60% (or base score when no required skills)
   const skillMatchRatio = totalRequiredWeight > 0 ? earnedSkillWeight / totalRequiredWeight : 0;
   const skillMatch = Math.round(skillMatchRatio * 60);
 
   // 2. Verified Bonus: 15%
-  const verifiedRatio = requiredSkills.length > 0 ? verifiedMatchesCount / requiredSkills.length : 0;
+  const verifiedRatio = hasRequiredSkills
+    ? verifiedMatchesCount / requiredSkills.length
+    : candidate.skills.filter((s) => s.verified).length / Math.max(1, candidate.skills.length);
   const verifiedBonus = Math.round(verifiedRatio * 15);
 
   // 3. Projects: 10%
@@ -119,16 +126,18 @@ export function calculateCandidateMatch(
   // 6. Location: 5%
   const locationScore = candidate.location.toLowerCase().includes(preferredLocation.toLowerCase()) ? 5 : 3;
 
-  const overall = Math.min(99, skillMatch + verifiedBonus + projectsScore + experienceScore + educationScore + locationScore);
+  const overall = Math.min(100, skillMatch + verifiedBonus + projectsScore + experienceScore + educationScore + locationScore);
 
   return {
     overall,
+    quality: getQualityTier(overall),
     skillMatch,
     verifiedBonus,
     projectsMatch: projectsScore,
     experienceMatch: experienceScore,
     educationMatch: educationScore,
     locationMatch: locationScore,
+    recommendedSkills,
     details,
   };
 }

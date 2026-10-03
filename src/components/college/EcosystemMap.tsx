@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { MapPin, Building2, Briefcase, GraduationCap, Compass } from 'lucide-react';
+import React, {  useState } from 'react';
+import { MapPin, Building2, Compass } from 'lucide-react';
 
 interface EcosystemPoint {
   id: string;

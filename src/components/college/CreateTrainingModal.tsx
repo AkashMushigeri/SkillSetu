@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useCollege } from '@/context/CollegeContext';
-import { Sparkles, GraduationCap, X, CheckCircle2 } from 'lucide-react';
+import {  GraduationCap, X, CheckCircle2 } from 'lucide-react';
 
 interface CreateTrainingProps {
   isOpen: boolean;

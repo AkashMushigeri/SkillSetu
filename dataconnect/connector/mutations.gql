@@ -1,5 +1,5 @@
 mutation UpsertStudentProfile($displayName: String!, $email: String!, $photoUrl: String, $college: String, $location: String, $phone: String)
-  @auth(level: USER, insecureReason: "Authenticated students can upsert their profile.") {
+  @auth(expr: "auth.token.userRole == 'STUDENT'") {
   user_upsert(data: {
     uid_expr: "auth.uid",
     displayName: $displayName,
@@ -13,7 +13,7 @@ mutation UpsertStudentProfile($displayName: String!, $email: String!, $photoUrl:
 }
 
 mutation UpsertUserProfile($displayName: String!, $email: String!, $role: UserRole!, $photoUrl: String, $college: String, $location: String, $phone: String)
-  @auth(level: USER, insecureReason: "Authenticated users can upsert their user profile.") {
+  @auth(expr: "auth.token.userRole == vars.role") {
   user_upsert(data: {
     uid_expr: "auth.uid",
     displayName: $displayName,
@@ -27,7 +27,7 @@ mutation UpsertUserProfile($displayName: String!, $email: String!, $role: UserRo
 }
 
 mutation UpsertCompany($name: String!, $type: String, $industry: String, $location: String, $coordinates: Any, $employees: String, $founded: Int, $website: String, $tagline: String, $about: String, $mission: String, $techStack: [String!], $departments: [String!], $hiringDomains: [String!], $benefits: [String!], $culture: [String!], $logo: String, $coverImage: String)
-  @auth(level: USER, insecureReason: "Authenticated industry users can create their company profile.") {
+  @auth(expr: "auth.token.userRole == 'INDUSTRY'") {
   company_insert(data: {
     ownerUid_expr: "auth.uid",
     name: $name,
@@ -51,9 +51,23 @@ mutation UpsertCompany($name: String!, $type: String, $industry: String, $locati
   })
 }
 
+mutation UpdateMyCompany($id: UUID!, $name: String!, $industry: String, $employees: String, $location: String, $website: String, $about: String, $mission: String)
+  @auth(expr: "auth.token.userRole == 'INDUSTRY'") {
+  company_update(first: { where: { id: { eq: $id }, ownerUid: { eq_expr: "auth.uid" } } }, data: {
+    name: $name,
+    industry: $industry,
+    employees: $employees,
+    location: $location,
+    website: $website,
+    about: $about,
+    mission: $mission
+  })
+}
+
 mutation UpsertCollege($name: String!, $location: String, $coordinates: Any, $studentsCount: Int, $verifiedStudentsCount: Int, $placementReadiness: Int, $contactPerson: String, $contactEmail: String)
-  @auth(level: USER, insecureReason: "Authenticated college users can upsert their college profile.") {
+  @auth(expr: "auth.token.userRole == 'COLLEGE'") {
   college_insert(data: {
+    ownerUid_expr: "auth.uid",
     name: $name,
     location: $location,
     coordinates: $coordinates,
@@ -66,8 +80,30 @@ mutation UpsertCollege($name: String!, $location: String, $coordinates: Any, $st
   })
 }
 
+mutation CreateMyCollege($name: String!, $location: String, $contactPerson: String, $contactEmail: String)
+  @auth(expr: "auth.token.userRole == 'COLLEGE'") {
+  college_insert(data: {
+    ownerUid_expr: "auth.uid",
+    name: $name,
+    location: $location,
+    contactPerson: $contactPerson,
+    contactEmail: $contactEmail,
+    partnershipStatus: POTENTIAL
+  })
+}
+
+mutation UpdateMyCollege($id: UUID!, $name: String!, $location: String, $contactPerson: String, $contactEmail: String)
+  @auth(expr: "auth.token.userRole == 'COLLEGE'") {
+  college_update(first: { where: { id: { eq: $id }, ownerUid: { eq_expr: "auth.uid" } } }, data: {
+    name: $name,
+    location: $location,
+    contactPerson: $contactPerson,
+    contactEmail: $contactEmail
+  })
+}
+
 mutation CreateSkill($name: String!, $category: String, $description: String)
-  @auth(level: USER, insecureReason: "Authenticated users can create skills.") {
+  @auth(expr: "auth.token.admin == true") {
   skill_insert(data: {
     name: $name,
     category: $category,
@@ -75,21 +111,21 @@ mutation CreateSkill($name: String!, $category: String, $description: String)
   })
 }
 
-mutation UpsertUserSkill($skillId: UUID!, $level: SkillLevel!, $verified: Boolean, $score: Float, $badgeUrl: String)
-  @auth(level: USER, insecureReason: "Authenticated students can upsert their skills.") {
+mutation UpsertUserSkill($skillId: UUID!, $level: SkillLevel!)
+  @auth(expr: "auth.token.userRole == 'STUDENT'") {
   userSkill_upsert(data: {
     userUid_expr: "auth.uid",
     skillId: $skillId,
     level: $level,
-    verified: $verified,
-    score: $score,
-    verificationDate_expr: "request.time",
-    badgeUrl: $badgeUrl
+    verified: false,
+    score: null,
+    verificationDate: null,
+    badgeUrl: null
   })
 }
 
 mutation CreateCandidateProject($title: String!, $description: String, $technologies: [String!], $githubUrl: String, $liveUrl: String)
-  @auth(level: USER, insecureReason: "Authenticated students can create projects.") {
+  @auth(expr: "auth.token.userRole == 'STUDENT'") {
   candidateProject_insert(data: {
     userUid_expr: "auth.uid",
     title: $title,
@@ -101,7 +137,7 @@ mutation CreateCandidateProject($title: String!, $description: String, $technolo
 }
 
 mutation CreateCandidateExperience($title: String!, $company: String!, $duration: String, $description: String, $location: String, $startDate: Timestamp, $endDate: Timestamp)
-  @auth(level: USER, insecureReason: "Authenticated students can add experience.") {
+  @auth(expr: "auth.token.userRole == 'STUDENT'") {
   candidateExperience_insert(data: {
     userUid_expr: "auth.uid",
     title: $title,
@@ -115,7 +151,7 @@ mutation CreateCandidateExperience($title: String!, $company: String!, $duration
 }
 
 mutation CreateCandidateEducation($degree: String!, $department: String!, $college: String!, $graduationYear: Int, $cgpa: Float, $currentYear: String)
-  @auth(level: USER, insecureReason: "Authenticated students can add education.") {
+  @auth(expr: "auth.token.userRole == 'STUDENT'") {
   candidateEducation_insert(data: {
     userUid_expr: "auth.uid",
     degree: $degree,
@@ -127,8 +163,48 @@ mutation CreateCandidateEducation($degree: String!, $department: String!, $colle
   })
 }
 
+mutation CreateProfileEducation($degree: String!, $department: String!, $college: String!, $graduationYear: Int, $cgpa: Float, $currentYear: String)
+  @auth(expr: "auth.token.userRole == 'STUDENT'") {
+  candidateEducation_insert(data: {
+    userUid_expr: "auth.uid",
+    profileOwnerUid_expr: "auth.uid",
+    degree: $degree,
+    department: $department,
+    college: $college,
+    graduationYear: $graduationYear,
+    cgpa: $cgpa,
+    currentYear: $currentYear
+  })
+}
+
+mutation UpdateMyProfileEducation($id: UUID!, $degree: String!, $department: String!, $college: String!, $graduationYear: Int, $cgpa: Float, $currentYear: String)
+  @auth(expr: "auth.token.userRole == 'STUDENT'") {
+  candidateEducation_update(first: { where: { id: { eq: $id }, userUid: { eq_expr: "auth.uid" } } }, data: {
+    profileOwnerUid_expr: "auth.uid",
+    degree: $degree,
+    department: $department,
+    college: $college,
+    graduationYear: $graduationYear,
+    cgpa: $cgpa,
+    currentYear: $currentYear
+  })
+}
+
+mutation DeleteMyDuplicateEducation($id: UUID!)
+  @auth(expr: "auth.token.userRole == 'STUDENT'") {
+  candidateEducation_delete(first: { where: {
+    id: { eq: $id },
+    userUid: { eq_expr: "auth.uid" },
+    profileOwnerUid: { isNull: true }
+  } })
+}
+
 mutation CreateJob($companyId: UUID!, $title: String!, $department: String, $location: String, $workMode: String, $jobType: String, $salaryRange: String, $experienceRequired: String, $education: String, $graduationYear: String, $minimumCgpa: Float, $description: String, $responsibilities: [String!], $qualifications: [String!], $deadline: Timestamp, $openings: Int, $status: String)
-  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'", insecureReason: "Verified industry users can create jobs.") {
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'") @transaction {
+  query @redact {
+    company(first: { where: { id: { eq: $companyId }, ownerUid: { eq_expr: "auth.uid" } } })
+      @check(expr: "this != null", message: "Company access denied") { id }
+  }
   job_insert(data: {
     companyId: $companyId,
     title: $title,
@@ -151,7 +227,12 @@ mutation CreateJob($companyId: UUID!, $title: String!, $department: String, $loc
 }
 
 mutation UpsertJobRequiredSkill($jobId: UUID!, $skillId: UUID!, $level: SkillLevel!, $importance: SkillImportance!, $minScore: Float)
-  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'", insecureReason: "Verified industry users can manage job required skills.") {
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'") @transaction {
+  query @redact {
+    job(id: $jobId) @check(expr: "this != null", message: "Job access denied") {
+      company { ownerUid @check(expr: "this == auth.uid", message: "Job access denied") }
+    }
+  }
   jobRequiredSkill_upsert(data: {
     jobId: $jobId,
     skillId: $skillId,
@@ -162,7 +243,11 @@ mutation UpsertJobRequiredSkill($jobId: UUID!, $skillId: UUID!, $level: SkillLev
 }
 
 mutation CreateInternship($companyId: UUID!, $title: String!, $department: String, $location: String, $workMode: String, $duration: String, $stipend: String, $eligibility: String, $startDate: Timestamp, $applicationDeadline: Timestamp, $description: String, $learningOutcomes: [String!], $mentor: String, $openings: Int, $isStartupFriendly: Boolean, $targetAudience: String, $eligibleForConversion: Boolean, $status: String)
-  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'", insecureReason: "Verified industry users can create internships.") {
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'") @transaction {
+  query @redact {
+    company(first: { where: { id: { eq: $companyId }, ownerUid: { eq_expr: "auth.uid" } } })
+      @check(expr: "this != null", message: "Company access denied") { id }
+  }
   internship_insert(data: {
     companyId: $companyId,
     title: $title,
@@ -186,7 +271,12 @@ mutation CreateInternship($companyId: UUID!, $title: String!, $department: Strin
 }
 
 mutation UpsertInternshipRequiredSkill($internshipId: UUID!, $skillId: UUID!, $level: SkillLevel!, $importance: SkillImportance!, $minScore: Float)
-  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'", insecureReason: "Verified industry users can manage internship required skills.") {
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'") @transaction {
+  query @redact {
+    internship(id: $internshipId) @check(expr: "this != null", message: "Internship access denied") {
+      company { ownerUid @check(expr: "this == auth.uid", message: "Internship access denied") }
+    }
+  }
   internshipRequiredSkill_upsert(data: {
     internshipId: $internshipId,
     skillId: $skillId,
@@ -196,10 +286,18 @@ mutation UpsertInternshipRequiredSkill($internshipId: UUID!, $skillId: UUID!, $l
   })
 }
 
-mutation CreateApplication($companyId: UUID!, $jobId: String, $internshipId: String, $title: String!, $jobType: String!, $matchScore: Int, $matchedSkills: [String!], $missingSkills: [String!])
-  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'STUDENT'", insecureReason: "Verified students can apply to jobs/internships.") {
+mutation CreateApplication($companyId: UUID!, $opportunityId: UUID!, $opportunityType: String!, $jobId: String, $internshipId: String, $opportunityKey: String, $title: String!, $jobType: String!, $matchScore: Int, $matchedSkills: [String!], $missingSkills: [String!])
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'STUDENT' && vars.opportunityType in ['job', 'internship']") @transaction {
+  query @redact {
+    company(id: $companyId)
+      @check(expr: "this != null && ((vars.opportunityType == 'job' && this.ownedJob.size() == 1) || (vars.opportunityType == 'internship' && this.ownedInternship.size() == 1))", message: "Opportunity does not belong to this company") {
+      ownedJob: jobs_on_company(where: { id: { eq: $opportunityId } }, limit: 1) { id }
+      ownedInternship: internships_on_company(where: { id: { eq: $opportunityId } }, limit: 1) { id }
+    }
+  }
   application_insert(data: {
     candidateUid_expr: "auth.uid",
+    opportunityKey: $opportunityKey,
     companyId: $companyId,
     jobId: $jobId,
     internshipId: $internshipId,
@@ -212,7 +310,12 @@ mutation CreateApplication($companyId: UUID!, $jobId: String, $internshipId: Str
 }
 
 mutation UpdateApplicationStage($id: UUID!, $stage: ApplicationStage!, $note: String)
-  @auth(expr: "auth.token.userRole == 'INDUSTRY'", insecureReason: "Industry users can update application stages.") {
+  @auth(expr: "auth.token.userRole == 'INDUSTRY'") @transaction {
+  query @redact {
+    application(id: $id) @check(expr: "this != null", message: "Application access denied") {
+      company { ownerUid @check(expr: "this == auth.uid", message: "Application access denied") }
+    }
+  }
   application_update(id: $id, data: {
     stage: $stage,
     recruiterNotes: $note,
@@ -220,12 +323,15 @@ mutation UpdateApplicationStage($id: UUID!, $stage: ApplicationStage!, $note: St
   })
 }
 
-mutation CreateInterview($candidateUid: String!, $companyId: UUID!, $title: String!, $round: String!, $date: Timestamp!, $time: String!, $mode: String, $meetingLink: String, $interviewers: [String!], $notes: String, $applicationId: UUID)
-  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'", insecureReason: "Verified industry users can schedule interviews.") {
+mutation CreateInterview($candidateUid: String!, $companyId: UUID!, $title: String!, $round: String!, $date: Timestamp!, $time: String!, $mode: String, $meetingLink: String, $interviewers: [String!], $notes: String)
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'") @transaction {
+  query @redact {
+    company(first: { where: { id: { eq: $companyId }, ownerUid: { eq_expr: "auth.uid" } } })
+      @check(expr: "this != null", message: "Company access denied") { id }
+  }
   interview_insert(data: {
     candidateUid: $candidateUid,
     companyId: $companyId,
-    applicationId: $applicationId,
     title: $title,
     round: $round,
     date: $date,
@@ -238,7 +344,11 @@ mutation CreateInterview($candidateUid: String!, $companyId: UUID!, $title: Stri
 }
 
 mutation CreateChallenge($companyId: UUID!, $title: String!, $description: String, $problemStatement: String, $requiredSkills: [String!], $difficulty: String, $deadline: Timestamp!, $teamSize: String, $prize: String, $submissionRequirements: String, $collegeParticipation: String, $status: ChallengeStatus)
-  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'", insecureReason: "Verified industry users can create challenges.") {
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'") @transaction {
+  query @redact {
+    company(first: { where: { id: { eq: $companyId }, ownerUid: { eq_expr: "auth.uid" } } })
+      @check(expr: "this != null", message: "Company access denied") { id }
+  }
   challenge_insert(data: {
     companyId: $companyId,
     title: $title,
@@ -268,10 +378,15 @@ mutation CreateChallengeSubmission($challengeId: UUID!, $teamName: String!, $git
   })
 }
 
-mutation CreateOffer($candidateUid: String!, $jobOrInternshipId: String, $roleTitle: String!, $type: String!, $department: String, $location: String, $workMode: String, $compensation: String, $baseFixed: String, $variableBonus: String, $retentionJoiningBonus: String, $benefitsSummary: String, $joiningDate: Timestamp, $validUntil: Timestamp, $status: OfferStatus, $authorizedSignatory: String, $signatoryTitle: String)
-  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'", insecureReason: "Verified industry users can create offers.") {
+mutation CreateOffer($candidateUid: String!, $companyId: UUID!, $jobOrInternshipId: String, $roleTitle: String!, $type: String!, $department: String, $location: String, $workMode: String, $compensation: String, $baseFixed: String, $variableBonus: String, $retentionJoiningBonus: String, $benefitsSummary: String, $joiningDate: Timestamp, $validUntil: Timestamp, $status: OfferStatus, $authorizedSignatory: String, $signatoryTitle: String)
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'") @transaction {
+  query @redact {
+    company(first: { where: { id: { eq: $companyId }, ownerUid: { eq_expr: "auth.uid" } } })
+      @check(expr: "this != null", message: "Company access denied") { id }
+  }
   offer_insert(data: {
     candidateUid: $candidateUid,
+    companyId: $companyId,
     jobOrInternshipId: $jobOrInternshipId,
     roleTitle: $roleTitle,
     type: $type,
@@ -292,7 +407,11 @@ mutation CreateOffer($candidateUid: String!, $jobOrInternshipId: String, $roleTi
 }
 
 mutation CreateCurriculumModule($collegeCompanyCollegeId: UUID!, $collegeCompanyCompanyId: UUID!, $semester: String!, $currentSubject: String!, $industryRecommendation: String, $recommendedTechnologies: [String!], $rationale: String, $status: CurriculumStatus)
-  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'", insecureReason: "Verified industry users can manage curriculum modules.") {
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'") @transaction {
+  query @redact {
+    company(first: { where: { id: { eq: $collegeCompanyCompanyId }, ownerUid: { eq_expr: "auth.uid" } } })
+      @check(expr: "this != null", message: "Company access denied") { id }
+  }
   curriculumModule_insert(data: {
     collegeCompanyCollegeId: $collegeCompanyCollegeId,
     collegeCompanyCompanyId: $collegeCompanyCompanyId,
@@ -306,7 +425,11 @@ mutation CreateCurriculumModule($collegeCompanyCollegeId: UUID!, $collegeCompany
 }
 
 mutation UpsertHiringPreferences($companyId: UUID!, $preferredDepartments: [String!], $preferredDegrees: [String!], $preferredGraduationYears: [String!], $preferredLocations: [String!], $workModes: [String!], $minimumCgpa: Float, $prioritizeVerifiedSkills: Boolean, $prioritizeStartupExperience: Boolean, $searchRadiusKm: Int)
-  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'", insecureReason: "Verified industry users can manage hiring preferences.") {
+  @auth(expr: "auth.token.email_verified && auth.token.userRole == 'INDUSTRY'") @transaction {
+  query @redact {
+    company(first: { where: { id: { eq: $companyId }, ownerUid: { eq_expr: "auth.uid" } } })
+      @check(expr: "this != null", message: "Company access denied") { id }
+  }
   hiringPreferences_upsert(data: {
     companyId: $companyId,
     preferredDepartments: $preferredDepartments,

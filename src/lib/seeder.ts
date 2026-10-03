@@ -9,12 +9,17 @@ import {
   createSkill,
   upsertCompany,
   upsertCollege,
-  createJob,
-  createInternship,
+  listColleges,
+  listJobs,
+  listInternships,
+  listChallenges,
   createChallenge,
-  upsertUserProfile,
-  createCandidateEducation,
+  getMyCompany,
 } from '@skillsetu/dataconnect';
+import {
+  syncNewJobToDataConnect,
+  syncNewInternshipToDataConnect,
+} from '@/lib/dataConnectService';
 import { popularTaxonomySkills } from '@/data/industry/industrySkills';
 import { defaultCompanyProfile } from '@/data/industry/industryCompanies';
 import { mockColleges } from '@/data/industry/industryColleges';
@@ -53,6 +58,16 @@ export interface SeedOptions {
   seedJobs?: boolean;
   seedInternships?: boolean;
   seedChallenges?: boolean;
+}
+
+function parseDateToISO(dateStr: string): string {
+  try {
+    const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return new Date().toISOString();
+    return date.toISOString();
+  } catch {
+    return new Date().toISOString();
+  }
 }
 
 export const DEMO_USERS: Partial<UserProfileData>[] = [
@@ -140,6 +155,27 @@ export async function runDatabaseSeeder(options: SeedOptions = {}): Promise<Seed
 
   addLog('INIT', 'Starting SkillSetu database seeding pipeline...');
 
+  // Data Connect is only ever initialised in the browser, so a server-side run
+  // (for example `npm run db:seed` under tsx) always sees it as null. Without
+  // this guard the pipeline below "seeds" nothing yet still reports success and
+  // inflated counts, so an operator gets a clean exit code for an empty database.
+  const dataConnectSectionsRequested =
+    options.seedSkills !== false ||
+    options.seedCompanies !== false ||
+    options.seedColleges !== false ||
+    options.seedJobs !== false ||
+    options.seedInternships !== false ||
+    options.seedChallenges !== false;
+
+  if (dataConnectSectionsRequested && !dataConnect) {
+    throw new Error(
+      'Data Connect is unavailable in this server runtime, so no Data Connect rows could be written. ' +
+        'Aborting instead of reporting a successful seed. Run the seeder from a runtime holding a live ' +
+        'Data Connect connection, or pass seedSkills/seedCompanies/seedColleges/seedJobs/seedInternships/' +
+        'seedChallenges: false to seed only the Firestore-backed user profiles.'
+    );
+  }
+
   // 1. Seed Demo User Profiles (Firestore & Data Connect User Table)
   if (options.seedUsers !== false) {
     addLog('USERS', `Seeding ${DEMO_USERS.length} canonical demo user profiles...`);
@@ -222,7 +258,15 @@ export async function runDatabaseSeeder(options: SeedOptions = {}): Promise<Seed
   if (options.seedColleges !== false) {
     addLog('COLLEGES', `Seeding ${mockColleges.length} partner colleges...`);
     if (dataConnect) {
+      let existingColleges: Set<string>;
+      try {
+        existingColleges = new Set((await listColleges(dataConnect)).data.colleges.map((college) => college.name.trim().toLowerCase()));
+      } catch (error) {
+        addLog('COLLEGES', `Skipped college seed because existing rows could not be checked: ${error}`, 'warning');
+        existingColleges = new Set(mockColleges.map((college) => college.name.trim().toLowerCase()));
+      }
       for (const col of mockColleges) {
+        if (existingColleges.has(col.name.trim().toLowerCase())) continue;
         try {
           await upsertCollege(dataConnect, {
             name: col.name,
@@ -234,6 +278,7 @@ export async function runDatabaseSeeder(options: SeedOptions = {}): Promise<Seed
             contactEmail: col.contactEmail || `placement@${col.name.toLowerCase().replace(/[^a-z]/g, '')}.edu`,
           });
           counts.colleges++;
+          existingColleges.add(col.name.trim().toLowerCase());
         } catch (err: any) {
           addLog('COLLEGES', `College insert notice for ${col.name}: ${err?.message || err}`, 'info');
         }
@@ -248,22 +293,105 @@ export async function runDatabaseSeeder(options: SeedOptions = {}): Promise<Seed
   // 5. Seed Jobs (Data Connect Job Table)
   if (options.seedJobs !== false) {
     addLog('JOBS', `Seeding ${mockJobs.length} active industry jobs...`);
-    counts.jobs = mockJobs.length;
-    addLog('JOBS', `Prepared ${counts.jobs} job records with skill mappings & compensation tiers.`, 'success');
+    if (dataConnect) {
+      let existingJobs: Set<string>;
+      try {
+        existingJobs = new Set((await listJobs(dataConnect)).data.jobs.map((job) => `${job.title}|${job.location}`.toLowerCase()));
+      } catch (error) {
+        addLog('JOBS', `Skipped job seed because existing rows could not be checked: ${error}`, 'warning');
+        existingJobs = new Set(mockJobs.map((job) => `${job.title}|${job.location}`.toLowerCase()));
+      }
+      for (const job of mockJobs) {
+        const key = `${job.title}|${job.location}`.toLowerCase();
+        if (existingJobs.has(key)) continue;
+        try {
+          if (!await syncNewJobToDataConnect(job)) throw new Error('Data Connect insert failed');
+          counts.jobs++;
+          existingJobs.add(key);
+        } catch (err: any) {
+          addLog('JOBS', `Job insert notice for '${job.title}': ${err?.message || err}`, 'info');
+        }
+      }
+      addLog('JOBS', `Seeded ${counts.jobs} jobs in Data Connect`, 'success');
+    } else {
+      counts.jobs = mockJobs.length;
+      addLog('JOBS', 'Data Connect not active; jobs available in mock provider', 'info');
+    }
   }
 
   // 6. Seed Internships (Data Connect Internship Table)
   if (options.seedInternships !== false) {
     addLog('INTERNSHIPS', `Seeding ${mockInternships.length} industry internships...`);
-    counts.internships = mockInternships.length;
-    addLog('INTERNSHIPS', `Prepared ${counts.internships} internship records with stipend & PPO tracks.`, 'success');
+    if (dataConnect) {
+      let existingInternships: Set<string>;
+      try {
+        existingInternships = new Set((await listInternships(dataConnect)).data.internships.map((internship) => `${internship.title}|${internship.location}`.toLowerCase()));
+      } catch (error) {
+        addLog('INTERNSHIPS', `Skipped internship seed because existing rows could not be checked: ${error}`, 'warning');
+        existingInternships = new Set(mockInternships.map((internship) => `${internship.title}|${internship.location}`.toLowerCase()));
+      }
+      for (const intern of mockInternships) {
+        const key = `${intern.title}|${intern.location}`.toLowerCase();
+        if (existingInternships.has(key)) continue;
+        try {
+          if (!await syncNewInternshipToDataConnect(intern)) throw new Error('Data Connect insert failed');
+          counts.internships++;
+          existingInternships.add(key);
+        } catch (err: any) {
+          addLog('INTERNSHIPS', `Internship insert notice for '${intern.title}': ${err?.message || err}`, 'info');
+        }
+      }
+      addLog('INTERNSHIPS', `Seeded ${counts.internships} internships in Data Connect`, 'success');
+    } else {
+      counts.internships = mockInternships.length;
+      addLog('INTERNSHIPS', 'Data Connect not active; internships available in mock provider', 'info');
+    }
   }
 
   // 7. Seed Challenges (Data Connect Challenge Table)
   if (options.seedChallenges !== false) {
     addLog('CHALLENGES', `Seeding ${mockChallenges.length} industry challenges...`);
-    counts.challenges = mockChallenges.length;
-    addLog('CHALLENGES', `Prepared ${counts.challenges} challenges with problem statements & prize pools.`, 'success');
+    if (dataConnect) {
+      const companyId = await getMyCompany(dataConnect).then(({ data }) => data.companies[0]?.id).catch(() => null);
+      if (!companyId) {
+        addLog('CHALLENGES', 'Skipped cloud challenge seed: no owned company profile found.', 'warning');
+      } else {
+        let existingChallenges: Set<string>;
+        try {
+          existingChallenges = new Set((await listChallenges(dataConnect)).data.challenges.map((challenge) => challenge.title.trim().toLowerCase()));
+        } catch (error) {
+          addLog('CHALLENGES', `Skipped challenge seed because existing rows could not be checked: ${error}`, 'warning');
+          existingChallenges = new Set(mockChallenges.map((challenge) => challenge.title.trim().toLowerCase()));
+        }
+        for (const chal of mockChallenges) {
+          if (existingChallenges.has(chal.title.trim().toLowerCase())) continue;
+          try {
+            await createChallenge(dataConnect, {
+              companyId,
+              title: chal.title,
+              description: chal.description,
+              problemStatement: chal.problemStatement,
+              requiredSkills: chal.requiredSkills,
+              difficulty: chal.difficulty,
+              deadline: parseDateToISO(chal.deadline),
+              teamSize: chal.teamSize,
+              prize: chal.prize,
+              submissionRequirements: chal.submissionRequirements,
+              collegeParticipation: chal.collegeParticipation,
+              status: chal.status.toUpperCase() as import('@skillsetu/dataconnect').ChallengeStatus,
+            });
+            counts.challenges++;
+            existingChallenges.add(chal.title.trim().toLowerCase());
+          } catch (err: any) {
+            addLog('CHALLENGES', `Challenge insert notice for '${chal.title}': ${err?.message || err}`, 'info');
+          }
+        }
+        addLog('CHALLENGES', `Seeded ${counts.challenges} challenges in Data Connect`, 'success');
+      }
+    } else {
+      counts.challenges = mockChallenges.length;
+      addLog('CHALLENGES', 'Data Connect not active; challenges available in mock provider', 'info');
+    }
   }
 
   const durationMs = Date.now() - startTime;

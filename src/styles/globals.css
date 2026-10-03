@@ -2,6 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .px-3 {
+    padding-left: 0.5rem;
+    padding-right: 0.75rem;
+  }
+  .max-w-7xl {
+    max-width: 96rem;
+  }
+  .mx-auto {
+    margin-left: 10px;
+    margin-right: 10px;
+  }
+}
+
+.max-w-7xl {
+  max-width: 96rem;
+}
+
+.mx-auto {
+  margin-left: 10px;
+}
+
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
@@ -119,6 +141,35 @@ textarea {
     transform: scale(1.6);
     opacity: 0;
   }
+}
+
+/* Hero section animated gradient background */
+@keyframes hero-gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.hero-animated-gradient {
+  background: linear-gradient(
+    135deg,
+    #031920 0%,
+    #082f38 20%,
+    #0a4a3a 38%,
+    #0d5c68 54%,
+    #064e3b 70%,
+    #082f38 86%,
+    #031920 100%
+  );
+  background-size: 300% 300%;
+  animation: hero-gradient-shift 10s ease infinite;
+}
+
+.hero-glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
 }
 
 /* Print Styles for Resume Preview & PDF Download */

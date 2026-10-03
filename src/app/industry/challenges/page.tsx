@@ -8,11 +8,7 @@ import {
   Plus,
   Users,
   Calendar,
-  Sparkles,
-  Award,
   ArrowRight,
-  School,
-  CheckCircle2,
 } from 'lucide-react';
 
 export default function IndustryChallengesPage() {

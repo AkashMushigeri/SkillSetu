@@ -3,6 +3,7 @@ import '@/styles/globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { OnboardingGuard } from '@/components/auth/OnboardingGuard';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { QueryProvider } from '@/providers/QueryProvider';
 
 export const metadata: Metadata = {
   title: 'SkillSetu — AYUSH Career Bridge | Academia–Industry Collaboration',
@@ -31,11 +32,13 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-slate-50 dark:bg-[#0b131e] text-slate-900 dark:text-slate-100 min-h-screen antialiased transition-colors duration-200">
-        <ThemeProvider>
-          <AuthProvider>
-            <OnboardingGuard>{children}</OnboardingGuard>
-          </AuthProvider>
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <OnboardingGuard>{children}</OnboardingGuard>
+            </AuthProvider>
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   );

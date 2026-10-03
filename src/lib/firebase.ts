@@ -29,15 +29,24 @@ import {
   connectFirestoreEmulator,
 } from 'firebase/firestore';
 import { getDataConnect, DataConnect, connectDataConnectEmulator } from 'firebase/data-connect';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { initializeAppCheck, ReCaptchaEnterpriseProvider, getToken, AppCheck } from 'firebase/app-check';
 import { EducationHistory } from '@/types/student';
 import {
   connectorConfig,
   upsertStudentProfile,
   upsertCompany,
-  upsertCollege,
-  createSkill,
-  createCandidateEducation,
+  getMyCompany,
+  updateMyCompany,
+  getMyCollege,
+  createMyCollege,
+  updateMyCollege,
+  getMyEducation,
+  createProfileEducation,
+  updateMyProfileEducation,
+  deleteMyDuplicateEducation,
 } from '@skillsetu/dataconnect';
+import { exactDuplicateEducationIds, selectProfileEducation } from '@/lib/profileEducation';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyBYafwhkKarQs36-GehGM50b1QqZKTvzPk',
@@ -52,6 +61,7 @@ let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
 let dataConnect: DataConnect | null = null;
+let appCheck: AppCheck | null = null;
 
 const isLocalhost =
   typeof window !== 'undefined' &&
@@ -88,36 +98,28 @@ function initEmulators(authInstance: Auth, dbInstance: Firestore, dcInstance: Da
 }
 
 if (typeof window !== 'undefined') {
-  if (!getApps().length) {
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
+  if (isLocalhost && process.env.NEXT_PUBLIC_APPCHECK_DEBUG === 'true') {
+    (window as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+  }
+
+  app = getApps()[0] || initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  if (process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
     try {
-      db = initializeFirestore(app, {
-        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+      appCheck = initializeAppCheck(app, {
+        provider: new ReCaptchaEnterpriseProvider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY),
+        isTokenAutoRefreshEnabled: true,
       });
     } catch {
-      db = getFirestore(app);
+      console.warn('Firebase App Check could not initialize.');
     }
-    try {
-      dataConnect = getDataConnect(app, connectorConfig);
-    } catch (e) {
-      console.warn('DataConnect init notice:', e);
-    }
-  } else {
-    app = getApps()[0];
-    auth = getAuth(app);
-    try {
-      db = initializeFirestore(app, {
-        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
-      });
-    } catch {
-      db = getFirestore(app);
-    }
-    try {
-      dataConnect = getDataConnect(app, connectorConfig);
-    } catch (e) {
-      console.warn('DataConnect init notice:', e);
-    }
+  }
+
+  db = null as any;
+  try {
+    dataConnect = getDataConnect(app, connectorConfig);
+  } catch (e) {
+    console.warn('DataConnect init notice:', e);
   }
 
   if (auth && db) {
@@ -135,6 +137,16 @@ if (typeof window !== 'undefined') {
 }
 
 export { app, auth, db, dataConnect };
+
+export async function getAiAppCheckHeaders(): Promise<Record<string, string>> {
+  if (!appCheck) {
+    if (process.env.NODE_ENV === 'production') throw new Error('App Check is not configured for AI requests.');
+    return {};
+  }
+  const { token } = await getToken(appCheck);
+  if (!token) throw new Error('Could not get an App Check token.');
+  return { 'X-Firebase-AppCheck': token };
+}
 
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
@@ -170,6 +182,40 @@ export const clearUserRole = () => {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(ROLE_STORAGE_KEY);
   localStorage.removeItem(ROLE_TIME_KEY);
+};
+
+export interface RoleRegistrationRequest {
+  role: UserRole;
+  displayName: string;
+  photoUrl?: string;
+  college?: string;
+  location?: string;
+  phone?: string;
+}
+
+export interface RoleRegistrationResult {
+  success: boolean;
+  pendingApproval?: boolean;
+  message?: string;
+  uid?: string;
+}
+
+/**
+ * Registers the signed-in user's requested role through the callable
+ * `registerUserWithRole`. The server owns this decision: STUDENT is granted
+ * immediately, while INDUSTRY/COLLEGE requests are written to
+ * `pendingRegistrations` and come back with `pendingApproval: true`.
+ */
+export const requestRoleRegistration = async (
+  data: RoleRegistrationRequest
+): Promise<RoleRegistrationResult> => {
+  if (!app) throw new Error('Firebase not initialized');
+  const register = httpsCallable<RoleRegistrationRequest, RoleRegistrationResult>(
+    getFunctions(app),
+    'registerUserWithRole'
+  );
+  const result = await register(data);
+  return result.data;
 };
 
 export const signInWithGoogle = async (): Promise<ExtendedUser> => {
@@ -294,14 +340,11 @@ export const getUserRole = (user: FirebaseUser | null): UserRole | null => {
 export const onAuthChange = (callback: (user: ExtendedUser | null) => void) => {
   if (!auth) return;
   return onAuthStateChanged(auth, async (user) => {
+    // Role is never synthesized from localStorage here: customClaims must only
+    // ever come from the signed ID token. Callers that need a role read it from
+    // the token via syncProfile(), which defaults to STUDENT.
     if (user) {
-      const storedRole = getUserStoredRole();
-      callback({
-        ...user,
-        customClaims: {
-          role: storedRole || undefined,
-        },
-      } as ExtendedUser);
+      callback(user as ExtendedUser);
     } else {
       callback(null);
     }
@@ -407,7 +450,7 @@ export const saveUserProfile = async (
 
   // 2. Persist to Firebase Data Connect (PostgreSQL Cloud SQL Database)
   const currentAuth = auth?.currentUser || (app ? getAuth(app)?.currentUser : null);
-  if (dataConnect && currentAuth) {
+  if (dataConnect && currentAuth?.uid === uid) {
     try {
       // Generic user upsert not available in current SDK; role-specific upserts below handle persistence
       if (updatedProfile.role === 'STUDENT') {
@@ -426,34 +469,42 @@ export const saveUserProfile = async (
 
         if (updatedProfile.degree && updatedProfile.college) {
           try {
-            await createCandidateEducation(dataConnect, {
+            const graduationYear = Number(String(updatedProfile.year || '').match(/\b(?:19|20)\d{2}\b/)?.[0]);
+            const cgpa = Number.parseFloat(String(updatedProfile.gpa || '').replace(/[^\d.]/g, ''));
+            const education = {
               degree: updatedProfile.degree,
               department: updatedProfile.department || updatedProfile.degree,
               college: updatedProfile.college,
-              graduationYear: parseInt(String(updatedProfile.year || '2026').replace(/\D/g, ''), 10) || 2026,
-              cgpa: parseFloat(String(updatedProfile.gpa || '8.0').replace(/[^\d.]/g, '')) || 8.0,
-              currentYear: updatedProfile.year || '3rd Year',
-            });
-          } catch (edErr) {
-            // Awaiting Data Connect deployment
-          }
-        }
-
-        if (updatedProfile.skills && updatedProfile.skills.length > 0) {
-          for (const skillName of updatedProfile.skills.slice(0, 5)) {
-            try {
-              await createSkill(dataConnect, {
-                name: skillName,
-                category: 'Technical',
-                description: `Verified candidate competency in ${skillName}`,
+              graduationYear: graduationYear >= 1900 ? graduationYear : undefined,
+              cgpa: Number.isFinite(cgpa) ? cgpa : undefined,
+              currentYear: updatedProfile.year || undefined,
+            };
+            const { data } = await getMyEducation(dataConnect);
+            const rows = data.user?.candidateEducations_on_user || [];
+            const existing = selectProfileEducation(rows, uid, education);
+            const savedEducation = {
+              ...education,
+              graduationYear: education.graduationYear
+                ?? (existing?.graduationYear && existing.graduationYear >= 1900 ? existing.graduationYear : undefined),
+            };
+            if (existing) {
+              const result = await updateMyProfileEducation(dataConnect, { id: existing.id, ...savedEducation });
+              if (!result.data.candidateEducation_update) throw new Error('Education row was not updated');
+              const deletions = await Promise.allSettled(exactDuplicateEducationIds(rows, existing).map((id) =>
+                deleteMyDuplicateEducation(dataConnect!, { id })
+              ));
+              deletions.forEach((deletion) => {
+                if (deletion.status === 'rejected') console.warn('Duplicate education cleanup notice:', deletion.reason);
               });
-            } catch (skErr) {
-              // Skill may already exist
+            } else {
+              await createProfileEducation(dataConnect, savedEducation);
             }
+          } catch (edErr) {
+            console.warn('Candidate education sync notice:', edErr);
           }
         }
       } else if (updatedProfile.role === 'INDUSTRY') {
-        await upsertCompany(dataConnect, {
+        const company = {
           name: updatedProfile.companyName || updatedProfile.displayName || 'Company',
           industry: updatedProfile.companyIndustry || undefined,
           employees: updatedProfile.companySize || undefined,
@@ -461,14 +512,22 @@ export const saveUserProfile = async (
           website: updatedProfile.companyWebsite || undefined,
           about: updatedProfile.companyBio || updatedProfile.bio || undefined,
           mission: updatedProfile.companyBio || updatedProfile.bio || undefined,
-        });
+        };
+        const { data } = await getMyCompany(dataConnect);
+        const companyId = data.companies[0]?.id;
+        if (companyId) await updateMyCompany(dataConnect, { id: companyId, ...company });
+        else await upsertCompany(dataConnect, company);
       } else if (updatedProfile.role === 'COLLEGE') {
-        await upsertCollege(dataConnect, {
+        const college = {
           name: updatedProfile.institutionName || updatedProfile.displayName || 'College',
           location: updatedProfile.institutionLocation || updatedProfile.location || undefined,
           contactPerson: updatedProfile.displayName || undefined,
           contactEmail: updatedProfile.email || currentAuth.email || undefined,
-        });
+        };
+        const { data } = await getMyCollege(dataConnect);
+        const collegeId = data.colleges[0]?.id;
+        if (collegeId) await updateMyCollege(dataConnect, { id: collegeId, ...college });
+        else await createMyCollege(dataConnect, college);
       }
       console.log('Firebase Data Connect profile sync completed for role:', updatedProfile.role);
     } catch (dcErr: any) {

@@ -58,6 +58,30 @@ query GetCompany($id: UUID!) @auth(level: PUBLIC, insecureReason: "Anyone can vi
   }
 }
 
+query GetMyCompany @auth(level: USER, insecureReason: "Company owners can find their own profile.") {
+  companies(where: { ownerUid: { eq_expr: "auth.uid" } }, limit: 1) { id }
+}
+
+query GetMyCollege @auth(level: USER, insecureReason: "College owners can find their own profile.") {
+  colleges(where: { ownerUid: { eq_expr: "auth.uid" } }, limit: 1) { id }
+}
+
+query GetMyEducation @auth(level: USER, insecureReason: "Students can read their own education rows.") {
+  user(key: { uid_expr: "auth.uid" }) {
+    candidateEducations_on_user {
+      id
+      profileOwnerUid
+      degree
+      department
+      college
+      graduationYear
+      cgpa
+      currentYear
+      createdAt
+    }
+  }
+}
+
 query ListColleges @auth(level: PUBLIC, insecureReason: "Anyone can browse colleges.") {
   colleges {
     id
@@ -112,6 +136,7 @@ query GetMyProfile @auth(level: USER_EMAIL_VERIFIED, insecureReason: "Verified u
     }
     candidateEducations_on_user {
       id
+      profileOwnerUid
       degree
       department
       college
@@ -151,21 +176,24 @@ query SearchCandidates($skillNames: [String!])
       liveUrl
     }
     candidateEducations_on_user {
+      profileOwnerUid
       degree
       department
       college
       graduationYear
       cgpa
       currentYear
+      createdAt
     }
   }
 }
 
 query GetCandidateProfile($uid: String!)
-  @auth(level: USER, insecureReason: "Authenticated users can view candidate profiles.") {
-  user(key: { uid: $uid }) {
+  @auth(expr: "auth.token.userRole in ['INDUSTRY', 'COLLEGE']") {
+  user(key: { uid: $uid }) @check(expr: "this != null && this.role == 'STUDENT'", message: "Candidate profile access denied") {
     uid
     displayName
+    role
     email
     photoUrl
     college
@@ -204,6 +232,7 @@ query GetCandidateProfile($uid: String!)
     }
     candidateEducations_on_user {
       id
+      profileOwnerUid
       degree
       department
       college
@@ -223,6 +252,8 @@ query ListJobs @auth(level: PUBLIC, insecureReason: "Anyone can browse jobs.") {
       id
       name
       logo
+      location
+      coordinates
     }
     department
     location
@@ -255,6 +286,8 @@ query ListInternships @auth(level: PUBLIC, insecureReason: "Anyone can browse in
       id
       name
       logo
+      location
+      coordinates
     }
     department
     location
@@ -304,6 +337,8 @@ query ListMyApplications
 
 query ListCompanyApplications($companyId: UUID!)
   @auth(expr: "auth.token.userRole == 'INDUSTRY'", insecureReason: "Industry users can view their company's applications.") {
+  company(first: { where: { id: { eq: $companyId }, ownerUid: { eq_expr: "auth.uid" } } })
+    @redact @check(expr: "this != null", message: "Company access denied") { id }
   applications(where: { companyId: { eq: $companyId } }) {
     id
     candidate {
@@ -353,6 +388,8 @@ query ListMyInterviews
 
 query ListCompanyInterviews($companyId: UUID!)
   @auth(expr: "auth.token.userRole == 'INDUSTRY'", insecureReason: "Industry users can view their company's interviews.") {
+  company(first: { where: { id: { eq: $companyId }, ownerUid: { eq_expr: "auth.uid" } } })
+    @redact @check(expr: "this != null", message: "Company access denied") { id }
   interviews(where: { companyId: { eq: $companyId } }) {
     id
     candidate {
@@ -426,7 +463,10 @@ query GetChallenge($id: UUID!)
 }
 
 query ListChallengeSubmissions($challengeId: UUID!)
-  @auth(level: PUBLIC, insecureReason: "Anyone can view submissions for a challenge.") {
+  @auth(expr: "auth.token.userRole == 'INDUSTRY'", insecureReason: "Recruiters can view submissions to their own challenges.") {
+  challenge(id: $challengeId) @redact @check(expr: "this != null", message: "Challenge access denied") {
+    company { ownerUid @check(expr: "this == auth.uid", message: "Challenge access denied") }
+  }
   challengeSubmissions(where: { challengeId: { eq: $challengeId } }) {
     id
     teamName
@@ -475,7 +515,7 @@ query ListMyOffers
 
 query ListMoUs
   @auth(expr: "auth.token.userRole == 'INDUSTRY'", insecureReason: "Industry users can list MoUs.") {
-  collegeCompanies(where: { mouStatus: { eq: ACTIVE } }) {
+  collegeCompanies(where: { mouStatus: { eq: ACTIVE }, company: { ownerUid: { eq_expr: "auth.uid" } } }) {
     college {
       id
       name
@@ -560,6 +600,8 @@ query ListMySkills
 
 query ListCompanyJobs($companyId: UUID!)
   @auth(expr: "auth.token.userRole == 'INDUSTRY'", insecureReason: "Industry users can view their company's jobs.") {
+  company(first: { where: { id: { eq: $companyId }, ownerUid: { eq_expr: "auth.uid" } } })
+    @redact @check(expr: "this != null", message: "Company access denied") { id }
   jobs(where: { companyId: { eq: $companyId } }) {
     id
     title
@@ -584,6 +626,8 @@ query ListCompanyJobs($companyId: UUID!)
 
 query ListCompanyInternships($companyId: UUID!)
   @auth(expr: "auth.token.userRole == 'INDUSTRY'", insecureReason: "Industry users can view their company's internships.") {
+  company(first: { where: { id: { eq: $companyId }, ownerUid: { eq_expr: "auth.uid" } } })
+    @redact @check(expr: "this != null", message: "Company access denied") { id }
   internships(where: { companyId: { eq: $companyId } }) {
     id
     title
@@ -609,6 +653,8 @@ query ListCompanyInternships($companyId: UUID!)
 
 query ListCompanyChallenges($companyId: UUID!)
   @auth(expr: "auth.token.userRole == 'INDUSTRY'", insecureReason: "Industry users can view their company's challenges.") {
+  company(first: { where: { id: { eq: $companyId }, ownerUid: { eq_expr: "auth.uid" } } })
+    @redact @check(expr: "this != null", message: "Company access denied") { id }
   challenges(where: { companyId: { eq: $companyId } }) {
     id
     title

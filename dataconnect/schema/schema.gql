@@ -95,6 +95,7 @@ type Company @table {
 }
 
 type College @table @index(fields: ["partnershipStatus"]) {
+  ownerUid: String @unique
   name: String!
   location: String
   coordinates: Any
@@ -157,6 +158,7 @@ type CandidateExperience @table {
 
 type CandidateEducation @table {
   user: User!
+  profileOwnerUid: String @unique
   degree: String!
   department: String!
   college: String!
@@ -234,8 +236,9 @@ type InternshipRequiredSkill @table(key: ["internship", "skill"]) {
   minScore: Float
 }
 
-type Application @table {
+type Application @table @unique(fields: ["candidate", "opportunityKey"]) {
   candidate: User!
+  opportunityKey: String
   jobId: String
   internshipId: String
   company: Company!
@@ -309,6 +312,7 @@ type ChallengeSubmission @table {
 
 type Offer @table {
   candidate: User!
+  company: Company
   jobOrInternshipId: String
   roleTitle: String!
   type: String!

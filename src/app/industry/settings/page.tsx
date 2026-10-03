@@ -3,19 +3,14 @@
 import React, { useState } from 'react';
 import { useIndustry } from '@/context/IndustryContext';
 import {
-  Settings,
-  Shield,
+  
   Bell,
   Sliders,
-  Building,
-  User,
-  CheckCircle2,
   RotateCcw,
-  Sparkles,
 } from 'lucide-react';
 
 export default function IndustrySettingsPage() {
-  const { preferences, updatePreferences, company, resetToDefaults, showToast } = useIndustry();
+  const { preferences, updatePreferences, resetToDefaults } = useIndustry();
 
   const [minCgpa, setMinCgpa] = useState<number>(preferences.minimumCgpa);
   const [prioritizeVerified, setPrioritizeVerified] = useState<boolean>(preferences.prioritizeVerifiedSkills);

@@ -87,7 +87,9 @@ export function matchStudentToOpportunity(
   }
 
   // Build lookup index of student skills
-  const studentSkillList = skills.filter((s) => s.progress > 0 || s.isVerified);
+  const studentSkillList = skills.filter(
+    (s) => s.progress > 0 || s.isVerified || Boolean(s.resumeEvidence)
+  );
 
   const matchedSkills: string[] = [];
   const verifiedMatchedSkills: string[] = [];

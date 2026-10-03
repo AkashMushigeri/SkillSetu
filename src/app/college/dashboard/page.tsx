@@ -11,14 +11,9 @@ import {
   Trophy,
   Building2,
   AlertTriangle,
-  CheckCircle2,
   Sparkles,
-  ArrowRight,
   Plus,
-  Filter,
-  BarChart3,
   Calendar,
-  Award,
   Zap,
   MapPin
 } from 'lucide-react';
@@ -26,7 +21,6 @@ import { CreateTrainingModal } from '@/components/college/CreateTrainingModal';
 import { EcosystemMap } from '@/components/college/EcosystemMap';
 import {
   COLLEGE_KPIS,
-  READINESS_BY_LEVEL,
   DEPARTMENT_READINESS_DATA,
   TOP_SKILLS_DATA,
   SKILL_GAP_ANALYSIS_DATA,
