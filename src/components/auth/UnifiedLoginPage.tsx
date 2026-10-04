@@ -23,6 +23,7 @@ import {
   Hash,
 } from 'lucide-react';
 import { PortalSelector, PortalRole } from './PortalSelector';
+import ConnectionDiagnostics from './ConnectionDiagnostics';
 import { useAuth } from '@/context/AuthContext';
 import { UserRole, isNetworkError } from '@/lib/firebase';
 
@@ -861,6 +862,9 @@ function UnifiedLoginContent({ initialRole = 'student' }: UnifiedLoginPageProps)
                   </>
                 )}
               </button>
+
+              {/* Backend diagnostics: Render + Neon reachability */}
+              <ConnectionDiagnostics />
             </>
           )}
         </section>
