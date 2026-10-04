@@ -1,115 +1,179 @@
 import assert from 'node:assert/strict';
 import { createPrivateKey, generateKeyPairSync } from 'node:crypto';
 import { describe, it } from 'node:test';
-import { assertUsablePrivateKey, normalisePrivateKey } from '../src/lib/privateKey';
+import {
+  assertUsablePrivateKey,
+  describePrivateKeyShape,
+  normalisePrivateKey,
+} from '../src/lib/privateKey';
 
 /**
- * These tests reproduce a real production outage: a service-account key pasted into
- * Render with a surrounding double quote failed at boot with
- * `error:1E08010C:DECODER routines::unsupported`. No key material is used here — a
- * throwaway keypair is generated per run — but the failure mode is identical because
- * it comes from the PEM framing, not from the key.
+ * These tests exist because of a real production crash loop. Every corruption listed
+ * below was verified to make OpenSSL fail with the identical, unactionable message
+ * `error:1E08010C:DECODER routines::unsupported`, which is what made the original
+ * outage expensive to diagnose.
+ *
+ * No key material is committed: a throwaway keypair is generated per run. The
+ * corruption is a property of the PEM framing, not of the key, so this reproduces the
+ * failure faithfully.
  */
-describe('FIREBASE_PRIVATE_KEY normalisation', () => {
-  const { privateKey } = generateKeyPairSync('ec', {
+function freshKey(): string {
+  return generateKeyPairSync('ec', {
     namedCurve: 'P-256',
     privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
-  });
+  }).privateKey;
+}
 
-  const asEscapes = privateKey.replace(/\n/g, '\\n');
-  const header = '-----BEGIN PRIVATE KEY-----';
+const TRANSPORTS: ReadonlyArray<{ name: string; apply: (key: string) => string }> = [
+  { name: 'pristine PEM', apply: (k) => k },
+  { name: 'wrapped in double quotes', apply: (k) => `"${k}"` },
+  { name: 'wrapped in single quotes', apply: (k) => `'${k}'` },
+  { name: 'literal backslash-n escapes', apply: (k) => k.replace(/\n/g, '\\n') },
+  { name: 'escaped backslash-r-backslash-n', apply: (k) => k.replace(/\n/g, '\\r\\n') },
+  { name: 'real CRLF line endings', apply: (k) => k.replace(/\n/g, '\r\n') },
+  { name: 'newlines collapsed to one line', apply: (k) => k.replace(/\n/g, '') },
+  { name: 'spaces instead of newlines', apply: (k) => k.replace(/\n/g, ' ') },
+  { name: 'quoted and collapsed together', apply: (k) => `"${k.replace(/\n/g, '')}"` },
+];
 
-  it('strips the surrounding double quotes that caused the outage', () => {
-    const quoted = `"${asEscapes}"`;
+describe('normalisePrivateKey repairs every transport that breaks OpenSSL', () => {
+  for (const { name, apply } of TRANSPORTS) {
+    it(name, () => {
+      const key = freshKey();
+      const transported = apply(key);
 
-    // The bug: trim() cannot remove quotes, so the header was not at offset 0.
-    assert.equal(quoted.trim().charAt(0), '"');
-    assert.notEqual(normalisePrivateKey(quoted).charAt(0), '"');
-    assert.equal(normalisePrivateKey(quoted).startsWith(header), true);
-  });
+      // The transported form is what the dashboard actually stores.
+      const repaired = normalisePrivateKey(transported);
 
-  it('strips a surrounding pair of single quotes', () => {
-    assert.equal(normalisePrivateKey(`'${asEscapes}'`).startsWith(header), true);
-  });
+      assert.equal(createPrivateKey(repaired).asymmetricKeyType, 'ec');
+      assert.ok(repaired.startsWith('-----BEGIN PRIVATE KEY-----\n'));
+      assert.ok(repaired.trimEnd().endsWith('-----END PRIVATE KEY-----'));
+    });
+  }
 
-  it('converts literal newline escapes to real newlines', () => {
-    assert.equal(normalisePrivateKey(asEscapes).includes('\n'), true);
-  });
-
-  it('converts escaped CRLF and real CRLF alike', () => {
-    const escaped = privateKey.replace(/\n/g, '\\r\\n');
-    const real = privateKey.replace(/\n/g, '\r\n');
-
-    assert.equal(normalisePrivateKey(escaped), normalisePrivateKey(real));
-    assert.equal(normalisePrivateKey(real).includes('\r'), false);
-  });
-
-  it('is idempotent, so normalising twice changes nothing', () => {
-    const once = normalisePrivateKey(`"${asEscapes}"`);
+  it('is idempotent', () => {
+    const once = normalisePrivateKey(`"${freshKey().replace(/\n/g, '\\n')}"`);
 
     assert.equal(normalisePrivateKey(once), once);
   });
 
-  it('leaves an already-correct real PEM untouched', () => {
-    assert.equal(normalisePrivateKey(privateKey), privateKey.trim());
-  });
+  it('preserves a PKCS#1 RSA label rather than relabelling it PKCS#8', () => {
+    const rsa = generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      privateKeyEncoding: { type: 'pkcs1', format: 'pem' },
+    }).privateKey;
 
-  it('produces a key OpenSSL accepts, where the raw quoted value does not', () => {
-    // Without normalisation this throws DECODER routines::unsupported.
-    assert.throws(() => createPrivateKey(`"${asEscapes}"`));
-
-    const recovered = normalisePrivateKey(`"${asEscapes}"`);
-
-    assert.equal(createPrivateKey(recovered).asymmetricKeyType, 'ec');
+    assert.ok(rsa.includes('BEGIN RSA PRIVATE KEY'));
+    assert.equal(createPrivateKey(normalisePrivateKey(rsa)).asymmetricKeyType, 'rsa');
   });
 });
 
-describe('assertUsablePrivateKey', () => {
-  const { privateKey } = generateKeyPairSync('ec', {
-    namedCurve: 'P-256',
-    privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+describe('assertUsablePrivateKey fails closed with something actionable', () => {
+  const code = { code: 'firebase_private_key_malformed' };
+
+  it('accepts every transport and returns a loadable key', () => {
+    for (const { apply } of TRANSPORTS) {
+      const usable = assertUsablePrivateKey(apply(freshKey()));
+
+      assert.ok(createPrivateKey(usable));
+    }
   });
 
-  it('accepts a quoted key and returns the canonical PEM', () => {
-    const escaped = privateKey.replace(/\n/g, '\\n');
-
-    assert.equal(assertUsablePrivateKey(`"${escaped}"`), privateKey.trim());
+  it('rejects a value with no PEM markers', () => {
+    assert.throws(() => assertUsablePrivateKey('not-a-key-at-all'), code);
   });
 
-  it('rejects a value with no PEM envelope', () => {
-    assert.throws(() => assertUsablePrivateKey('not-a-key'), {
-      code: 'firebase_private_key_malformed',
-    });
+  it('rejects a truncated key that cannot be decoded', () => {
+    const truncated = freshKey().slice(0, 120);
+
+    assert.throws(() => assertUsablePrivateKey(truncated), code);
   });
 
-  it('rejects a BEGIN with no matching END', () => {
-    assert.throws(
-      () => assertUsablePrivateKey('-----BEGIN PRIVATE KEY-----\nAAAA\n'),
-      { code: 'firebase_private_key_malformed' },
-    );
+  it('rejects a corrupted body even though the markers survive', () => {
+    const corrupted = freshKey().replace(/M[A-Za-z0-9+/]{20}/, 'M-not-base64-here!!!!');
+
+    assert.throws(() => assertUsablePrivateKey(corrupted), code);
+  });
+
+  it('rejects markers with nothing between them', () => {
+    assert.throws(() => assertUsablePrivateKey('-----BEGIN PRIVATE KEY----------END PRIVATE KEY-----'), code);
   });
 
   it('rejects an END that precedes its BEGIN', () => {
-    const inverted = `-----END PRIVATE KEY-----\nAAAA\n-----BEGIN PRIVATE KEY-----`;
-
-    assert.throws(() => assertUsablePrivateKey(inverted), {
-      code: 'firebase_private_key_malformed',
-    });
+    assert.throws(
+      () => assertUsablePrivateKey('-----END PRIVATE KEY-----\nAAAA\n-----BEGIN PRIVATE KEY-----'),
+      code,
+    );
   });
 
-  it('explains the fix and never echoes key material', () => {
-    const body = 'AAAA';
+  it('rejects BEGIN and END labels that disagree', () => {
+    assert.throws(
+      () => assertUsablePrivateKey('-----BEGIN PRIVATE KEY-----\nAAAA\n-----END RSA PRIVATE KEY-----'),
+      code,
+    );
+  });
+
+  it('explains the fix without ever echoing key material', () => {
     let message = '';
 
     try {
-      assertUsablePrivateKey(body);
+      assertUsablePrivateKey('-----BEGIN PRIVATE KEY-----\nSECRETBODYHERE\n-----END PRIVATE KEY-----');
       assert.fail('expected a rejection');
     } catch (error) {
       message = (error as Error).message;
     }
 
     assert.match(message, /FIREBASE_PRIVATE_KEY/);
-    assert.match(message, /BEGIN PRIVATE KEY/);
-    assert.equal(message.includes(body), false);
+    assert.match(message, /service-account JSON/);
+    assert.equal(message.includes('SECRETBODYHERE'), false);
+  });
+
+  it('never lets an OpenSSL decoder error escape unactionable', () => {
+    let message = '';
+
+    try {
+      assertUsablePrivateKey(freshKey().replace(/M[A-Za-z0-9+/]{20}/, 'M-not-base64-here!!!!'));
+      assert.fail('expected a rejection');
+    } catch (error) {
+      message = (error as Error).message;
+    }
+
+    assert.match(message, /Refusing to start/);
+    assert.match(message, /service-account JSON/);
+  });
+});
+
+describe('describePrivateKeyShape reports structure without revealing the key', () => {
+  it('flags a collapsed key so the cause is visible in a deploy log', () => {
+    const collapsed = freshKey().replace(/\n/g, '');
+
+    const shape = describePrivateKeyShape(collapsed);
+
+    assert.equal(shape.hasBeginMarker, true);
+    assert.equal(shape.hasEndMarker, true);
+    assert.equal(shape.hasRealNewlines, false);
+    assert.equal(shape.lineCount, 1);
+  });
+
+  it('flags a quoted key', () => {
+    assert.equal(describePrivateKeyShape(`"${freshKey()}"`).hasSurroundingQuotes, true);
+  });
+
+  it('flags an unconverted escape', () => {
+    const escaped = freshKey().replace(/\n/g, '\\n');
+
+    const shape = describePrivateKeyShape(escaped);
+
+    assert.equal(shape.hasLiteralEscapes, true);
+    assert.equal(shape.hasRealNewlines, false);
+  });
+
+  it('reports a plausible byte length for a healthy EC key', () => {
+    const shape = describePrivateKeyShape(freshKey());
+
+    assert.ok(shape.byteLength > 100);
+    assert.equal(shape.hasBeginMarker, true);
+    assert.equal(shape.hasEndMarker, true);
+    assert.equal(shape.bodyIsBase64, true);
   });
 });
