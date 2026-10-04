@@ -36,11 +36,11 @@ async function verifyAuthUser(req: Request): Promise<{ verified: boolean; uid?: 
     return { verified: false, error: 'Unauthorized: Bearer token is empty.' };
   }
 
-  // Support local demo sessions during development and testing
-  if (process.env.NODE_ENV !== 'production' && token.startsWith('demo_token_')) {
-    const demoUid = token.replace('demo_token_', '');
-    return { verified: true, uid: demoUid };
-  }
+  // No demo-token bypass. This route previously accepted any client-supplied
+  // `demo_token_<uid>` string as a verified identity whenever NODE_ENV was not
+  // production, which let a caller assert any uid it liked. NODE_ENV describes the
+  // process, not the deployment, so that gate held for any reachable non-production
+  // host. Real ID tokens are verified cryptographically below.
 
   // Cryptographically verify ID token with Google Identity Toolkit
   const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyBYafwhkKarQs36-GehGM50b1QqZKTvzPk';

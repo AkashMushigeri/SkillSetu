@@ -67,7 +67,7 @@ const CollegeContext = createContext<CollegeContextType | undefined>(undefined);
 
 export const CollegeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user, userProfile } = useAuth();
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [profile, setProfile] = useState<CollegeProfileInfo>(INITIAL_COLLEGE_PROFILE);
 
   // Sync with Firebase Firestore profile
@@ -107,9 +107,6 @@ export const CollegeProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       const savedProfile = localStorage.getItem('skillsetu_college_profile');
       if (savedProfile) setProfile(JSON.parse(savedProfile));
-
-      const savedAuth = localStorage.getItem('skillsetu_college_auth');
-      if (savedAuth === 'true') setIsLoggedIn(true);
     } catch (e) {
       console.error(e);
     }
@@ -185,23 +182,18 @@ export const CollegeProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const clearToast = () => setToast(null);
 
-  const login = (email: string, pass: string) => {
-    if (email === 'admin@ayushcollege.edu' && pass === 'college123') {
-      setIsLoggedIn(true);
-      localStorage.setItem('skillsetu_college_auth', 'true');
-      showToast('Welcome back, Dr. Priya Sharma!', 'success');
-      return true;
-    }
-    // Allow demo login fallback as well
-    setIsLoggedIn(true);
-    localStorage.setItem('skillsetu_college_auth', 'true');
-    showToast('Signed in to College Portal', 'success');
-    return true;
+  const login = (_email: string, _pass: string) => {
+    // Credentials are never checked here, and portal access is never granted from
+    // the client. The previous implementation accepted the hardcoded pair
+    // admin@ayushcollege.edu / college123 and then granted access to ANY input as a
+    // "demo login", storing the result in localStorage. Authorization is resolved
+    // server-side from PostgreSQL; this entry point therefore cannot grant it.
+    showToast('Sign in through the unified login page to access the College Portal.', 'info');
+    return false;
   };
 
   const logout = () => {
     setIsLoggedIn(false);
-    localStorage.removeItem('skillsetu_college_auth');
     showToast('Signed out of College Portal', 'info');
   };
 

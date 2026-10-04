@@ -243,14 +243,6 @@ function UnifiedLoginContent({ initialRole = 'student' }: UnifiedLoginPageProps)
 
     const fbRole = roleToUserRole[selectedRole];
 
-    if (selectedRole === 'college') {
-      try {
-        localStorage.setItem('skillsetu_college_auth', 'true');
-      } catch {
-        // ignore storage errors
-      }
-    }
-
     try {
       if (isSignup) {
         await signUpWithEmailPassword(
@@ -310,14 +302,6 @@ function UnifiedLoginContent({ initialRole = 'student' }: UnifiedLoginPageProps)
     setIsLoading(true);
     setError(null);
     const fbRole = roleToUserRole[selectedRole];
-
-    if (selectedRole === 'college') {
-      try {
-        localStorage.setItem('skillsetu_college_auth', 'true');
-      } catch {
-        // ignore storage errors
-      }
-    }
 
     try {
       if (isSignup) {
