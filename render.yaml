@@ -8,16 +8,24 @@ services:
     # `branch` omitted follows the Blueprint's own branch. That removes the ref
     # entirely, so there is no branch value left to mistype — a wrong literal here
     # would silently deploy the wrong ref instead of failing.
-    # `--include=dev` is required, not optional. NODE_ENV is production below, which
-    # makes a plain `npm ci` omit devDependencies — and TypeScript is a devDependency.
-    # With no local backend/node_modules/.bin/tsc, `npm run build` fell through to the
-    # global `typescript` that Render's runtime image preinstalls. That compiler is not
-    # the project's, so it rejected backend/tsconfig.json with TS5108 (moduleResolution
+    # `--include=dev` is redundant with backend/.npmrc (which sets include=dev) and is
+    # kept only as defence in depth. The authoritative fix is backend/.npmrc: a Blueprint
+    # buildCommand is stored as service config, so editing render.yaml does NOT reliably
+    # reach an already-created service — the previous deploy proved this, running the old
+    # `npm ci` command after render.yaml had already been updated. backend/.npmrc makes
+    # `npm ci` install devDependencies no matter which command string executes it.
+    #
+    # Why devDependencies matter: TypeScript is a devDependency, and NODE_ENV is
+    # production below, so a plain `npm ci` omitted it. With no local
+    # backend/node_modules/.bin/tsc, `npm run build` fell through to the global
+    # `typescript` binary that Render's runtime image preinstalls. That compiler is not
+    # the project's, and it rejected backend/tsconfig.json with TS5108 (moduleResolution
     # node10 removed) and TS5102 (baseUrl removed) — errors the locked 5.9.3 never emits.
-    # Installing devDependencies puts the project's own tsc first on the script PATH.
+    #
     # The version probe prints only the compiler version, so a future PATH regression is
     # visible in the build log instead of surfacing as a confusing foreign-compiler error.
-    # It exposes no environment variables and no secrets.
+    # It exposes no environment variables and no secrets. It only runs once the stored
+    # build command is updated to this one, so its absence from a log is not a failure.
     buildCommand: >-
       npm --prefix backend ci --include=dev &&
       npm --prefix backend exec -- tsc --version &&
