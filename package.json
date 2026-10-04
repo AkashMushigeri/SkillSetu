@@ -15,7 +15,16 @@
     "type-check": "tsc --noEmit",
     "deploy": "firebase deploy --only apphosting",
     "deploy:preview": "firebase apphosting:channels:deploy live",
-    "db:seed": "npx tsx scripts/seed.ts",
+    "db:migrate": "npm --prefix backend run db:migrate",
+    "db:migrate:dev": "npm --prefix backend run db:migrate:dev",
+    "db:seed": "npm --prefix backend run db:seed",
+    "db:reset": "npm --prefix backend run db:reset",
+    "db:verify": "npm --prefix backend run db:verify",
+    "auth:seed:dev": "npm --prefix backend run auth:seed:dev",
+    "auth:bootstrap-admin": "npm --prefix backend run auth:bootstrap-admin",
+    "test:backend": "npm --prefix backend run test",
+    "backend:dev": "npm --prefix backend run dev",
+    "backend:build": "npm --prefix backend run build",
     "emulators": "npx -y firebase-tools emulators:start --only dataconnect,auth,firestore",
     "emulators:export": "npx -y firebase-tools emulators:start --only dataconnect,auth,firestore --export-on-exit=./emulator-data",
     "deploy:dataconnect": "npx -y firebase-tools deploy --only dataconnect",
@@ -47,6 +56,7 @@
     "eslint": "^8.57.0",
     "postcss": "^8.5.1",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.23.15",
     "typescript": "^5.7.3"
   }
 }

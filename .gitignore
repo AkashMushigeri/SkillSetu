@@ -9,6 +9,7 @@ functions/node_modules/
 out/
 build/
 tsconfig.tsbuildinfo
+backend/dist/
 
 # Firebase
 firebase-debug.log
@@ -27,6 +28,7 @@ local_backups/
 .env.test.local
 .env.production
 .env.production.local
+backend/.env
 
 # Vercel
 .vercel/
@@ -48,3 +50,4 @@ src/generated/dataconnect/
 
 # Build cache
 *.tsbuildinfo
+.neon
