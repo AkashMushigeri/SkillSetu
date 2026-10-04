@@ -1,0 +1,46 @@
+services:
+  - type: web
+    name: skillsetu-api
+    runtime: node
+    plan: free
+    # No `repo` and no `branch`: Render deploys this service from the same GitHub
+    # repository that holds this Blueprint, and a service in that repository with
+    # `branch` omitted follows the Blueprint's own branch. That removes the ref
+    # entirely, so there is no branch value left to mistype — a wrong literal here
+    # would silently deploy the wrong ref instead of failing.
+    buildCommand: npm --prefix backend ci && npm --prefix backend run build && npm --prefix backend run db:migrate
+    startCommand: npm --prefix backend run start
+    healthCheckPath: /health
+    buildFilter:
+      paths:
+        - backend/**
+        - shared/**
+        # The seed command imports the frontend catalogues (src/data/*) so dev data
+        # matches what the UI expects, and those files are compiled into the backend
+        # build. A change to either must trigger a backend rebuild.
+        - src/data/**
+        - src/types/**
+        - render.yaml
+      ignoredPaths:
+        - backend/**/*.test.ts
+        - backend/**/*.md
+    envVars:
+      # Deliberately NOT set here: FIREBASE_AUTH_EMULATOR_HOST.
+      # Render must talk to the real dedicated Firebase DEVELOPMENT project using the
+      # service-account credentials below. The Auth emulator is a local-only tool; if
+      # that variable were ever set on Render, firebaseAdmin.ts would build an app with
+      # no service account and auth would silently break.
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
