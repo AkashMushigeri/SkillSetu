@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { loadLocalEnvFile } from './envFile';
-import { normalisePrivateKey } from '../lib/privateKey';
+import { describePrivateKeyShape, normalisePrivateKey } from '../lib/privateKey';
+import { logger } from '../lib/logger';
 
 const REQUIRED_VARIABLES = [
   'DATABASE_URL',
@@ -125,6 +126,15 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   if (allowedOrigins.length === 0) {
     throw new EnvValidationError(['ALLOWED_ORIGINS']);
   }
+
+  // Logged here, not in createAdmin, because this is the last point at which the value
+  // is still exactly what the environment supplied. createAdmin receives the rebuilt
+  // PEM, so a shape check there reports a healthy key no matter what was actually
+  // stored — which is false reassurance, the opposite of what a diagnostic is for.
+  logger.info(
+    { privateKeyShape: describePrivateKeyShape(parsed.data.FIREBASE_PRIVATE_KEY) },
+    'firebase private key shape as configured',
+  );
 
   return {
     nodeEnv: parsed.data.NODE_ENV,

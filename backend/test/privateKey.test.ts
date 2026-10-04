@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { createPrivateKey, generateKeyPairSync } from 'node:crypto';
 import { describe, it } from 'node:test';
+import { loadEnv } from '../src/config/env';
 import {
   assertUsablePrivateKey,
   describePrivateKeyShape,
@@ -175,5 +176,40 @@ describe('describePrivateKeyShape reports structure without revealing the key', 
     assert.equal(shape.hasBeginMarker, true);
     assert.equal(shape.hasEndMarker, true);
     assert.equal(shape.bodyIsBase64, true);
+  });
+});
+describe('loadEnv normalises the configured key and describes it before doing so', () => {
+  const key = freshKey();
+  const base = {
+    NODE_ENV: 'production',
+    DATABASE_URL: 'postgresql://user:pass@db.example/neondb',
+    FIREBASE_PROJECT_ID: 'skillsetu-test',
+    FIREBASE_CLIENT_EMAIL: 'svc@skillsetu-test.iam.gserviceaccount.com',
+    ALLOWED_ORIGINS: 'https://example.com',
+  };
+
+  const collapsedAndQuoted = `"${key.replace(/\n/g, '')}"`;
+
+  it('accepts a collapsed, quoted value and yields a loadable key', () => {
+    const env = loadEnv({ ...base, FIREBASE_PRIVATE_KEY: collapsedAndQuoted });
+
+    assert.ok(createPrivateKey(env.firebasePrivateKey));
+    assert.ok(env.firebasePrivateKey.startsWith('-----BEGIN PRIVATE KEY-----\n'));
+  });
+
+  it('describes the RAW value, so corruption stays visible', () => {
+    // This is the regression guard. loadEnv normalises the key, so anything that
+    // inspects env.firebasePrivateKey sees a perfect PEM and can never report that
+    // the stored value was damaged. Only the raw source reveals that.
+    const shape = describePrivateKeyShape(collapsedAndQuoted);
+
+    assert.equal(shape.hasSurroundingQuotes, true);
+    assert.equal(shape.hasRealNewlines, false);
+    assert.equal(shape.lineCount, 1);
+
+    const env = loadEnv({ ...base, FIREBASE_PRIVATE_KEY: collapsedAndQuoted });
+
+    assert.equal(describePrivateKeyShape(env.firebasePrivateKey).hasSurroundingQuotes, false);
+    assert.equal(describePrivateKeyShape(env.firebasePrivateKey).hasRealNewlines, true);
   });
 });

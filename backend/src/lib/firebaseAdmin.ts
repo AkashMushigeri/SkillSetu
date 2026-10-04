@@ -2,7 +2,7 @@ import { cert, deleteApp, getApps, initializeApp, type App } from 'firebase-admi
 import { getAuth, type Auth } from 'firebase-admin/auth';
 import { AppError } from './errors';
 import { logger } from './logger';
-import { assertUsablePrivateKey, describePrivateKeyShape } from './privateKey';
+import { assertUsablePrivateKey } from './privateKey';
 
 export type FirebaseAdminState = 'initialized' | 'not_initialized';
 
@@ -92,11 +92,9 @@ export function createAdmin(input: FirebaseCredentialInput): FirebaseAdmin {
 
   const existing = getApps().find((app) => app.name === '[DEFAULT]');
 
-  // Structure only: byte length, line count and a few booleans. No key material.
-  // An opaque `DECODER routines::unsupported` is impossible to act on, so the shape
-  // of whatever actually arrived is recorded on every boot.
-  logger.info({ privateKeyShape: describePrivateKeyShape(privateKey) }, 'firebase private key shape');
-
+  // NOTE: the shape of the configured key is logged by loadEnv, which still sees the
+  // raw environment value. By this point the key has already been rebuilt, so anything
+  // measured here would describe the normalised PEM rather than what was supplied.
   let usablePrivateKey: string;
 
   try {
