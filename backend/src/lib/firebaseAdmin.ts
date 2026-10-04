@@ -2,6 +2,7 @@ import { cert, deleteApp, getApps, initializeApp, type App } from 'firebase-admi
 import { getAuth, type Auth } from 'firebase-admin/auth';
 import { AppError } from './errors';
 import { logger } from './logger';
+import { assertUsablePrivateKey } from './privateKey';
 
 export type FirebaseAdminState = 'initialized' | 'not_initialized';
 
@@ -41,10 +42,6 @@ export type FirebaseAdmin = {
 };
 
 let cached: FirebaseAdmin | null = null;
-
-function normalisePrivateKey(raw: string): string {
-  return raw.replace(/\\n/g, '\n').trim();
-}
 
 function assertLoopbackEmulatorHost(emulatorHost: string): void {
   const [host] = emulatorHost.split(':');
@@ -102,7 +99,7 @@ export function createAdmin(input: FirebaseCredentialInput): FirebaseAdmin {
       credential: cert({
         projectId,
         clientEmail,
-        privateKey: normalisePrivateKey(privateKey),
+        privateKey: assertUsablePrivateKey(privateKey),
       }),
     });
 

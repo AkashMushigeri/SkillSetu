@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { loadLocalEnvFile } from './envFile';
+import { normalisePrivateKey } from '../lib/privateKey';
 
 const REQUIRED_VARIABLES = [
   'DATABASE_URL',
@@ -49,9 +50,11 @@ export class EnvValidationError extends Error {
   }
 }
 
-function normalisePrivateKey(raw: string): string {
-  return raw.replace(/\\n/g, '\n').trim();
-}
+/**
+ * Normalisation of paste artefacts lives in lib/privateKey alongside the assertion
+ * that validates the result. It used to be duplicated here and in firebaseAdmin, and
+ * the two copies were free to drift — which is how a quoted PEM reached OpenSSL.
+ */
 
 function parseAllowedOrigins(raw: string): string[] {
   return raw
