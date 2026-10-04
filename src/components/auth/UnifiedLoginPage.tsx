@@ -19,6 +19,8 @@ import {
   EyeOff,
   ArrowLeft,
   CheckCircle2,
+  Building2,
+  Hash,
 } from 'lucide-react';
 import { PortalSelector, PortalRole } from './PortalSelector';
 import { useAuth } from '@/context/AuthContext';
@@ -181,6 +183,7 @@ function UnifiedLoginContent({ initialRole = 'student' }: UnifiedLoginPageProps)
   const [displayName, setDisplayName] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [college, setCollege] = useState<string>('');
+  const [organizationCode, setOrganizationCode] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isResetLoading, setIsResetLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -239,6 +242,22 @@ function UnifiedLoginContent({ initialRole = 'student' }: UnifiedLoginPageProps)
         setIsLoading(false);
         return;
       }
+      // The backend stores the organization snapshot on the pending role request
+      // and rejects an incomplete one with a 400, so catch it here instead.
+      if (selectedRole !== 'student' && !college.trim()) {
+        setError(
+          selectedRole === 'college'
+            ? 'College name is required.'
+            : 'Company name is required.'
+        );
+        setIsLoading(false);
+        return;
+      }
+      if (selectedRole === 'college' && !organizationCode.trim()) {
+        setError('College code is required (e.g. ABC123).');
+        setIsLoading(false);
+        return;
+      }
     }
 
     const fbRole = roleToUserRole[selectedRole];
@@ -251,7 +270,8 @@ function UnifiedLoginContent({ initialRole = 'student' }: UnifiedLoginPageProps)
           displayName || (selectedRole === 'student' ? 'Student' : config.name),
           fbRole,
           selectedRole === 'student' ? '' : phone,
-          selectedRole === 'student' ? '' : college
+          selectedRole === 'student' ? '' : college,
+          selectedRole === 'student' ? '' : organizationCode
         );
       } else {
         try {
@@ -270,7 +290,8 @@ function UnifiedLoginContent({ initialRole = 'student' }: UnifiedLoginPageProps)
               displayName || config.name,
               fbRole,
               phone,
-              college
+              college,
+              organizationCode
             );
           } else {
             throw loginErr;
@@ -305,7 +326,7 @@ function UnifiedLoginContent({ initialRole = 'student' }: UnifiedLoginPageProps)
 
     try {
       if (isSignup) {
-        await signUpWithGoogle(fbRole, displayName || config.name, phone, college);
+        await signUpWithGoogle(fbRole, displayName || config.name, phone, college, organizationCode);
       } else {
         await signInWithGoogle();
       }
@@ -723,6 +744,49 @@ function UnifiedLoginContent({ initialRole = 'student' }: UnifiedLoginPageProps)
                         onChange={(e) => setPhone(e.target.value)}
                         className="w-full pl-10 pr-3.5 py-2 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 transition-all font-sans"
                         placeholder="Enter contact number"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Signup Only: Organization Name (Industry / College) */}
+                {isSignup && selectedRole !== 'student' && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      {selectedRole === 'college' ? 'College Name' : 'Company Name'}
+                    </label>
+                    <div className="relative">
+                      <Building2 className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
+                      <input
+                        type="text"
+                        value={college}
+                        onChange={(e) => setCollege(e.target.value)}
+                        className="w-full pl-10 pr-3.5 py-2 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 transition-all font-sans"
+                        placeholder={
+                          selectedRole === 'college'
+                            ? 'Enter your college name'
+                            : 'Enter your company name'
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Signup Only: College Code (College only) */}
+                {isSignup && selectedRole === 'college' && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      College Code
+                    </label>
+                    <div className="relative">
+                      <Hash className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
+                      <input
+                        type="text"
+                        value={organizationCode}
+                        onChange={(e) => setOrganizationCode(e.target.value.toUpperCase())}
+                        maxLength={32}
+                        className="w-full pl-10 pr-3.5 py-2 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 transition-all font-sans uppercase"
+                        placeholder="e.g. ABC123"
                       />
                     </div>
                   </div>

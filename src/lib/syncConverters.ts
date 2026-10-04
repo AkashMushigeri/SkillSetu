@@ -10,6 +10,7 @@
  */
 
 import type { Opportunity, Application, NotificationItem } from '@/types/student';
+import { resolveOpportunityCoordinates } from '@/lib/geoUtils';
 import type {
   IndustryJob,
   IndustryInternship,
@@ -502,7 +503,13 @@ export function readStudentOpportunitiesFromIndustry(): Opportunity[] {
     (o) => !(o as Opportunity & { __college?: boolean }).__college
   );
   const challenges = readSyncRecords<Opportunity>(SYNC_DOMAINS.CHALLENGES);
-  return [...jobs, ...internships, ...challenges];
+  // Sync envelopes are untrusted: an industry record can be stored without
+  // coordinates, which breaks the required `Opportunity.coordinates` contract.
+  // Normalize here so every downstream consumer can trust the type.
+  return [...jobs, ...internships, ...challenges].map((opp) => ({
+    ...opp,
+    coordinates: resolveOpportunityCoordinates(opp),
+  }));
 }
 
 export function readCollegeInternshipsFromIndustry(): InternshipOpportunity[] {

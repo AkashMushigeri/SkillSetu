@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import { Opportunity } from '@/types/student';
 import { getOpportunityTypeBadgeColor } from '@/lib/styleUtils';
+import { resolveOpportunityCoordinates } from '@/lib/geoUtils';
 
 interface LeafletMapInnerProps {
   userCoords: { lat: number; lng: number };
@@ -200,7 +201,8 @@ export default function LeafletMapInner({
         </div>
       `;
 
-      const marker = L.marker([opp.coordinates.lat, opp.coordinates.lng], { icon: oppIcon })
+      const coords = resolveOpportunityCoordinates(opp);
+      const marker = L.marker([coords.lat, coords.lng], { icon: oppIcon })
         .bindPopup(popupHtml);
 
       marker.on('popupopen', () => {

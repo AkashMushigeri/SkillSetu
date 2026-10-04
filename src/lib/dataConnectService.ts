@@ -262,8 +262,6 @@ export async function syncApplicationToDataConnect(params: {
 
   try {
     await createApplication(dataConnect, {
-      opportunityId: params.jobId || params.internshipId || `opp-${Date.now()}`,
-      opportunityType: params.jobType || 'Job',
       companyId: params.companyId || DEFAULT_DEMO_COMPANY_ID,
       jobId: params.jobId,
       internshipId: params.internshipId,

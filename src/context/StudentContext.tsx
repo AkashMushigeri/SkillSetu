@@ -25,6 +25,7 @@ import {
 } from '@/data/mockStudentData';
 import { findCatalogSkill } from '@/data/skillsData';
 import { calculateHaversineDistance, computeOpportunityMatch } from '@/lib/matchUtils';
+import { resolveOpportunityCoordinates } from '@/lib/geoUtils';
 import {
   subscribeToSync,
   readNotificationsFor,
@@ -1046,11 +1047,12 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Compute live opportunities with distances, skill match, and match boost
   const opportunities = useMemo(() => {
     const local = INITIAL_OPPORTUNITIES.map((opp) => {
+      const coords = resolveOpportunityCoordinates(opp);
       const distance = calculateHaversineDistance(
         userCoords.lat,
         userCoords.lng,
-        opp.coordinates.lat,
-        opp.coordinates.lng
+        coords.lat,
+        coords.lng
       );
 
       const match = computeOpportunityMatch(opp, skills, projects, profile);
@@ -1074,11 +1076,12 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const synced = syncedOpportunities
       .filter((o) => !local.some((loc) => loc.id === o.id))
       .map((opp) => {
+        const coords = resolveOpportunityCoordinates(opp);
         const distance = calculateHaversineDistance(
           userCoords.lat,
           userCoords.lng,
-          opp.coordinates.lat,
-          opp.coordinates.lng
+          coords.lat,
+          coords.lng
         );
 
         const match = computeOpportunityMatch(opp, skills, projects, profile);
@@ -1103,11 +1106,12 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       .filter((o) => !local.some((loc) => loc.id === o.id))
       .filter((o) => !synced.some((s) => s.id === o.id))
       .map((opp) => {
+        const coords = resolveOpportunityCoordinates(opp);
         const distance = calculateHaversineDistance(
           userCoords.lat,
           userCoords.lng,
-          opp.coordinates.lat,
-          opp.coordinates.lng
+          coords.lat,
+          coords.lng
         );
 
         const match = computeOpportunityMatch(opp, skills, projects, profile);
@@ -1133,11 +1137,12 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       .filter((o) => !synced.some((s) => s.id === o.id))
       .filter((o) => !apiJobs.some((a) => a.id === o.id))
       .map((opp) => {
+        const coords = resolveOpportunityCoordinates(opp);
         const distance = calculateHaversineDistance(
           userCoords.lat,
           userCoords.lng,
-          opp.coordinates?.lat || 12.9716,
-          opp.coordinates?.lng || 77.5946
+          coords.lat,
+          coords.lng
         );
 
         const match = computeOpportunityMatch(opp, skills, projects, profile);

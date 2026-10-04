@@ -27,6 +27,7 @@ import {
   UserProfileData,
   sendPasswordReset as sendPasswordResetFirebase,
 } from '@/lib/firebase';
+import { registerWithBackend } from '@/lib/backendApi';
 
 interface AuthContextType {
   user: ExtendedUser | null;
@@ -41,9 +42,16 @@ interface AuthContextType {
     displayName: string,
     role: UserRole,
     phone?: string,
-    college?: string
+    college?: string,
+    organizationCode?: string
   ) => Promise<void>;
-  signUpWithGoogle: (role: UserRole, displayName?: string, phone?: string, college?: string) => Promise<void>;
+  signUpWithGoogle: (
+    role: UserRole,
+    displayName?: string,
+    phone?: string,
+    college?: string,
+    organizationCode?: string
+  ) => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
   completeOnboarding: (details: Partial<UserProfileData>) => Promise<void>;
   refreshUserProfile: () => Promise<UserProfileData | null>;
@@ -180,7 +188,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [router, syncProfile]);
 
   const signUpWithGoogle = useCallback(
-    async (selectedRole: UserRole, displayName?: string, phone?: string, college?: string) => {
+    async (
+      selectedRole: UserRole,
+      displayName?: string,
+      phone?: string,
+      college?: string,
+      organizationCode?: string
+    ) => {
       const u = await signInWithGoogle();
       if (u && u.uid) {
         setUser(u);
@@ -196,6 +210,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUserProfile(profile);
         setRole(selectedRole);
         saveUserRole(selectedRole);
+        void registerWithBackend(u, {
+          role: selectedRole,
+          displayName: displayName || u.displayName || undefined,
+          phone,
+          organization: { name: college, code: organizationCode },
+        });
         router.push('/onboarding');
       }
     },
@@ -226,7 +246,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       displayName: string,
       selectedRole: UserRole,
       phone?: string,
-      college?: string
+      college?: string,
+      organizationCode?: string
     ) => {
       // A network failure is surfaced as a failure. The previous behaviour minted an
       // `offline_*` session with a client-chosen role whenever the signup request
@@ -245,6 +266,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setUserProfile(profile);
       setRole(selectedRole);
       saveUserRole(selectedRole);
+      // Deliberately not awaited: this writes the PostgreSQL `users` row that
+      // authorization depends on, but a Firebase account must still be created
+      // when the backend is slow or down.
+      void registerWithBackend(u, {
+        role: selectedRole,
+        displayName,
+        phone,
+        organization: { name: college, code: organizationCode },
+      });
       router.push('/onboarding');
     },
     [router]
