@@ -220,6 +220,10 @@ export const users = pgTable(
     displayName: text('display_name'),
     photoUrl: text('photo_url'),
     phone: text('phone'),
+    // Added by 0013. Describes the person, not the organization: a company row
+    // cannot hold "HR Lead" without two recruiters at the same employer
+    // disagreeing about it.
+    title: text('title'),
     role: userRoleEnum('role').notNull().default('student'),
     status: userStatusEnum('status').notNull().default('active'),
     collegeId: uuid('college_id').references(() => colleges.id, { onDelete: 'set null' }),
@@ -404,6 +408,12 @@ export const skillResources = pgTable(
     topic: text('topic'),
     description: text('description'),
     position: integer('position').notNull(),
+    /**
+     * Stable frontend catalog id. Progress writes address a resource by this
+     * value, not by `position`, so reordering the catalog cannot silently move a
+     * student's progress onto a different resource.
+     */
+    sourceId: text('source_id'),
     createdAt,
     updatedAt,
   },

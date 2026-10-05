@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, getDashboardRoute } from '@/context/AuthContext';
-import { UserRole, UserProfileData } from '@/lib/firebase';
 import {
   Sparkles,
   GraduationCap,
@@ -36,6 +35,65 @@ import confetti from 'canvas-confetti';
 import { LocationSuggestion } from '@/app/api/locations/autocomplete/route';
 import { CollegeAutocomplete } from '@/components/onboarding/CollegeAutocomplete';
 import { CollegeItem, searchColleges } from '@/data/collegesData';
+
+interface OnboardingPayload {
+  displayName: string;
+  countryCode: string;
+  phoneNumber: string;
+  phone: string;
+  location: string;
+  locationDetails: {
+    city?: string;
+    state?: string;
+    country?: string;
+    displayName?: string;
+    latitude?: number;
+    longitude?: number;
+  };
+  role: 'STUDENT' | 'INDUSTRY' | 'COLLEGE';
+  email: string;
+  onboardingCompleted: boolean;
+  // Student-specific
+  college?: string;
+  collegeId?: string;
+  collegeDetails?: {
+    id: string;
+    name: string;
+    city: string;
+    state: string;
+    type?: string;
+    university?: string;
+    affiliation?: string;
+    institutionType?: string;
+  };
+  degree?: string;
+  department?: string;
+  year?: string;
+  gpa?: string;
+  careerGoal?: string;
+  skills?: string[];
+  bio?: string;
+  github?: string;
+  linkedin?: string;
+  // Industry-specific
+  companyName?: string;
+  companyIndustry?: string;
+  companySize?: string;
+  companyLocation?: string;
+  companyWebsite?: string;
+  recruiterTitle?: string;
+  hiringDomains?: string[];
+  companyBio?: string;
+  // College-specific
+  institutionName?: string;
+  collegeCode?: string;
+  designation?: string;
+  institutionLocation?: string;
+  institutionWebsite?: string;
+  departments?: string[];
+  totalStudents?: number;
+  naacGrade?: string;
+}
 
 const POPULAR_STUDENT_SKILLS = [
   'React',
@@ -162,15 +220,15 @@ function getPhoneValidationError(digits: string, country: CountryOption): string
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user, userProfile, loading, completeOnboarding, signOut } = useAuth();
+  const { user, identity, loading, completeOnboarding, signOut } = useAuth();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [customSkillInput, setCustomSkillInput] = useState('');
 
-  // Role
-  const role: UserRole = userProfile?.role || 'STUDENT';
+  // Role from PostgreSQL identity
+  const role = (identity?.role?.toUpperCase() as 'STUDENT' | 'INDUSTRY' | 'COLLEGE') || 'STUDENT';
 
   // Common Fields
   const [displayName, setDisplayName] = useState('');
@@ -247,92 +305,20 @@ export default function OnboardingPage() {
   const [totalStudents, setTotalStudents] = useState('2400');
   const [naacGrade, setNaacGrade] = useState('A+ Accredited');
 
-  // Prepopulate existing profile data if available
+  // Prepopulate from identity (basic account fields only)
   useEffect(() => {
-    if (userProfile) {
-      if (userProfile.displayName) setDisplayName(userProfile.displayName);
+    if (identity) {
+      if (identity.displayName) setDisplayName(identity.displayName);
 
-      // Handle Phone & Country Code
-      if (userProfile.countryCode) {
-        const found = COUNTRY_OPTIONS.find((c) => c.code === userProfile.countryCode);
-        if (found) setSelectedCountry(found);
-      }
-      if (userProfile.phoneNumber) {
-        setPhoneNumber(userProfile.phoneNumber);
-        setPhone(`${userProfile.countryCode || '+91'} ${userProfile.phoneNumber}`);
-      } else if (userProfile.phone) {
-        const parsed = parseStoredPhone(userProfile.phone);
+      // Handle Phone
+      if (identity.phone) {
+        const parsed = parseStoredPhone(identity.phone);
         setSelectedCountry(parsed.country);
         setPhoneNumber(parsed.number);
-        setPhone(userProfile.phone);
-      }
-
-      // Handle Location & Structured Details
-      if (userProfile.location) setLocation(userProfile.location);
-      if (userProfile.locationDetails) {
-        setSelectedLocationDetails(userProfile.locationDetails);
-      } else if (userProfile.location) {
-        setSelectedLocationDetails({
-          city: userProfile.location.split(',')[0]?.trim() || userProfile.location.trim(),
-          displayName: userProfile.location.trim(),
-        });
-      }
-
-      // Student fields
-      if (userProfile.college) {
-        setCollege(userProfile.college);
-        if (userProfile.collegeDetails) {
-          setSelectedCollege(userProfile.collegeDetails as CollegeItem);
-        } else {
-          const matched = searchColleges(userProfile.college, 1)[0];
-          if (matched && matched.name.toLowerCase() === userProfile.college.toLowerCase()) {
-            setSelectedCollege(matched);
-          }
-        }
-      }
-      if (userProfile.degree) setDegree(userProfile.degree);
-      if (userProfile.department) setDepartment(userProfile.department);
-      if (userProfile.year) setYear(userProfile.year);
-      if (userProfile.gpa) setGpa(userProfile.gpa);
-      if (userProfile.careerGoal) setCareerGoal(userProfile.careerGoal);
-      if (userProfile.skills && userProfile.skills.length > 0) {
-        setSelectedSkills(userProfile.skills);
-      }
-      if (userProfile.bio) setBio(userProfile.bio);
-      if (userProfile.github) setGithub(userProfile.github);
-      if (userProfile.linkedin) setLinkedin(userProfile.linkedin);
-
-      // Industry fields
-      if (userProfile.companyName) setCompanyName(userProfile.companyName);
-      if (userProfile.companyIndustry) setCompanyIndustry(userProfile.companyIndustry);
-      if (userProfile.companySize) setCompanySize(userProfile.companySize);
-      if (userProfile.companyWebsite) setCompanyWebsite(userProfile.companyWebsite);
-      if (userProfile.recruiterTitle) setRecruiterTitle(userProfile.recruiterTitle);
-      if (userProfile.hiringDomains && userProfile.hiringDomains.length > 0) {
-        setSelectedHiringDomains(userProfile.hiringDomains);
-      }
-      if (userProfile.companyBio) setCompanyBio(userProfile.companyBio);
-
-      // College fields
-      if (userProfile.institutionName) setInstitutionName(userProfile.institutionName);
-      if (userProfile.collegeCode) setCollegeCode(userProfile.collegeCode);
-      if (userProfile.designation) setDesignation(userProfile.designation);
-      if (userProfile.institutionWebsite) setInstitutionWebsite(userProfile.institutionWebsite);
-      if (userProfile.departments && userProfile.departments.length > 0) {
-        setSelectedDepartments(userProfile.departments);
-      }
-      if (userProfile.totalStudents) setTotalStudents(userProfile.totalStudents.toString());
-      if (userProfile.naacGrade) setNaacGrade(userProfile.naacGrade);
-    } else if (user) {
-      if (user.displayName) setDisplayName(user.displayName);
-      if (user.phoneNumber) {
-        const parsed = parseStoredPhone(user.phoneNumber);
-        setSelectedCountry(parsed.country);
-        setPhoneNumber(parsed.number);
-        setPhone(user.phoneNumber);
+        setPhone(identity.phone);
       }
     }
-  }, [userProfile, user]);
+  }, [identity]);
 
   // Click outside listener for country and location dropdowns
   useEffect(() => {
@@ -791,7 +777,7 @@ export default function OnboardingPage() {
 
     try {
       const fullNormalizedPhone = `${selectedCountry.code} ${phoneNumber.trim()}`;
-      const baseData: Partial<UserProfileData> = {
+      const baseData: OnboardingPayload = {
         displayName: displayName.trim(),
         countryCode: selectedCountry.code,
         phoneNumber: phoneNumber.trim(),
@@ -806,7 +792,7 @@ export default function OnboardingPage() {
         onboardingCompleted: true,
       };
 
-      let finalPayload: Partial<UserProfileData> = { ...baseData };
+      let finalPayload: OnboardingPayload = { ...baseData };
 
       if (role === 'STUDENT') {
         const finalCollegeItem = selectedCollege || searchColleges(college.trim(), 1)[0];
@@ -878,7 +864,7 @@ export default function OnboardingPage() {
       // Save to Firebase database & complete onboarding (with safety timeout)
       try {
         await Promise.race([
-          completeOnboarding(finalPayload),
+          completeOnboarding(finalPayload as unknown as Record<string, unknown>),
           new Promise((resolve) => setTimeout(resolve, 2500)),
         ]);
       } catch (saveErr) {

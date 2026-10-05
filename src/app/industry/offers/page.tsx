@@ -48,12 +48,12 @@ export default function IndustryOffersPage() {
     return off.status === activeTab;
   });
 
-  const handleGenerateSubmit = (e: React.FormEvent) => {
+  const handleGenerateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cand = candidates.find((c) => c.id === candidateId);
     if (!cand) return;
 
-    const newOffer = createOffer({
+    const newOffer = await createOffer({
       candidateId: cand.id,
       candidateName: cand.name,
       candidateAvatar: cand.avatar,

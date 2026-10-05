@@ -677,3 +677,179 @@ export const createNotificationSchema = z
 
 export type ListNotificationsQuery = z.infer<typeof listNotificationsSchema>;
 export type CreateNotificationBody = z.infer<typeof createNotificationSchema>;
+
+/* ----------------------------------------------------------------- college */
+/*
+ * The college portal had no backend at all. `0011_college.sql` created the
+ * tables — college_company, curriculum_modules, training_programs,
+ * training_enrollments, campus_announcements, placement_drives — but nothing
+ * ever served them, so the portal ran entirely on module-level `useState`
+ * arrays seeded from mock data. A refresh lost every program, announcement and
+ * drive, and `importStudents(n)` only incremented a counter in memory.
+ *
+ * These schemas are the write side of that gap. Note the deliberate omissions:
+ * no collegeId and no createdBy. The owning college is always read from
+ * `req.user.collegeId`, so an officer cannot create a program under another
+ * institution by sending a different id.
+ */
+
+export const PARTNERSHIP_STATUSES = ['active', 'pending', 'potential'] as const;
+export const MOU_STATUSES = ['active', 'under_review', 'draft', 'renewed'] as const;
+export const CURRICULUM_MODULE_STATUSES = [
+  'adopted',
+  'in_review',
+  'pending_senate_approval',
+] as const;
+export const TRAINING_STATUSES = ['active', 'upcoming', 'completed'] as const;
+export const ANNOUNCEMENT_CATEGORIES = [
+  'internship',
+  'placement_drive',
+  'training_program',
+  'assessment_deadline',
+  'industry_challenge',
+  'workshop',
+] as const;
+export const ANNOUNCEMENT_STATUSES = ['published', 'draft'] as const;
+export const PLACEMENT_DRIVE_STATUSES = ['upcoming', 'ongoing', 'completed'] as const;
+
+export const listCollegeStudentsSchema = z.object({
+  q: z.string().trim().max(200).optional(),
+  department: z.string().trim().max(200).optional(),
+  skillSlug: z.string().trim().max(120).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  offset: z.coerce.number().int().min(0).max(10000).default(0),
+});
+export type ListCollegeStudentsQuery = z.infer<typeof listCollegeStudentsSchema>;
+
+/**
+ * The date-ordering rule is attached to the create schema rather than the field
+ * object, because Zod refuses `.partial()` on a schema that already carries a
+ * refinement. Keeping the raw object lets the update schema derive from the same
+ * field definitions instead of restating them.
+ */
+const trainingProgramFields = z
+  .object({
+    slug: z.string().trim().min(1).max(140).regex(/^[a-z0-9-]+$/).optional(),
+    name: shortText(200),
+    skillId: z.string().uuid('must be a UUID').optional().nullable(),
+    skillName: optionalText(120),
+    skillLevel: z.enum(SKILL_TIERS).default('intermediate'),
+    description: optionalText(4000),
+    instructor: optionalText(200),
+    startDate: optionalIsoDate,
+    endDate: optionalIsoDate,
+    maxStudents: z.coerce.number().int().min(0).max(100000).optional().nullable(),
+    assessmentRequired: z.boolean().default(false),
+    industryPartner: optionalText(200),
+    learningResources: textArray(300),
+    status: z.enum(TRAINING_STATUSES).default('upcoming'),
+  })
+  .strict();
+
+export const createTrainingProgramSchema = trainingProgramFields.refine(
+  (value) =>
+    value.endDate == null || value.startDate == null || value.endDate >= value.startDate,
+  { message: 'endDate cannot be before startDate', path: ['endDate'] },
+);
+
+export const updateTrainingProgramSchema = trainingProgramFields.partial().strict();
+export type CreateTrainingProgramBody = z.infer<typeof createTrainingProgramSchema>;
+export type UpdateTrainingProgramBody = z.infer<typeof updateTrainingProgramSchema>;
+
+export const updateTrainingEnrollmentSchema = z
+  .object({
+    status: z.enum(ENROLLMENT_STATUSES),
+    score: z.coerce.number().min(0).max(100).optional().nullable(),
+  })
+  .strict();
+export type UpdateTrainingEnrollmentBody = z.infer<typeof updateTrainingEnrollmentSchema>;
+
+export const createCampusAnnouncementSchema = z
+  .object({
+    slug: z.string().trim().min(1).max(140).regex(/^[a-z0-9-]+$/).optional(),
+    title: shortText(200),
+    category: z.enum(ANNOUNCEMENT_CATEGORIES),
+    content: optionalText(8000),
+    targetAudience: optionalText(200),
+    status: z.enum(ANNOUNCEMENT_STATUSES).default('published'),
+    important: z.boolean().default(false),
+  })
+  .strict();
+
+export const updateCampusAnnouncementSchema = createCampusAnnouncementSchema
+  .partial()
+  .strict();
+export type CreateCampusAnnouncementBody = z.infer<typeof createCampusAnnouncementSchema>;
+export type UpdateCampusAnnouncementBody = z.infer<typeof updateCampusAnnouncementSchema>;
+
+export const createPlacementDriveSchema = z
+  .object({
+    slug: z.string().trim().min(1).max(140).regex(/^[a-z0-9-]+$/).optional(),
+    companyId: z.string().uuid('must be a UUID').optional().nullable(),
+    title: shortText(200),
+    driveDate: optionalIsoDate,
+    eligibleDepartments: textArray(200),
+    minimumCgpa: z.coerce.number().min(0).max(10).optional().nullable(),
+    skillsRequired: textArray(120),
+    packageOffer: optionalText(120),
+    openings: z.coerce.number().int().min(0).max(100000).optional().nullable(),
+    status: z.enum(PLACEMENT_DRIVE_STATUSES).default('upcoming'),
+  })
+  .strict();
+
+export const updatePlacementDriveSchema = createPlacementDriveSchema.partial().strict();
+export type CreatePlacementDriveBody = z.infer<typeof createPlacementDriveSchema>;
+export type UpdatePlacementDriveBody = z.infer<typeof updatePlacementDriveSchema>;
+
+const partnershipFields = z
+  .object({
+    companyId: z.string().uuid('must be a UUID'),
+    partnershipStatus: z.enum(PARTNERSHIP_STATUSES).default('pending'),
+    isMou: z.boolean().default(false),
+    mouStatus: z.enum(MOU_STATUSES).optional().nullable(),
+    contactPerson: optionalText(200),
+    contactEmail: z.string().trim().email('must be a valid email').max(320).optional().nullable(),
+    effectiveFrom: optionalIsoDate,
+    expiresAt: optionalIsoDate,
+    keyInitiatives: textArray(200),
+    internshipCommitmentCount: z.coerce.number().int().min(0).default(0),
+    jointHackathonsCount: z.coerce.number().int().min(0).default(0),
+    curriculumReviewsCompleted: z.coerce.number().int().min(0).default(0),
+    internshipOpportunitiesCount: z.coerce.number().int().min(0).default(0),
+    studentsHiredCount: z.coerce.number().int().min(0).default(0),
+    challengesActiveCount: z.coerce.number().int().min(0).default(0),
+  })
+  .strict();
+
+export const upsertPartnershipSchema = partnershipFields.refine(
+  (value) =>
+    value.expiresAt == null || value.effectiveFrom == null || value.expiresAt >= value.effectiveFrom,
+  { message: 'expiresAt cannot be before effectiveFrom', path: ['expiresAt'] },
+);
+
+export const updatePartnershipSchema = partnershipFields
+  .partial()
+  .omit({ companyId: true })
+  .strict();
+export type UpsertPartnershipBody = z.infer<typeof upsertPartnershipSchema>;
+export type UpdatePartnershipBody = z.infer<typeof updatePartnershipSchema>;
+
+export const createCurriculumModuleSchema = z
+  .object({
+    slug: z.string().trim().min(1).max(140).regex(/^[a-z0-9-]+$/).optional(),
+    companyId: z.string().uuid('must be a UUID'),
+    semester: optionalText(60),
+    currentSubject: optionalText(200),
+    industryRecommendation: optionalText(4000),
+    recommendedTechnologies: textArray(120),
+    rationale: optionalText(4000),
+    status: z.enum(CURRICULUM_MODULE_STATUSES).default('in_review'),
+  })
+  .strict();
+
+export const updateCurriculumModuleSchema = createCurriculumModuleSchema
+  .partial()
+  .omit({ companyId: true })
+  .strict();
+export type CreateCurriculumModuleBody = z.infer<typeof createCurriculumModuleSchema>;
+export type UpdateCurriculumModuleBody = z.infer<typeof updateCurriculumModuleSchema>;

@@ -1265,6 +1265,80 @@ describe('interviews and offers', () => {
 
 /* ================================================== organization profiles */
 
+describe('account fields (PATCH /api/auth/me)', () => {
+  it('persists the person-owned fields onboarding collects', async () => {
+    const student = await registerStudent();
+
+    const res = await api()
+      .patch('/api/auth/me')
+      .set(...bearer(student.token))
+      .send({
+        displayName: 'Aarav Sharma',
+        phone: '+91 90000 00000',
+        title: 'Placement Coordinator',
+        onboardingCompleted: true,
+      });
+
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.equal(res.body.displayName, 'Aarav Sharma');
+    assert.equal(res.body.title, 'Placement Coordinator');
+    assert.equal(res.body.onboardingCompleted, true);
+
+    // The point of the route: the value is in PostgreSQL, not in a Firestore blob,
+    // so a fresh sign-in on another device reads the same thing back.
+    const reread = await api().get('/api/auth/me').set(...bearer(student.token));
+    assert.equal(reread.body.title, 'Placement Coordinator');
+    assert.equal(reread.body.onboardingCompleted, true);
+  });
+
+  it('leaves absent keys alone and clears an explicit null', async () => {
+    const student = await registerStudent();
+
+    await api()
+      .patch('/api/auth/me')
+      .set(...bearer(student.token))
+      .send({ title: 'Talent Sourcer', displayName: 'Kept Name' });
+
+    const cleared = await api()
+      .patch('/api/auth/me')
+      .set(...bearer(student.token))
+      .send({ title: null });
+
+    assert.equal(cleared.status, 200);
+    assert.equal(cleared.body.title, null, 'explicit null must clear');
+    assert.equal(cleared.body.displayName, 'Kept Name', 'absent key must be untouched');
+  });
+
+  it('refuses to accept role, status or organization ids', async () => {
+    const student = await registerStudent();
+
+    // The single most important assertion in this file: a person editing their
+    // own profile must not be able to promote themselves.
+    const res = await api()
+      .patch('/api/auth/me')
+      .set(...bearer(student.token))
+      .send({ role: 'admin', companyId: '11111111-1111-1111-1111-111111111111' });
+
+    assert.equal(res.status, 400);
+    assert.equal(res.body.code, 'validation_failed');
+
+    const unchanged = await api().get('/api/auth/me').set(...bearer(student.token));
+    assert.equal(unchanged.body.role, 'student');
+    assert.equal(unchanged.body.status, 'active');
+    assert.equal(unchanged.body.companyId, null);
+  });
+
+  it('401s without a token and 403s a token with no users row', async () => {
+    const anon = await api().patch('/api/auth/me').send({ displayName: 'No Token' });
+    assert.equal(anon.status, 401);
+
+    const { token } = await createFirebaseUser(uniqueEmail('unregistered-account'));
+    const unregistered = await api().patch('/api/auth/me').set(...bearer(token)).send({ displayName: 'X' });
+    assert.equal(unregistered.status, 403);
+    assert.equal(unregistered.body.code, 'registration_required');
+  });
+});
+
 describe('organization profiles', () => {
   it('updates only the caller company', async () => {
     const recruiter = await registerRecruiter('profile');
@@ -1310,8 +1384,602 @@ describe('organization profiles', () => {
     const recruiter = await registerRecruiter('strict');
     const res = await api()
       .patch('/api/industry/company')
+    .set(...bearer(recruiter.token))
+    .send({ notARealColumn: 'x' });
+  assert.equal(res.status, 400, 'unknown fields must be rejected, not silently dropped');
+  });
+});
+
+/* ================================================================ catalog */
+/*
+ * Migration 0014 added `skill_resources.source_id` because the static catalog
+ * addresses resources by local id (`c-1`) while the database used UUIDs, and the
+ * only previous link was the ordinal `position`. These tests cover the resolution
+ * path so the frontend never has to derive a UUID itself.
+ */
+
+describe('skill catalog identity', () => {
+  it('exposes source_id and resolves progress by it', async () => {
+    const student = await registerStudent();
+
+    // Any seeded skill will do; the point is the join between the catalog id the
+    // client holds and the database row.
+    const catalog = await api().get('/api/skills?limit=1').set(...bearer(student.token));
+    assert.equal(catalog.status, 200);
+    const skill = catalog.body.skills[0];
+    assert.ok(skill?.slug, 'every seeded skill must carry the catalog slug');
+
+    const detail = await api().get(`/api/skills/${skill.id}`).set(...bearer(student.token));
+    assert.equal(detail.status, 200);
+
+    const resource = detail.body.resources.find(
+      (r: { source_id: string | null }) => r.source_id !== null,
+    );
+    assert.ok(resource, '0014 must backfill source_id on seeded resources');
+
+    // Writing progress by source_id must hit the same row as writing by UUID.
+    const bySourceId = await api()
+      .post(`/api/student/skills/${skill.id}/resources/${resource.source_id}/progress`)
+      .set(...bearer(student.token))
+      .send({ completed: true });
+    assert.equal(bySourceId.status, 200, JSON.stringify(bySourceId.body));
+    assert.equal(bySourceId.body.progress.completed, true);
+
+    const byUuid = await api()
+      .post(`/api/student/skills/${skill.id}/resources/${resource.id}/progress`)
+      .set(...bearer(student.token))
+      .send({ completed: false });
+    assert.equal(byUuid.status, 200);
+    assert.equal(
+      byUuid.body.progress.resource_id,
+      bySourceId.body.progress.resource_id,
+      'both id forms must address the same resource row',
+    );
+  });
+
+  it('404s a source_id used against the wrong skill', async () => {
+    const student = await registerStudent();
+
+    const catalog = await api().get('/api/skills?limit=200').set(...bearer(student.token));
+    const withResources: Array<{ id: string; slug: string }> = catalog.body.skills;
+
+    // Find two distinct skills so a source_id from one can be tried against the other.
+    let first: { skillId: string; sourceId: string } | null = null;
+    for (const candidate of withResources) {
+      const detail = await api().get(`/api/skills/${candidate.id}`).set(...bearer(student.token));
+      const resource = detail.body.resources.find((r: { source_id: string | null }) => r.source_id);
+      if (resource) {
+        first = { skillId: candidate.id, sourceId: resource.source_id };
+        break;
+      }
+    }
+
+    assert.ok(first, 'the seed must provide at least one skill with resources');
+
+    const other = withResources.find((s) => s.id !== first!.skillId);
+    assert.ok(other, 'the seed must provide more than one skill');
+
+    const res = await api()
+      .post(`/api/student/skills/${other.id}/resources/${first!.sourceId}/progress`)
+      .set(...bearer(student.token))
+      .send({ completed: true });
+
+    assert.equal(
+      res.status,
+      404,
+      'a source_id must not resolve across skills — the unique index is per skill',
+    );
+  });
+
+  it('keeps source_id unique per skill and non-null on seeded rows', async () => {
+    const totals = await getPool().query<{
+      total: string;
+      with_source_id: string;
+      dupes: string;
+    }>(
+      `SELECT count(*)::text AS total,
+              count(source_id)::text AS with_source_id,
+              (SELECT count(*)::text FROM (
+                 SELECT skill_id, source_id FROM skill_resources
+                  WHERE source_id IS NOT NULL
+                  GROUP BY skill_id, source_id HAVING count(*) > 1
+               ) d) AS dupes
+         FROM skill_resources`,
+    );
+
+    assert.equal(
+      Number(totals.rows[0].total),
+      Number(totals.rows[0].with_source_id),
+      'every seeded resource must carry a source_id',
+    );
+    assert.equal(totals.rows[0].dupes, '0', 'source_id must be unique within a skill');
+  });
+});
+/*
+ * The college portal had no backend at all. 0011_college.sql created six tables
+ * and nothing served them, so the portal ran on useState arrays seeded from mock
+ * data: `tp-new-${Date.now()}`, `anc-${Date.now()}`, and `importStudents(n)`
+ * incrementing a counter in memory. These tests are the first thing to check
+ * that the tables actually hold what the portal needs.
+ */
+
+describe('college portal', () => {
+  it('401 without a token and 403 for a student', async () => {
+    const anon = await api().get('/api/college/training-programs');
+    assert.equal(anon.status, 401);
+
+    const student = await registerStudent();
+    const wrongRole = await api().get('/api/college/training-programs').set(...bearer(student.token));
+    assert.equal(wrongRole.status, 403);
+    assert.equal(wrongRole.body.code, 'forbidden');
+  });
+
+  it('persists a training program and lists it back with counts', async () => {
+    const officer = await registerOfficer();
+    const skillId = await aSeededSkillId();
+
+    const created = await api()
+      .post('/api/college/training-programs')
+      .set(...bearer(officer.token))
+      .send({
+        name: 'Kubernetes for Platform Teams',
+        skillId,
+        skillName: 'Kubernetes',
+        skillLevel: 'advanced',
+        startDate: '2026-11-02',
+        endDate: '2026-12-14',
+        maxStudents: 30,
+        assessmentRequired: true,
+        learningResources: ['helm-basics'],
+        status: 'upcoming',
+      });
+
+    assert.equal(created.status, 201, JSON.stringify(created.body));
+    assert.equal(created.body.trainingProgram.name, 'Kubernetes for Platform Teams');
+
+    // Re-read through a separate request: this is the assertion that the row
+    // is in PostgreSQL and not in the response the client just built.
+    const listed = await api().get('/api/college/training-programs').set(...bearer(officer.token));
+    assert.equal(listed.status, 200);
+
+    const found = listed.body.trainingPrograms.find(
+      (p: { id: string }) => p.id === created.body.trainingProgram.id,
+    );
+    assert.ok(found, 'the created program must come back from the list endpoint');
+    assert.equal(found.enrolled_students, 0);
+    assert.equal(found.skill_slug !== null, true, 'the skill FK must resolve to a slug');
+  });
+
+  it('never exposes another college training programs', async () => {
+    const mine = await registerOfficer();
+    const theirs = await registerOfficer();
+
+    const created = await api()
+      .post('/api/college/training-programs')
+      .set(...bearer(mine.token))
+      .send({ name: 'Confidential Internal Batch' });
+    assert.equal(created.status, 201);
+
+    const listed = await api().get('/api/college/training-programs').set(...bearer(theirs.token));
+    const leaked = listed.body.trainingPrograms.find(
+      (p: { id: string }) => p.id === created.body.trainingProgram.id,
+    );
+    assert.equal(leaked, undefined, 'tenant isolation must hold on the college portal');
+  });
+
+  it('404s an officer editing a program owned by a different college', async () => {
+    const mine = await registerOfficer();
+    const theirs = await registerOfficer();
+
+    const created = await api()
+      .post('/api/college/training-programs')
+      .set(...bearer(mine.token))
+      .send({ name: 'Owned By Another College' });
+    assert.equal(created.status, 201);
+
+    const patched = await api()
+      .patch(`/api/college/training-programs/${created.body.trainingProgram.id}`)
+      .set(...bearer(theirs.token))
+      .send({ description: 'hijacked' });
+
+    assert.equal(patched.status, 404, 'a cross-tenant write must be indistinguishable from a missing row');
+
+    const unchanged = await api().get('/api/college/training-programs').set(...bearer(mine.token));
+    const found = unchanged.body.trainingPrograms.find(
+      (p: { id: string; description: string | null }) => p.id === created.body.trainingProgram.id,
+    );
+    assert.equal(found.description, null, 'the cross-tenant patch must not have landed');
+  });
+
+  it('rejects a training program with endDate before startDate', async () => {
+    const officer = await registerOfficer();
+    const res = await api()
+      .post('/api/college/training-programs')
+      .set(...bearer(officer.token))
+      .send({ name: 'Time Travel Bootcamp', startDate: '2026-12-01', endDate: '2026-11-01' });
+    assert.equal(res.status, 400);
+    assert.equal(res.body.code, 'validation_failed');
+  });
+
+  it('refuses a collegeId in the body so an officer cannot target another institution', async () => {
+    const officer = await registerOfficer();
+    const other = await registerOfficer();
+
+    const res = await api()
+      .post('/api/college/training-programs')
+      .set(...bearer(officer.token))
+      // @ts-expect-error deliberately sending a field the schema must not accept
+      .send({ name: 'Cross Tenant Injection', collegeId: other.collegeId });
+    assert.equal(res.status, 400, 'collegeId must be rejected, not ignored');
+
+    const theirs = await api().get('/api/college/training-programs').set(...bearer(other.token));
+    assert.equal(theirs.body.trainingPrograms.length, 0);
+  });
+
+  it('enrols the officer in their own college program and derives completed_at', async () => {
+    const officer = await registerOfficer();
+
+    const program = await api()
+      .post('/api/college/training-programs')
+      .set(...bearer(officer.token))
+      .send({ name: 'Cloud Security Fundamentals' });
+    assert.equal(program.status, 201);
+    const programId = program.body.trainingProgram.id as string;
+
+    const enrolled = await api()
+      .post(`/api/college/training-programs/${programId}/enroll`)
+      .set(...bearer(officer.token));
+    assert.equal(enrolled.status, 201, JSON.stringify(enrolled.body));
+    assert.ok(enrolled.body.enrollment, 'the enrollment row must be returned');
+    assert.equal(enrolled.body.enrollment.status, 'enrolled');
+
+    const marked = await api()
+      .patch(`/api/college/training-enrollments/${enrolled.body.enrollment.id}`)
+      .set(...bearer(officer.token))
+      .send({ status: 'completed', score: 88.5 });
+    assert.equal(marked.status, 200, JSON.stringify(marked.body));
+    assert.equal(marked.body.enrollment.status, 'completed');
+    assert.ok(
+      marked.body.enrollment.completed_at,
+      'completed_at must be derived from status, not accepted from the client',
+    );
+  });
+
+  it('400s a non-UUID id instead of 404 or 500', async () => {
+    const officer = await registerOfficer();
+    const res = await api()
+      .patch('/api/college/training-programs/tp-new-1234567890')
+      .set(...bearer(officer.token))
+      .send({ description: 'x' });
+    assert.equal(res.status, 400);
+    assert.equal(res.body.code, 'invalid_id');
+  });
+
+  it('publishes an announcement with a derived published_at', async () => {
+    const officer = await registerOfficer();
+
+    const created = await api()
+      .post('/api/college/announcements')
+      .set(...bearer(officer.token))
+      .send({
+        title: 'Semester 7 internship drives open',
+        category: 'internship',
+        content: 'Register with the placement cell before Friday.',
+        status: 'published',
+        important: true,
+      });
+
+    assert.equal(created.status, 201, JSON.stringify(created.body));
+    assert.ok(
+      created.body.announcement.published_at,
+      'the CHECK constraint requires published_at for a published announcement',
+    );
+
+    const deleted = await api()
+      .delete(`/api/college/announcements/${created.body.announcement.id}`)
+      .set(...bearer(officer.token));
+    assert.equal(deleted.status, 200);
+  });
+
+  it('scopes the student roster to the calling college', async () => {
+    const mine = await registerOfficer();
+    const theirs = await registerOfficer();
+
+    const mineStudent = await createFirebaseUser(uniqueEmail('roster-mine'));
+    const mineReg = await api()
+      .post('/api/auth/register')
+      .set(...bearer(mineStudent.token))
+      .send({ intentRole: 'student' });
+    assert.equal(mineReg.status, 201);
+    await getPool().query(`UPDATE users SET college_id = $1 WHERE id = $2`, [
+      mine.collegeId,
+      mineReg.body.userId,
+    ]);
+
+    const theirStudent = await createFirebaseUser(uniqueEmail('roster-theirs'));
+    const theirReg = await api()
+      .post('/api/auth/register')
+      .set(...bearer(theirStudent.token))
+      .send({ intentRole: 'student' });
+    await getPool().query(`UPDATE users SET college_id = $1 WHERE id = $2`, [
+      theirs.collegeId,
+      theirReg.body.userId,
+    ]);
+
+    const roster = await api().get('/api/college/students').set(...bearer(mine.token));
+    assert.equal(roster.status, 200);
+    const uids = roster.body.students.map((s: { firebase_uid: string }) => s.firebase_uid);
+    assert.ok(uids.includes(mineStudent.uid), 'the officer must see their own student');
+    assert.equal(
+      uids.includes(theirStudent.uid),
+      false,
+      'one college roster must never contain another college student',
+    );
+  });
+
+  it('requires a partnership before a curriculum module can exist', async () => {
+    const officer = await registerOfficer();
+    const company = await registerRecruiter('curr');
+
+    // No partnership yet: the composite FK to college_company must reject this.
+    const orphaned = await api()
+      .post('/api/college/curriculum')
+      .set(...bearer(officer.token))
+      .send({ companyId: company.companyId, currentSubject: 'Distributed Systems', semester: '6' });
+    assert.equal(orphaned.status, 422, 'a module without a partnership must be refused');
+    assert.equal(orphaned.body.code, 'referenced_record_not_found');
+
+    const partnership = await api()
+      .put('/api/college/partnerships')
+      .set(...bearer(officer.token))
+      .send({ companyId: company.companyId, partnershipStatus: 'active', isMou: true, mouStatus: 'active' });
+    assert.equal(partnership.status, 200, JSON.stringify(partnership.body));
+
+    // Re-submitting the same company must update, not conflict.
+    const again = await api()
+      .put('/api/college/partnerships')
+      .set(...bearer(officer.token))
+      .send({ companyId: company.companyId, partnershipStatus: 'active', isMou: true, mouStatus: 'under_review' });
+    assert.equal(again.status, 200, 'the partnership upsert must be idempotent');
+    assert.equal(again.body.partnership.mou_status, 'under_review');
+
+    const now = await api()
+      .post('/api/college/curriculum')
+      .set(...bearer(officer.token))
+      .send({
+        companyId: company.companyId,
+        currentSubject: 'Distributed Systems',
+        semester: '6',
+        recommendedTechnologies: ['Kafka', 'gRPC'],
+        status: 'in_review',
+      });
+    assert.equal(now.status, 201, JSON.stringify(now.body));
+
+    const listed = await api().get('/api/college/curriculum').set(...bearer(officer.token));
+    assert.equal(listed.body.curriculumModules.length, 1);
+  });
+
+  it('keeps college_company readable from the industry side of the same row', async () => {
+    const officer = await registerOfficer();
+    const company = await registerRecruiter('shared');
+
+    const partnership = await api()
+      .put('/api/college/partnerships')
+      .set(...bearer(officer.token))
+      .send({ companyId: company.companyId, partnershipStatus: 'active', internshipCommitmentCount: 12 });
+    assert.equal(partnership.status, 200);
+
+    // The industry portal reads the same rows, which is the relational
+    // relationship replacing the localStorage sync bus.
+    const fromIndustry = await api()
+      .get('/api/industry/partnerships')
+      .set(...bearer(company.token));
+    assert.equal(fromIndustry.status, 200, JSON.stringify(fromIndustry.body));
+
+    const row = fromIndustry.body.partnerships.find(
+      (p: { college_id: string }) => p.college_id === officer.collegeId,
+    );
+    assert.ok(row, 'the recruiter must see the partnership the college created');
+    assert.equal(row.internship_commitment_count, 12);
+  });
+
+  it('derives the overview counts in SQL so they match a refresh', async () => {
+    const officer = await registerOfficer();
+
+    await api()
+      .post('/api/college/placement-drives')
+      .set(...bearer(officer.token))
+      .send({ title: 'Graduation Drive', openings: 40, minimumCgpa: 6.5, status: 'upcoming' });
+
+    const overview = await api().get('/api/college/overview').set(...bearer(officer.token));
+    assert.equal(overview.status, 200);
+    assert.equal(overview.body.overview.upcoming_placement_drives, 1);
+    assert.equal(typeof overview.body.overview.students, 'number');
+  });
+
+  it('replaces the hardcoded "42 eligible" with a real eligibility count', async () => {
+    const officer = await registerOfficer();
+    const recruiter = await registerRecruiter('eligibility');
+    const skillId = await aSeededSkillId();
+
+    const internship = await api()
+      .post('/api/industry/internships')
       .set(...bearer(recruiter.token))
-      .send({ notARealColumn: 'x' });
-    assert.equal(res.status, 400, 'unknown fields must be rejected, not silently dropped');
+      .send({
+        title: 'Backend Engineer Internship',
+        slug: `be-internship-${Date.now()}`,
+        status: 'active',
+        requiredSkills: [{ skillId, importance: 'required', level: 'intermediate' }],
+      });
+    assert.equal(internship.status, 201, JSON.stringify(internship.body));
+    const internshipId = internship.body.internship.id as string;
+
+    // A student who has not claimed the required skill is not eligible.
+    const unprepared = await createFirebaseUser(uniqueEmail('unprepared'));
+    const unpreparedReg = await api()
+      .post('/api/auth/register')
+      .set(...bearer(unprepared.token))
+      .send({ intentRole: 'student' });
+    await getPool().query(`UPDATE users SET college_id = $1, status = 'active' WHERE id = $2`, [
+      officer.collegeId,
+      unpreparedReg.body.userId,
+    ]);
+
+    const before = await api()
+      .get(`/api/college/internships/${internshipId}/eligible-students`)
+      .set(...bearer(officer.token));
+    assert.equal(before.status, 200);
+    assert.equal(before.body.total, 0, 'a student without the required skill must not be counted eligible');
+    assert.equal(before.body.requiredSkills, 1);
+
+    // Claim the skill and the same query now reports them.
+    await getPool().query(
+      `INSERT INTO user_skills (user_id, skill_id, progress, learning_status, evidence_source)
+       VALUES ($1, $2, 60, 'in_progress', 'self_declared')`,
+      [unpreparedReg.body.userId, skillId],
+    );
+
+    const after = await api()
+      .get(`/api/college/internships/${internshipId}/eligible-students`)
+      .set(...bearer(officer.token));
+    assert.equal(after.body.total, 1, 'claiming the required skill must make the student eligible');
+
+    const recommended = await api()
+      .post(`/api/college/internships/${internshipId}/recommend`)
+      .set(...bearer(officer.token));
+    assert.equal(recommended.status, 201, JSON.stringify(recommended.body));
+    assert.equal(recommended.body.notified, 1, 'the notified count must equal the eligible count');
+
+    // The notification has to exist on the student's side. The old
+    // implementation only showed a toast claiming 42 students were reached.
+    const studentNotifications = await api()
+      .get('/api/notifications')
+      .set(...bearer(unprepared.token));
+    assert.equal(studentNotifications.status, 200);
+    assert.equal(studentNotifications.body.notifications.length, 1);
+    assert.match(
+      String(studentNotifications.body.notifications[0].title),
+      /Recommended internship/,
+    );
+  });
+
+  it('lists internships with a real per-college eligible count', async () => {
+    const officer = await registerOfficer();
+    const recruiter = await registerRecruiter('listing');
+    const skillId = await aSeededSkillId();
+
+    const internship = await api()
+      .post('/api/industry/internships')
+      .set(...bearer(recruiter.token))
+      .send({
+        title: 'Data Analyst Internship',
+        slug: `da-${Date.now()}`,
+        status: 'active',
+        workMode: 'remote',
+        isStartupFriendly: true,
+        requiredSkills: [{ skillId, importance: 'required' }],
+      });
+    assert.equal(internship.status, 201, JSON.stringify(internship.body));
+    const internshipId = internship.body.internship.id as string;
+
+    const student = await createFirebaseUser(uniqueEmail('listed-student'));
+    const reg = await api()
+      .post('/api/auth/register')
+      .set(...bearer(student.token))
+      .send({ intentRole: 'student' });
+    await getPool().query(`UPDATE users SET college_id = $1, status = 'active' WHERE id = $2`, [
+      officer.collegeId,
+      reg.body.userId,
+    ]);
+
+    const listed = await api().get('/api/college/internships').set(...bearer(officer.token));
+    assert.equal(listed.status, 200);
+
+    const row = listed.body.internships.find(
+      (i: { id: string; eligible_students: number; required_skills: number }) => i.id === internshipId,
+    );
+    assert.ok(row, 'the posted internship must appear in the college listing');
+    assert.equal(row.required_skills, 1);
+    assert.equal(row.eligible_students, 0, 'the student has not claimed the skill yet');
+
+    // The count in the list and the count from the detail route are the same
+    // number, because they are the same query. A client cannot show 42 and then
+    // notify a different number of people.
+    await getPool().query(
+      `INSERT INTO user_skills (user_id, skill_id, progress, learning_status, evidence_source)
+       VALUES ($1, $2, 75, 'in_progress', 'self_declared')`,
+      [reg.body.userId, skillId],
+    );
+
+    const relisted = await api().get('/api/college/internships').set(...bearer(officer.token));
+    const after = relisted.body.internships.find(
+      (i: { id: string; eligible_students: number }) => i.id === internshipId,
+    );
+    assert.equal(after.eligible_students, 1);
+
+    const detail = await api()
+      .get(`/api/college/internships/${internshipId}/eligible-students`)
+      .set(...bearer(officer.token));
+    assert.equal(
+      detail.body.total,
+      after.eligible_students,
+      'the list count and the detail count must agree',
+    );
+  });
+
+  it('never lets one college notify another college students', async () => {
+    const mine = await registerOfficer();
+    const theirs = await registerOfficer();
+    const recruiter = await registerRecruiter('isolation');
+
+    const internship = await api()
+      .post('/api/industry/internships')
+      .set(...bearer(recruiter.token))
+      .send({ title: 'Isolated Internship', slug: `iso-${Date.now()}`, status: 'active' });
+    const internshipId = internship.body.internship.id as string;
+
+    const theirStudent = await createFirebaseUser(uniqueEmail('their-student'));
+    const theirReg = await api()
+      .post('/api/auth/register')
+      .set(...bearer(theirStudent.token))
+      .send({ intentRole: 'student' });
+    await getPool().query(`UPDATE users SET college_id = $1, status = 'active' WHERE id = $2`, [
+      theirs.collegeId,
+      theirReg.body.userId,
+    ]);
+
+    const myStudent = await createFirebaseUser(uniqueEmail('my-student'));
+    const myReg = await api()
+      .post('/api/auth/register')
+      .set(...bearer(myStudent.token))
+      .send({ intentRole: 'student' });
+    await getPool().query(`UPDATE users SET college_id = $1, status = 'active' WHERE id = $2`, [
+      mine.collegeId,
+      myReg.body.userId,
+    ]);
+
+    // No required skills on this internship, so every student at *my* college is
+    // eligible and every student at theirs is not.
+    const mineStudents = await api()
+      .get(`/api/college/internships/${internshipId}/eligible-students`)
+      .set(...bearer(mine.token));
+    assert.equal(mineStudents.status, 200);
+    assert.equal(mineStudents.body.total, 1, 'only the officer own college student qualifies');
+
+    const recommended = await api()
+      .post(`/api/college/internships/${internshipId}/recommend`)
+      .set(...bearer(mine.token));
+    assert.equal(recommended.status, 201);
+    assert.equal(recommended.body.notified, 1);
+
+    const theirFeed = await api().get('/api/notifications').set(...bearer(theirStudent.token));
+    assert.equal(
+      theirFeed.body.notifications.length,
+      0,
+      'a recommendation must not cross a college boundary',
+    );
+
+    const myFeed = await api().get('/api/notifications').set(...bearer(myStudent.token));
+    assert.equal(myFeed.body.notifications.length, 1, 'the own college student was notified');
   });
 });

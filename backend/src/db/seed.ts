@@ -529,15 +529,18 @@ async function seedLearning(
 
     for (const [index, resource] of resources.entries()) {
       await client.query(
-        `INSERT INTO skill_resources (skill_id, title, type, duration, url, topic, description, position)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+        `INSERT INTO skill_resources (skill_id, title, type, duration, url, topic, description, position, source_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
          ON CONFLICT (skill_id, position) DO UPDATE SET
            title = EXCLUDED.title,
            type = EXCLUDED.type,
            duration = EXCLUDED.duration,
            url = EXCLUDED.url,
            topic = EXCLUDED.topic,
-           description = EXCLUDED.description`,
+           description = EXCLUDED.description,
+           -- Keep the catalog id in step with the row even on an upsert, so a
+           -- re-seed repairs a drifted source_id instead of leaving it stale.
+           source_id = COALESCE(EXCLUDED.source_id, skill_resources.source_id)`,
         [
           resolved.id,
           resource.title,
@@ -547,6 +550,9 @@ async function seedLearning(
           resource.topic ?? null,
           resource.description ?? null,
           index,
+          // The catalog is the authority for identity. Fall back to the same
+          // `<slug>-<n>` form migration 0014 backfilled with.
+          resource.id ?? `${skill.id}-${index + 1}`,
         ],
       );
       resourceCount += 1;

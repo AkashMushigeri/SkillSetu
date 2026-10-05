@@ -414,7 +414,13 @@ export default function StudentProfilePage() {
     );
   };
 
-  const handleAddSkillToProfile = () => {
+/**
+   * Adding a skill is a server insert now, so this awaits the result instead of
+   * reading a synchronously-returned object. The success/error message is
+   * rendered from the server's answer — a rejected insert reports failure here
+   * instead of the skill silently appearing in the list.
+   */
+  const handleAddSkillToProfile = async () => {
     const nameToAdd = selectedCatalogSkill ? selectedCatalogSkill.name : skillSearchQuery.trim();
     if (!nameToAdd) {
       setSkillAddMessage({ text: 'Please select or search a skill.', type: 'error' });
@@ -430,7 +436,7 @@ export default function StudentProfilePage() {
       return;
     }
 
-    const result = addSkill({
+    const result = await addSkill({
       name: nameToAdd,
       level: selectedProficiency,
       category: selectedCatalogSkill?.category,

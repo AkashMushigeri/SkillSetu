@@ -1,8 +1,44 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useCollege } from '@/context/CollegeContext';
-import { Upload, Download, FileSpreadsheet, CheckCircle2, X } from 'lucide-react';
+/**
+ * Bulk student import — deliberately not wired to anything.
+ *
+ * What this component used to do, and why it is now inert:
+ *
+ *   - `handleFileSelect` recorded `e.target.files[0].name` and never read the
+ *     file. Nothing was uploaded, parsed, or validated.
+ *   - The "Import Preview" panel was a hardcoded "248 students / 120 CSE /
+ *     64 AIML / 40 ECE / 24 EEE" block, shown for any file at all.
+ *   - `handleConfirmImport` waited 600ms and then called `importStudents(248)`,
+ *     which incremented `profile.totalStudents` in memory and reported
+ *     "profiles & skill scores updated" without writing a single row.
+ *
+ * It could not simply be pointed at an API. A student in this architecture is a
+ * `users` row with a real `firebase_uid`, and that UID is what the auth
+ * middleware maps every request through. Creating student rows from a CSV would
+ * manufacture accounts with no Firebase identity, which would then fail
+ * `requireAuth` with `registration_required` — a roster of people who cannot
+ * sign in.
+ *
+ * Making this real means picking a model, which is a product decision rather
+ * than a migration one:
+ *
+ *   1. Invite/claim — the college uploads USNs, invited students claim their
+ *      record on first sign-in, and `users.college_id` is set at that point.
+ *   2. Roster-only CSV — academic records (USN, department, year, CGPA) are
+ *      imported into a pending roster keyed by email, then matched to a signed-in
+ *      student. This needs a table for unmatched rows.
+ *   3. Direct creation — needs a provisioning flow that is explicitly not
+ *      allowed under the current architecture.
+ *
+ * Until one of those is chosen, the button explains that instead of pretending.
+ * The `recommendInternship` action in the same portal did get a real
+ * implementation, because it needed no new model: it writes `notifications` rows
+ * against students who already exist.
+ */
+
+import React from 'react';
+import { FileSpreadsheet, X, Info } from 'lucide-react';
 
 interface ImportModalProps {
   isOpen: boolean;
@@ -10,42 +46,7 @@ interface ImportModalProps {
 }
 
 export const ImportStudentsModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => {
-  const { importStudents } = useCollege();
-  const [selectedFile, setSelectedFile] = useState<string | null>(null);
-  const [isImporting, setIsImporting] = useState(false);
-
   if (!isOpen) return null;
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0].name);
-    } else {
-      setSelectedFile('AYUSH_College_Student_Master_List_2026.csv');
-    }
-  };
-
-  const handleDownloadTemplate = () => {
-    const csvContent =
-      'USN,Name,Email,Department,Year,GPA,Skills\n' +
-      '1AY23CS101,Rohan K,rohan.k@ayushcollege.edu,CSE,3rd Year,8.5,"Python, SQL, React"\n' +
-      '1AY23AI102,Pooja S,pooja.s@ayushcollege.edu,AIML,3rd Year,9.0,"Python, Machine Learning"\n';
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'skillsetu_student_import_template.csv';
-    a.click();
-  };
-
-  const handleConfirmImport = () => {
-    setIsImporting(true);
-    setTimeout(() => {
-      importStudents(248);
-      setIsImporting(false);
-      onClose();
-    }, 600);
-  };
 
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
@@ -56,11 +57,11 @@ export const ImportStudentsModal: React.FC<ImportModalProps> = ({ isOpen, onClos
         <div className="p-5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700">
-              <Upload className="w-5 h-5" />
+              <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
               <h2 className="font-bold text-slate-900 text-base">Bulk Student Import</h2>
-              <p className="text-xs text-slate-500">Upload CSV to sync student profiles &amp; academic records.</p>
+              <p className="text-xs text-slate-500">Not available until a student claim flow exists.</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-700 rounded-lg">
@@ -68,82 +69,35 @@ export const ImportStudentsModal: React.FC<ImportModalProps> = ({ isOpen, onClos
           </button>
         </div>
 
-        <div className="p-6 space-y-5">
-          {/* Download Template Box */}
-          <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-2xl">
-            <div className="flex items-center gap-2.5">
-              <FileSpreadsheet className="w-5 h-5 text-emerald-600 shrink-0" />
-              <div>
-                <p className="text-xs font-bold text-slate-900">Download CSV Template</p>
-                <p className="text-[11px] text-slate-500">Includes USN, Dept, Year, GPA &amp; Skill columns</p>
-              </div>
+        <div className="p-6 space-y-4">
+          <div className="flex gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+            <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="space-y-2 text-xs text-slate-700">
+              <p className="font-bold text-slate-900">This import was previously a no-op.</p>
+              <p>
+                It accepted a file without reading it, previewed a hardcoded set of 248 student records for
+                any file, and reported that profiles and skill scores had been updated while writing nothing.
+                That has been removed rather than left in place.
+              </p>
+              <p>
+                A real import cannot be built on the current model: every account needs a genuine Firebase
+                identity, so a CSV cannot create students who are able to sign in. The portal roster now
+                lists students who have signed up and affiliated with this college.
+              </p>
+              <p className="text-slate-600">
+                The likely path forward is an invite or claim flow, where uploaded records are matched to a
+                signed-in student rather than created for them.
+              </p>
             </div>
-            <button
-              onClick={handleDownloadTemplate}
-              className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold text-xs rounded-xl flex items-center gap-1.5 transition-colors"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Template</span>
-            </button>
           </div>
-
-          {/* Upload Area */}
-          {!selectedFile ? (
-            <label className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer bg-slate-50 hover:bg-emerald-50/30 transition-colors">
-              <Upload className="w-8 h-8 text-slate-400 mb-2" />
-              <p className="text-xs font-bold text-slate-900">Click or drag CSV file to upload</p>
-              <p className="text-[11px] text-slate-500 mt-1">Supports CSV, XLSX up to 10MB</p>
-              <input type="file" accept=".csv" onChange={handleFileSelect} className="hidden" />
-            </label>
-          ) : (
-            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-emerald-800 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  File Selected: {selectedFile}
-                </span>
-                <button onClick={() => setSelectedFile(null)} className="text-xs text-slate-500 hover:text-slate-800">
-                  Change
-                </button>
-              </div>
-
-              {/* Mock Preview Info */}
-              <div className="p-3 bg-white rounded-xl border border-emerald-100 text-xs space-y-1">
-                <p className="font-bold text-slate-900 flex items-center justify-between">
-                  <span>Import Preview:</span>
-                  <span className="text-emerald-700 font-extrabold text-sm">248 students</span>
-                </p>
-                <p className="text-slate-500 text-[11px]">
-                  &bull; 120 CSE &bull; 64 AIML &bull; 40 ECE &bull; 24 EEE
-                </p>
-                <p className="text-slate-500 text-[11px]">
-                  &bull; All USNs verified &bull; Skills mapped automatically
-                </p>
-              </div>
-            </div>
-          )}
         </div>
 
-        <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+        <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end">
           <button
             onClick={onClose}
             className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold"
           >
-            Cancel
-          </button>
-          <button
-            onClick={handleConfirmImport}
-            disabled={!selectedFile || isImporting}
-            className="px-5 py-2 bg-gradient-to-r from-brand-emerald to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-md"
-          >
-            {isImporting ? (
-              <span>Importing 248 Students...</span>
-            ) : (
-              <>
-                <Upload className="w-4 h-4" />
-                <span>Import Students</span>
-              </>
-            )}
+            Close
           </button>
         </div>
       </div>

@@ -73,3 +73,27 @@ export const rejectSchema = z
   .strict();
 
 export type RejectBody = z.infer<typeof rejectSchema>;
+
+/**
+ * The account fields that belong to the person rather than to a portal.
+ *
+ * These are what onboarding collects for every role (display name, phone, job
+ * title) plus the flag that says onboarding is done. They were previously
+ * written to the Firestore `users/{uid}` blob by `saveUserProfile`, which meant
+ * the record that decided routing lived in a document store while the record that
+ * decided authorization lived in PostgreSQL — two sources for one fact.
+ *
+ * Deliberately no `role`, `status`, `companyId` or `collegeId`: those are set by
+ * the registration and role-approval flows, never by the person themselves.
+ */
+export const updateAccountSchema = z
+  .object({
+    displayName: z.string().trim().max(200).optional().nullable(),
+    phone: z.string().trim().max(32).optional().nullable(),
+    title: z.string().trim().max(200).optional().nullable(),
+    avatarUrl: z.string().trim().url().max(1000).optional().nullable(),
+    onboardingCompleted: z.boolean().optional(),
+  })
+  .strict();
+
+export type UpdateAccountBody = z.infer<typeof updateAccountSchema>;

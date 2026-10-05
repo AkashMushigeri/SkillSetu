@@ -13,7 +13,7 @@
  */
 
 import type { User } from 'firebase/auth';
-import type { UserRole } from '@/lib/firebase';
+import type { UserRole } from '@/lib/session';
 
 /** Lowercase `user_role` enum in PostgreSQL; the frontend uses uppercase. */
 const ROLE_TO_INTENT: Record<UserRole, 'student' | 'industry' | 'college'> = {

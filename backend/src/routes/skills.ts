@@ -73,10 +73,10 @@ export function createSkillRouter({ pool, authMiddleware }: SkillRouterDependenc
       }
 
       const resources = await pool.query(
-        `SELECT id, title, type, duration, url, topic, description, position
+          `SELECT id, source_id, title, type, duration, url, topic, description, position
          FROM skill_resources WHERE skill_id = $1 ORDER BY position`,
-        [id],
-      );
+          [id],
+        );
 
       res.status(200).json({ skill: skill.rows[0], resources: resources.rows, requestId: requestId(res) });
     })().catch(next);
@@ -88,6 +88,13 @@ export function createSkillRouter({ pool, authMiddleware }: SkillRouterDependenc
    * Returns the caller's `user_skills` rows joined to the catalogue, so the
    * frontend gets both the shared description and the per-user progress and
    * verification state in one round trip.
+   *
+   * Learning materials are aggregated in the same query, each carrying the
+   * caller's own completion flag. They used to be omitted here, which left the
+   * skill detail page with an empty resource list after a refresh: the static
+   * catalogue only supplies `completed: false` defaults, so a ticked material
+   * had to come from somewhere real, and this is that place. A left join keeps
+   * untouched materials in the list instead of dropping them.
    */
   router.get('/api/student/skills', requireAuth, requireRole('student'), (req, res, next) => {
     void (async () => {
@@ -99,9 +106,34 @@ export function createSkillRouter({ pool, authMiddleware }: SkillRouterDependenc
                 us.progress, us.learning_status, us.assessment_status, us.is_verified,
                 us.verified_at, us.verification_type, us.verified_level,
                 us.evidence_source, us.best_score, us.assessment_strengths,
-                us.assessment_improvements, us.created_at AS added_at
+                us.assessment_improvements, us.created_at AS added_at,
+                COALESCE(resources.aggregate, '[]'::json) AS resources
          FROM user_skills us
          JOIN skills s ON s.id = us.skill_id
+         LEFT JOIN LATERAL (
+           SELECT json_agg(
+                    json_build_object(
+                      -- The client sends this value back to the progress
+                      -- endpoint, which accepts either form. Prefer the
+                      -- catalogue source_id so it matches the static
+                      -- catalogue's own resource ids, and fall back to the UUID
+                      -- for rows seeded before migration 0014.
+                      'id', COALESCE(r.source_id, r.id::text),
+                      'uuid', r.id,
+                      'title', r.title,
+                      'type', r.type,
+                      'duration', r.duration,
+                      'url', r.url,
+                      'topic', r.topic,
+                      'position', r.position,
+                      'completed', COALESCE(rp.completed, false)
+                    ) ORDER BY r.position
+                  ) AS aggregate
+           FROM skill_resources r
+           LEFT JOIN skill_resource_progress rp
+             ON rp.resource_id = r.id AND rp.user_id = $1
+           WHERE r.skill_id = s.id
+         ) resources ON true
          WHERE us.user_id = $1
          ORDER BY us.is_verified DESC, s.name ASC`,
         [userId],
@@ -244,6 +276,12 @@ export function createSkillRouter({ pool, authMiddleware }: SkillRouterDependenc
    *
    * Per-material completion, which the client kept as a boolean inside each
    * learning resource in the skills blob.
+   *
+   * `:resourceId` accepts either the `skill_resources.id` UUID or the catalog
+   * `source_id`. The second form is what the static catalog carries, and it is
+   * resolved server-side rather than by the client looking up a UUID first:
+   * the mapping is scoped to the skill in the path, so a source id can never
+   * address a resource belonging to a different skill.
    */
   router.post(
     '/api/student/skills/:id/resources/:resourceId/progress',
@@ -254,8 +292,23 @@ export function createSkillRouter({ pool, authMiddleware }: SkillRouterDependenc
       void (async () => {
         const userId = req.user!.userId;
         const skillId = readUuidParam(req.params);
-        const resourceId = readUuidParam(req.params, 'resourceId');
+        const rawResourceId = String(req.params.resourceId ?? '');
         const body = req.body as UpdateMaterialProgressBody;
+
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawResourceId);
+
+        const resourceId = isUuid
+          ? rawResourceId.toLowerCase()
+          : await (async () => {
+              const resolved = await pool.query<{ id: string }>(
+                `SELECT id FROM skill_resources WHERE skill_id = $1 AND source_id = $2`,
+                [skillId, rawResourceId],
+              );
+              if (!resolved.rows[0]) {
+                throw AppError.notFound('Resource not found for that skill.', 'resource_not_found');
+              }
+              return resolved.rows[0].id;
+            })();
 
         const upserted = await onMissingReference(() =>
           pool.query(

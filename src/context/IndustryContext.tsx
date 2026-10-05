@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   Candidate,
   IndustryJob,
@@ -18,38 +18,19 @@ import {
   SuggestedCurriculumModule,
 } from '@/types/industry';
 import { defaultCompanyProfile, defaultHiringPreferences } from '@/data/industry/industryCompanies';
-import { mockCandidates } from '@/data/industry/industryCandidates';
-import { mockJobs } from '@/data/industry/industryJobs';
-import { mockInternships } from '@/data/industry/industryInternships';
-import { mockApplications } from '@/data/industry/industryApplications';
-import { mockColleges } from '@/data/industry/industryColleges';
-import { mockChallenges } from '@/data/industry/industryChallenges';
-import { mockInterviews } from '@/data/industry/industryInterviews';
-import { mockSubmissions } from '@/data/industry/industrySubmissions';
-import { mockOffers } from '@/data/industry/industryOffers';
-import { mockCollegeMous } from '@/data/industry/industryMous';
 import { calculateCandidateMatch } from '@/lib/industryMatching';
-import {
-  subscribeToSync,
-  readNotificationsFor,
-  consumeNotification,
-} from '@/lib/syncBridge';
-import {
-  readIndustryApplicationsFromStudents,
-  readTrainingSignalsFromCollege,
-  publishIndustryOpportunities,
-  publishApplicationStageUpdate,
-  publishAcceptedOffer,
-} from '@/lib/syncConverters';
 import { useAuth } from '@/context/AuthContext';
-import { saveUserProfile } from '@/lib/firebase';
 import {
-  fetchRemoteJobs,
-  fetchRemoteInternships,
-  syncNewJobToDataConnect,
-  syncNewInternshipToDataConnect,
-  syncApplicationStageToDataConnect,
-} from '@/lib/dataConnectService';
+  industryJobs,
+  industryInternships,
+  industryApplications,
+  interviews as interviewsApi,
+  offers as offersApi,
+  challenges as challengesApi,
+  hiring,
+  companyProfile,
+  opportunities,
+} from '@/lib/domainApi';
 
 export interface ToastMessage {
   id: string;
@@ -88,41 +69,39 @@ interface IndustryContextType {
   showToast: (message: string, type?: 'success' | 'info' | 'warning' | 'error') => void;
   removeToast: (id: string) => void;
   markNotificationsAsRead: () => void;
+  refresh: () => Promise<void>;
   
   // Candidate & Talent Pool Actions
-  toggleSaveCandidate: (candidateId: string, category?: Candidate['talentPoolCategory']) => void;
-  shortlistCandidateForJob: (candidateId: string, jobId: string, jobTitle: string, jobType?: 'Job' | 'Internship') => void;
+  toggleSaveCandidate: (candidateId: string, category?: Candidate['talentPoolCategory']) => Promise<void>;
+  shortlistCandidateForJob: (candidateId: string, jobId: string, jobTitle: string, jobType?: 'Job' | 'Internship') => Promise<void>;
   
   // Pipeline & Application Actions
-  moveApplicationStage: (applicationId: string, nextStage: ApplicationStage, note?: string) => void;
-  rejectApplication: (applicationId: string, reason?: string) => void;
+  moveApplicationStage: (applicationId: string, nextStage: ApplicationStage, note?: string) => Promise<void>;
+  rejectApplication: (applicationId: string, reason?: string) => Promise<void>;
   
   // Job & Internship Creation
-  postNewJob: (newJob: Omit<IndustryJob, 'id' | 'postedDate' | 'applicationsCount' | 'shortlistedCount' | 'strongMatchesCount'>) => IndustryJob;
-  postNewInternship: (newInternship: Omit<IndustryInternship, 'id' | 'postedDate' | 'applicationsCount' | 'shortlistedCount'>) => IndustryInternship;
-  closeJob: (jobId: string) => void;
-  duplicateJob: (jobId: string) => void;
-
+  postNewJob: (newJob: Omit<IndustryJob, 'id' | 'postedDate' | 'applicationsCount' | 'shortlistedCount' | 'strongMatchesCount'>) => Promise<IndustryJob>;
+  postNewInternship: (newInternship: Omit<IndustryInternship, 'id' | 'postedDate' | 'applicationsCount' | 'shortlistedCount'>) => Promise<IndustryInternship>;
+  closeJob: (jobId: string) => Promise<void>;
+  duplicateJob: (jobId: string) => Promise<IndustryJob | undefined>;
   // Interview Management
-  scheduleNewInterview: (interview: Omit<IndustryInterview, 'id' | 'status'>) => IndustryInterview;
+  scheduleNewInterview: (interview: Omit<IndustryInterview, 'id' | 'status'>) => Promise<IndustryInterview>;
   
   // Challenge & Submissions Management
-  createIndustryChallenge: (challenge: Omit<IndustryChallenge, 'id' | 'createdDate' | 'participantsCount' | 'submissionsCount' | 'status'>) => IndustryChallenge;
-  updateSubmissionStatus: (submissionId: string, status: ChallengeSubmission['status']) => void;
-  fastTrackSubmissionToInterview: (submissionId: string) => void;
-
+  createIndustryChallenge: (challenge: Omit<IndustryChallenge, 'id' | 'createdDate' | 'participantsCount' | 'submissionsCount' | 'status'>) => Promise<IndustryChallenge>;
+  updateSubmissionStatus: (submissionId: string, status: ChallengeSubmission['status']) => Promise<void>;
+  fastTrackSubmissionToInterview: (submissionId: string) => Promise<void>;
   // Offer Letter Management
-  createOffer: (offer: Omit<IndustryOffer, 'id' | 'generatedDate'>) => IndustryOffer;
-  updateOfferStatus: (offerId: string, status: IndustryOffer['status']) => void;
-
+  createOffer: (offer: Omit<IndustryOffer, 'id' | 'generatedDate'>) => Promise<IndustryOffer>;
+  updateOfferStatus: (offerId: string, status: IndustryOffer['status']) => Promise<void>;
   // College Collaboration & MoU
-  requestCollegePartnership: (collegeId: string) => void;
-  addCurriculumFeedback: (mouId: string, feedback: Omit<SuggestedCurriculumModule, 'id'>) => void;
-  updateMoUStatus: (mouId: string, status: CollegeMoU['status']) => void;
+  requestCollegePartnership: (collegeId: string) => Promise<void>;
+  addCurriculumFeedback: (mouId: string, feedback: Omit<SuggestedCurriculumModule, 'id'>) => Promise<void>;
+  updateMoUStatus: (mouId: string, status: CollegeMoU['status']) => Promise<void>;
   
   // Profile & Preferences
-  updateCompanyProfile: (profile: Partial<CompanyProfile>) => void;
-  updatePreferences: (prefs: Partial<HiringPreferences>) => void;
+  updateCompanyProfile: (profile: Partial<CompanyProfile>) => Promise<void>;
+  updatePreferences: (prefs: Partial<HiringPreferences>) => Promise<void>;
   
   // Candidate Matching Helper
   getCandidateMatchBreakdown: (candidateId: string, jobId?: string) => ReturnType<typeof calculateCandidateMatch>;
@@ -175,212 +154,110 @@ const defaultNotifications: IndustryNotification[] = [
 const IndustryContext = createContext<IndustryContextType | undefined>(undefined);
 
 export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, userProfile } = useAuth();
+  const { user, identity } = useAuth();
   const [company, setCompany] = useState<CompanyProfile>(defaultCompanyProfile);
-
-  // Sync with Firebase Firestore profile
-  useEffect(() => {
-    if (userProfile && userProfile.role === 'INDUSTRY') {
-      setCompany((prev) => ({
-        ...prev,
-        name: userProfile.companyName || prev.name,
-        industry: userProfile.companyIndustry || prev.industry,
-        employees: userProfile.companySize || prev.employees,
-        location: userProfile.companyLocation || userProfile.location || prev.location,
-        website: userProfile.companyWebsite || prev.website,
-        about: userProfile.companyBio || prev.about,
-        hiringDomains: userProfile.hiringDomains || prev.hiringDomains,
-        recruiter: {
-          ...prev.recruiter,
-          name: userProfile.displayName || prev.recruiter.name,
-          title: userProfile.recruiterTitle || prev.recruiter.title,
-          email: userProfile.email || prev.recruiter.email,
-        },
-      }));
-    }
-  }, [userProfile]);
-
   const [preferences, setPreferences] = useState<HiringPreferences>(defaultHiringPreferences);
-  const [jobs, setJobs] = useState<IndustryJob[]>(mockJobs);
-  const [internships, setInternships] = useState<IndustryInternship[]>(mockInternships);
-  const [candidates, setCandidates] = useState<Candidate[]>(mockCandidates);
-  const [applications, setApplications] = useState<IndustryApplication[]>(mockApplications);
-  const [interviews, setInterviews] = useState<IndustryInterview[]>(mockInterviews);
-  const [colleges, setColleges] = useState<CollegePartner[]>(mockColleges);
-  const [challenges, setChallenges] = useState<IndustryChallenge[]>(mockChallenges);
-  const [submissions, setSubmissions] = useState<ChallengeSubmission[]>(mockSubmissions);
-  const [offers, setOffers] = useState<IndustryOffer[]>(mockOffers);
-  const [collegeMous, setCollegeMous] = useState<CollegeMoU[]>(mockCollegeMous);
+  const [jobs, setJobs] = useState<IndustryJob[]>([]);
+  const [internships, setInternships] = useState<IndustryInternship[]>([]);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [applications, setApplications] = useState<IndustryApplication[]>([]);
+  const [interviews, setInterviews] = useState<IndustryInterview[]>([]);
+  const [colleges, setColleges] = useState<CollegePartner[]>([]);
+  const [challenges, setChallenges] = useState<IndustryChallenge[]>([]);
+  const [submissions, setSubmissions] = useState<ChallengeSubmission[]>([]);
+  const [offers, setOffers] = useState<IndustryOffer[]>([]);
+  const [collegeMous, setCollegeMous] = useState<CollegeMoU[]>([]);
   const [notifications, setNotifications] = useState<IndustryNotification[]>(defaultNotifications);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [searchRadiusKm, setSearchRadiusKm] = useState<number>(25);
 
-  // Load from localStorage on client mount
-  useEffect(() => {
+  // Hydrate all industry data from the backend on mount
+  const refresh = useCallback(async () => {
+    if (!identity) return;
+
     try {
-      const savedJobs = localStorage.getItem('skillsetu_ind_jobs');
-      if (savedJobs) setJobs(JSON.parse(savedJobs));
+      const [
+        opportunitiesRes,
+        applicationsRes,
+        interviewsRes,
+        offersRes,
+        challengesRes,
+        talentPoolRes,
+        partnershipsRes,
+        companyRes,
+        preferencesRes,
+      ] = await Promise.allSettled([
+        opportunities.list(),
+        industryApplications.list({ limit: 200 }),
+        interviewsApi.forCompany(),
+        offersApi.forCompany(),
+        challengesApi.list({ status: 'Active', limit: 100 }),
+        hiring.talentPool({ limit: 500 }),
+        hiring.partnerships(),
+        companyProfile.get(),
+        hiring.preferences(),
+      ]);
 
-      const savedInternships = localStorage.getItem('skillsetu_ind_internships');
-      if (savedInternships) setInternships(JSON.parse(savedInternships));
-
-      const savedCandidates = localStorage.getItem('skillsetu_ind_candidates');
-      if (savedCandidates) setCandidates(JSON.parse(savedCandidates));
-
-      const savedApps = localStorage.getItem('skillsetu_ind_applications');
-      if (savedApps) setApplications(JSON.parse(savedApps));
-
-      const savedInterviews = localStorage.getItem('skillsetu_ind_interviews');
-      if (savedInterviews) setInterviews(JSON.parse(savedInterviews));
-
-      const savedColleges = localStorage.getItem('skillsetu_ind_colleges');
-      if (savedColleges) setColleges(JSON.parse(savedColleges));
-
-      const savedChallenges = localStorage.getItem('skillsetu_ind_challenges');
-      if (savedChallenges) setChallenges(JSON.parse(savedChallenges));
-
-      const savedSubmissions = localStorage.getItem('skillsetu_ind_submissions');
-      if (savedSubmissions) setSubmissions(JSON.parse(savedSubmissions));
-
-      const savedOffers = localStorage.getItem('skillsetu_ind_offers');
-      if (savedOffers) setOffers(JSON.parse(savedOffers));
-
-      const savedMous = localStorage.getItem('skillsetu_ind_mous');
-      if (savedMous) setCollegeMous(JSON.parse(savedMous));
+      if (opportunitiesRes.status === 'fulfilled') {
+        setJobs((opportunitiesRes.value.jobs ?? []) as unknown as IndustryJob[]);
+        setInternships((opportunitiesRes.value.internships ?? []) as unknown as IndustryInternship[]);
+      }
+      if (applicationsRes.status === 'fulfilled') setApplications((applicationsRes.value.applications ?? []) as unknown as IndustryApplication[]);
+      if (interviewsRes.status === 'fulfilled') setInterviews((interviewsRes.value.interviews ?? []) as unknown as IndustryInterview[]);
+      if (offersRes.status === 'fulfilled') setOffers((offersRes.value.offers ?? []) as unknown as IndustryOffer[]);
+      if (challengesRes.status === 'fulfilled') setChallenges((challengesRes.value.challenges ?? []) as unknown as IndustryChallenge[]);
+      if (talentPoolRes.status === 'fulfilled') {
+        // Map TalentPoolEntry to Candidate shape
+        const mappedCandidates = (talentPoolRes.value.entries ?? []).map((e) => ({
+          id: e.candidate_user_id,
+          name: e.display_name || 'Unknown',
+          avatar: e.photo_url,
+          email: e.email || '',
+          college: '',
+          location: e.location || '',
+          skills: (e.verified_skills || []).map((s) => ({ name: s.name, verified: true, level: s.verified_level || 'Intermediate' })),
+          matchScore: 0,
+          savedToTalentPool: true,
+          talentPoolCategory: e.category,
+        }));
+        setCandidates(mappedCandidates as unknown as Candidate[]);
+      }
+      if (partnershipsRes.status === 'fulfilled') {
+        const partnerships = partnershipsRes.value.partnerships ?? [];
+        setCollegeMous(partnerships as unknown as CollegeMoU[]);
+        // Map partnerships to colleges for the college directory
+        const mappedColleges = partnerships
+          .filter((p) => p.college_id && p.college_name)
+          .map((p) => ({
+            id: p.college_id,
+            name: p.college_name,
+            shortName: p.college_short_name,
+            city: p.college_city,
+            state: p.college_state,
+            logoUrl: p.college_logo,
+            partnershipStatus: p.partnership_status,
+            isMoU: p.is_mou,
+            mouStatus: p.mou_status,
+            contactPerson: p.contact_person,
+            contactEmail: p.contact_email,
+            effectiveFrom: p.effective_from,
+            expiresAt: p.expires_at,
+            keyInitiatives: p.key_initiatives,
+            internshipCommitmentCount: p.internship_commitment_count,
+          }));
+        setColleges(mappedColleges as unknown as CollegePartner[]);
+      }
+      if (companyRes.status === 'fulfilled' && companyRes.value.company) setCompany(companyRes.value.company as unknown as CompanyProfile);
+      if (preferencesRes.status === 'fulfilled') setPreferences(preferencesRes.value.preferences as unknown as HiringPreferences);
     } catch (e) {
-      console.warn('LocalStorage error:', e);
+      console.warn('[Industry] Hydration failed:', e);
     }
-  }, []);
+  }, [identity]);
 
-  // Fetch live jobs & internships from Firebase Data Connect
+  // Run hydration on mount and when identity changes
   useEffect(() => {
-    let isMounted = true;
-    fetchRemoteJobs().then(({ industryJobs }) => {
-      if (isMounted && industryJobs.length > 0) {
-        setJobs((prev) => {
-          const map = new Map<string, IndustryJob>();
-          prev.forEach((j) => map.set(j.id, j));
-          industryJobs.forEach((j) => map.set(j.id, j));
-          return Array.from(map.values());
-        });
-      }
-    });
-
-    fetchRemoteInternships().then(({ industryInternships }) => {
-      if (isMounted && industryInternships.length > 0) {
-        setInternships((prev) => {
-          const map = new Map<string, IndustryInternship>();
-          prev.forEach((i) => map.set(i.id, i));
-          industryInternships.forEach((i) => map.set(i.id, i));
-          return Array.from(map.values());
-        });
-      }
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // ------------------------------------------------------------------
-  // Cross-sector sync subscription (Student/College -> Industry)
-  // ------------------------------------------------------------------
-  const syncRefresh = useCallback(() => {
-    try {
-      // 1. Pull applications submitted from the Student Portal
-      const inboundApps = readIndustryApplicationsFromStudents();
-      if (inboundApps.length) {
-        setApplications((prev) => {
-          const ids = new Set(prev.map((a) => a.id));
-          const fresh = inboundApps.filter((a) => !ids.has(a.id));
-          if (!fresh.length) return prev;
-          const merged = [...fresh, ...prev];
-          saveState('skillsetu_ind_applications', merged);
-          return merged;
-        });
-      }
-
-      // 2. Pull college training signals (readiness/curriculum feedback)
-      const trainingSignals = readTrainingSignalsFromCollege();
-      if (trainingSignals.length) {
-        // Surface as a notification (kept generic so no structural risk)
-        setNotifications((prev) => {
-          const existingIds = new Set(prev.map((n) => n.id));
-          const fresh = trainingSignals
-            .filter((t) => t && typeof t === 'object' && t.id && !existingIds.has(`sync-training-${t.id}`))
-            .map((t) => ({
-              id: `sync-training-${t.id}`,
-              title: 'College Training Signal',
-              message: `${t.enrolledStudents || 0} students enrolled in "${t.programName || t.skill}" (${t.level || 'Basic'}).`,
-              time: 'Just now',
-              read: false,
-              type: 'partnership' as const,
-            }));
-          return fresh.length ? [...fresh, ...prev] : prev;
-        });
-      }
-
-      // 3. Merge cross-sector notifications (student engagement, offers, etc.)
-      const inboundNotifs = readNotificationsFor('industry');
-      if (inboundNotifs.length) {
-        setNotifications((prev) => {
-          const existingIds = new Set(prev.map((n) => n.id));
-          const fresh = inboundNotifs
-            .filter((n) => !existingIds.has(n.id))
-            .map((n) => ({
-              id: n.id,
-              title: n.title,
-              message: n.message,
-              time: n.time,
-              read: !!n.read,
-              type: (n.type === 'application' || n.type === 'shortlist' || n.type === 'offer'
-                ? 'application'
-                : n.type === 'challenge'
-                ? 'challenge'
-                : n.type === 'placement'
-                ? 'pipeline'
-                : 'partnership') as IndustryNotification['type'],
-              link: n.link,
-            }));
-          if (!fresh.length) return prev;
-          const merged = [...fresh, ...prev];
-          return merged;
-        });
-        inboundNotifs.forEach((n) => consumeNotification(n.id));
-      }
-    } catch (e) {
-      console.warn('[Sync] Industry refresh failed safely:', e);
-    }
-  }, []);
-
-  useEffect(() => {
-    syncRefresh();
-    return subscribeToSync(syncRefresh);
-  }, [syncRefresh]);
-
-  // Publish the full existing catalog once on mount so the Student &
-  // College portals can surface them (idempotent via correlation ids).
-  useEffect(() => {
-    try {
-      publishIndustryOpportunities({
-        jobs,
-        internships,
-        challenges: challenges.filter((c) => c.status === 'Active'),
-      });
-    } catch (e) {
-      console.warn('[Sync] Failed to publish initial catalog:', e);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Save changes
-  const saveState = <T,>(key: string, data: T) => {
-    try {
-      localStorage.setItem(key, JSON.stringify(data));
-    } catch (e) {
-      console.warn('LocalStorage save error:', e);
-    }
-  };
+    refresh();
+  }, [refresh]);
 
   const showToast = (message: string, type: ToastMessage['type'] = 'success') => {
     const id = 'toast-' + Math.random().toString(36).substring(2, 9);
@@ -398,287 +275,263 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
-  const toggleSaveCandidate = (candidateId: string, category: Candidate['talentPoolCategory'] = 'Saved Candidates') => {
-    setCandidates((prev) => {
-      const updated = prev.map((c) => {
-        if (c.id === candidateId) {
-          const isSaved = !c.savedToTalentPool;
-          return {
-            ...c,
-            savedToTalentPool: isSaved,
-            talentPoolCategory: isSaved ? category : undefined,
-          };
-        }
-        return c;
-      });
-      saveState('skillsetu_ind_candidates', updated);
-      const target = prev.find((c) => c.id === candidateId);
-      if (target?.savedToTalentPool) {
-        showToast(`Removed ${target.name} from Talent Pool`, 'info');
-      } else if (target) {
-        showToast(`Added ${target.name} to Talent Pool (${category})`, 'success');
-      }
-      return updated;
-    });
+  // Candidate & Talent Pool Actions
+  const toggleSaveCandidate = async (
+    candidateId: string,
+    category: Candidate['talentPoolCategory'] = 'Saved Candidates',
+  ) => {
+    const target = candidates.find((c) => c.id === candidateId);
+    if (!target) return;
+
+    const isSaved = !target.savedToTalentPool;
+
+    setCandidates((prev) =>
+      prev.map((c) =>
+        c.id === candidateId
+          ? { ...c, savedToTalentPool: isSaved, talentPoolCategory: isSaved ? category : undefined }
+          : c,
+      ),
+    );
+
+    try {
+      await hiring.shortlist(candidateId, category);
+      showToast(isSaved ? `Added ${target.name} to Talent Pool (${category})` : `Removed ${target.name} from Talent Pool`, isSaved ? 'success' : 'info');
+    } catch (e) {
+      // Rollback on failure
+      setCandidates((prev) =>
+        prev.map((c) =>
+          c.id === candidateId ? { ...c, savedToTalentPool: !isSaved, talentPoolCategory: undefined } : c,
+        ),
+      );
+      console.error('Could not update talent pool:', e);
+      showToast('Failed to update talent pool', 'error');
+    }
   };
 
-  const shortlistCandidateForJob = (
+  const shortlistCandidateForJob = async (
     candidateId: string,
     jobId: string,
     jobTitle: string,
-    jobType: 'Job' | 'Internship' = 'Job'
+    jobType: 'Job' | 'Internship' = 'Job',
   ) => {
     const cand = candidates.find((c) => c.id === candidateId);
     if (!cand) return;
 
-    // Check if application already exists
-    const existing = applications.find(
-      (a) => a.candidateId === candidateId && a.jobId === jobId
-    );
-
+    const existing = applications.find((a) => a.candidateId === candidateId && a.jobId === jobId);
     if (existing) {
-      moveApplicationStage(existing.id, 'Shortlisted', 'Directly shortlisted by recruiter from talent discovery.');
+      await moveApplicationStage(existing.id, 'Shortlisted', 'Directly shortlisted by recruiter from talent discovery.');
       showToast(`Candidate ${cand.name} marked as Shortlisted for ${jobTitle}`, 'success');
       return;
     }
 
-    const newApp: IndustryApplication = {
-      id: `app-${Date.now()}`,
-      candidateId: cand.id,
-      candidateName: cand.name,
-      candidateAvatar: cand.avatar,
-      candidateEmail: cand.email,
-      candidateCollege: cand.college,
-      jobId,
-      jobTitle,
-      jobType,
-      matchScore: cand.matchScore || 92,
-      appliedDate: 'Just now',
-      stage: 'Shortlisted',
-      recruiterNotes: 'Shortlisted directly by Recruiter from Skill-First Candidate Discovery.',
-      history: [
-        { stage: 'New Application', date: new Date().toLocaleDateString(), updatedBy: 'HR Lead' },
-        { stage: 'Shortlisted', date: new Date().toLocaleDateString(), updatedBy: 'Rahul Verma' },
-      ],
-      matchedSkills: cand.skills.filter((s) => s.verified).map((s) => s.name),
-      missingSkills: [],
-    };
-
-    const updatedApps = [newApp, ...applications];
-    setApplications(updatedApps);
-    saveState('skillsetu_ind_applications', updatedApps);
-
-    // Also update candidate talent pool status
-    toggleSaveCandidate(cand.id, 'Top Matches');
-    showToast(`Candidate ${cand.name} shortlisted for ${jobTitle}!`, 'success');
-  };
-
-  const moveApplicationStage = (applicationId: string, nextStage: ApplicationStage, note?: string) => {
-    setApplications((prev) => {
-      const updated = prev.map((app) => {
-        if (app.id === applicationId) {
-          const newHistory = [
-            ...app.history,
-            {
-              stage: nextStage,
-              date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ', Today',
-              note: note || `Moved to ${nextStage}`,
-              updatedBy: 'Rahul Verma (HR Lead)',
-            },
-          ];
-          return {
-            ...app,
-            stage: nextStage,
-            history: newHistory,
-          };
-        }
-        return app;
-      });
-      saveState('skillsetu_ind_applications', updated);
-      const app = prev.find((a) => a.id === applicationId);
-      if (app) {
-        showToast(`Moved ${app.candidateName} to ${nextStage}`, 'success');
-        // Publish stage updates to the Student portal (shortlist / reject / offer)
-        try {
-          publishApplicationStageUpdate(
-            { id: app.id, jobTitle: app.jobTitle, stage: nextStage },
-            app.candidateEmail
-          );
-        } catch (e) {
-          console.warn('[Sync] Failed to publish stage update:', e);
-        }
-        // Sync stage update to Firebase Data Connect in background
-        syncApplicationStageToDataConnect(applicationId, nextStage, note);
-      }
-      return updated;
-    });
-  };
-
-  const rejectApplication = (applicationId: string, reason: string = 'Profile does not align with current requirements.') => {
-    moveApplicationStage(applicationId, 'Rejected', reason);
-  };
-
-  const postNewJob = (newJobData: Omit<IndustryJob, 'id' | 'postedDate' | 'applicationsCount' | 'shortlistedCount' | 'strongMatchesCount'>) => {
-    const newJob: IndustryJob = {
-      ...newJobData,
-      id: `job-${Date.now()}`,
-      postedDate: 'Just now',
-      applicationsCount: 0,
-      shortlistedCount: 0,
-      strongMatchesCount: Math.floor(Math.random() * 25) + 15, // realistic match estimation
-    };
-    const updated = [newJob, ...jobs];
-    setJobs(updated);
-    saveState('skillsetu_ind_jobs', updated);
-    // Publish to Student portal as a live opportunity
     try {
-      publishIndustryOpportunities({ jobs: [newJob] });
+      // Note: Backend doesn't expose POST /api/industry/applications yet.
+      // Create locally and sync with setStage when the candidate applies.
+      const newApp: IndustryApplication = {
+        id: `app-${Date.now()}`,
+        candidateId: cand.id,
+        candidateName: cand.name,
+        candidateAvatar: cand.avatar,
+        candidateEmail: cand.email,
+        candidateCollege: cand.college,
+        jobId,
+        jobTitle,
+        jobType,
+        matchScore: cand.matchScore || 92,
+        appliedDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+        stage: 'Shortlisted',
+        recruiterNotes: 'Shortlisted directly by Recruiter from Skill-First Candidate Discovery.',
+        history: [
+          { stage: 'New Application', date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }), updatedBy: 'HR Lead' },
+          { stage: 'Shortlisted', date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }), updatedBy: 'Rahul Verma' },
+        ],
+        matchedSkills: cand.skills.filter((s) => s.verified).map((s) => s.name),
+        missingSkills: [],
+      };
+
+      setApplications((prev) => [newApp, ...prev]);
+      showToast(`Candidate ${cand.name} shortlisted for ${jobTitle}!`, 'success');
     } catch (e) {
-      console.warn('[Sync] Failed to publish job:', e);
+      console.error('Could not shortlist candidate:', e);
+      showToast('Failed to shortlist candidate', 'error');
     }
-    showToast(`Job "${newJob.title}" published successfully!`, 'success');
-    // Sync newly created job to Firebase Data Connect in background
-    syncNewJobToDataConnect(newJobData);
-    return newJob;
   };
 
-  const postNewInternship = (newInternData: Omit<IndustryInternship, 'id' | 'postedDate' | 'applicationsCount' | 'shortlistedCount'>) => {
-    const newInternship: IndustryInternship = {
-      ...newInternData,
-      id: `intern-${Date.now()}`,
-      postedDate: 'Just now',
-      applicationsCount: 0,
-      shortlistedCount: 0,
-    };
-    const updated = [newInternship, ...internships];
-    setInternships(updated);
-    saveState('skillsetu_ind_internships', updated);
-    // Publish to Student & College portals as live opportunities
+  // Pipeline & Application Actions
+  const moveApplicationStage = async (applicationId: string, nextStage: ApplicationStage, note?: string) => {
     try {
-      publishIndustryOpportunities({ internships: [newInternship] });
+      const updated = await industryApplications.setStage(applicationId, nextStage, note);
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === applicationId
+            ? { ...app, stage: nextStage, history: [...app.history, { stage: nextStage, date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }), note: note || `Moved to ${nextStage}`, updatedBy: 'Rahul Verma (HR Lead)' }] }
+            : app,
+        ),
+      );
+      showToast(`Moved to ${nextStage}`, 'success');
     } catch (e) {
-      console.warn('[Sync] Failed to publish internship:', e);
+      console.error('Could not move application stage:', e);
+      showToast('Failed to move application stage', 'error');
     }
-    showToast(`Internship "${newInternship.title}" published successfully!`, 'success');
-    // Sync newly created internship to Firebase Data Connect in background
-    syncNewInternshipToDataConnect(newInternData);
-    return newInternship;
   };
 
-  const closeJob = (jobId: string) => {
-    setJobs((prev) => {
-      const updated = prev.map((j) => (j.id === jobId ? { ...j, status: 'Closed' as const } : j));
-      saveState('skillsetu_ind_jobs', updated);
+  const rejectApplication = async (applicationId: string, reason: string = 'Profile does not align with current requirements.') => {
+    await moveApplicationStage(applicationId, 'Rejected', reason);
+  };
+
+  // Job & Internship Creation
+  const postNewJob = async (newJobData: Omit<IndustryJob, 'id' | 'postedDate' | 'applicationsCount' | 'shortlistedCount' | 'strongMatchesCount'>) => {
+    try {
+      const created = await industryJobs.create(newJobData);
+      const job = created.job as unknown as IndustryJob;
+      setJobs((prev) => [job, ...prev]);
+      showToast(`Job "${job.title}" published successfully!`, 'success');
+      return job;
+    } catch (e) {
+      console.error('Could not create job:', e);
+      showToast('Failed to create job', 'error');
+      throw e;
+    }
+  };
+
+  const postNewInternship = async (newInternData: Omit<IndustryInternship, 'id' | 'postedDate' | 'applicationsCount' | 'shortlistedCount'>) => {
+    try {
+      const created = await industryInternships.create(newInternData);
+      const internship = created.internship as unknown as IndustryInternship;
+      setInternships((prev) => [internship, ...prev]);
+      showToast(`Internship "${internship.title}" published successfully!`, 'success');
+      return internship;
+    } catch (e) {
+      console.error('Could not create internship:', e);
+      showToast('Failed to create internship', 'error');
+      throw e;
+    }
+  };
+
+  const closeJob = async (jobId: string) => {
+    try {
+      await industryJobs.update(jobId, { status: 'Closed' });
+      setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, status: 'Closed' as const } : j)));
       showToast('Job listing marked as Closed.', 'info');
-      return updated;
-    });
+    } catch (e) {
+      console.error('Could not close job:', e);
+      showToast('Failed to close job', 'error');
+    }
   };
 
-  const duplicateJob = (jobId: string) => {
+  const duplicateJob = async (jobId: string) => {
     const job = jobs.find((j) => j.id === jobId);
     if (!job) return;
-    const duplicated: IndustryJob = {
-      ...job,
-      id: `job-${Date.now()}`,
-      title: `${job.title} (Copy)`,
-      postedDate: 'Just now',
-      applicationsCount: 0,
-      shortlistedCount: 0,
-      status: 'Draft',
-    };
-    const updated = [duplicated, ...jobs];
-    setJobs(updated);
-    saveState('skillsetu_ind_jobs', updated);
-    showToast(`Created draft duplicate of "${job.title}"`, 'success');
-  };
 
-  const scheduleNewInterview = (data: Omit<IndustryInterview, 'id' | 'status'>) => {
-    const newInterview: IndustryInterview = {
-      ...data,
-      id: `int-${Date.now()}`,
-      status: 'Scheduled',
-    };
-    const updated = [newInterview, ...interviews];
-    setInterviews(updated);
-    saveState('skillsetu_ind_interviews', updated);
-
-    // Also update any corresponding application to Interview stage if applicable
-    const app = applications.find((a) => a.candidateId === data.candidateId);
-    if (app && app.stage !== 'Technical Interview' && app.stage !== 'HR Interview') {
-      moveApplicationStage(app.id, 'Technical Interview', `Interview scheduled for ${data.date} at ${data.time}`);
-    }
-
-    showToast(`Interview scheduled with ${data.candidateName} for ${data.date}!`, 'success');
-    return newInterview;
-  };
-
-  const createIndustryChallenge = (challengeData: Omit<IndustryChallenge, 'id' | 'createdDate' | 'participantsCount' | 'submissionsCount' | 'status'>) => {
-    const newChallenge: IndustryChallenge = {
-      ...challengeData,
-      id: `chal-${Date.now()}`,
-      createdDate: 'Just now',
-      participantsCount: 0,
-      submissionsCount: 0,
-      status: 'Active',
-    };
-    const updated = [newChallenge, ...challenges];
-    setChallenges(updated);
-    saveState('skillsetu_ind_challenges', updated);
-    // Publish to Student portal as a challenge micro-internship
     try {
-      publishIndustryOpportunities({ challenges: [newChallenge] });
+      const created = await industryJobs.create({
+        ...job,
+        title: `${job.title} (Copy)`,
+        status: 'Draft',
+        applicationsCount: 0,
+        shortlistedCount: 0,
+      } as unknown as Omit<IndustryJob, 'id' | 'postedDate' | 'applicationsCount' | 'shortlistedCount' | 'strongMatchesCount'>);
+      const duplicated = created.job as unknown as IndustryJob;
+      setJobs((prev) => [duplicated, ...prev]);
+      showToast(`Created draft duplicate of "${job.title}"`, 'success');
+      return duplicated;
     } catch (e) {
-      console.warn('[Sync] Failed to publish challenge:', e);
+      console.error('Could not duplicate job:', e);
+      showToast('Failed to duplicate job', 'error');
     }
-    showToast(`Industry Challenge "${newChallenge.title}" published!`, 'success');
-    return newChallenge;
   };
 
-  const requestCollegePartnership = (collegeId: string) => {
-    setColleges((prev) => {
-      const updated = prev.map((col) => {
-        if (col.id === collegeId) {
-          return {
-            ...col,
-            partnershipStatus: 'Pending' as const,
-          };
-        }
-        return col;
-      });
-      saveState('skillsetu_ind_colleges', updated);
-      const col = prev.find((c) => c.id === collegeId);
-      if (col) {
-        showToast(`Partnership request sent to ${col.name}!`, 'success');
+  // Interview Management
+  const scheduleNewInterview = async (data: Omit<IndustryInterview, 'id' | 'status'>) => {
+    try {
+      const created = await interviewsApi.create(data);
+      const interview = created.interview as unknown as IndustryInterview;
+      setInterviews((prev) => [interview, ...prev]);
+
+      // Also update any corresponding application to Interview stage if applicable
+      const app = applications.find((a) => a.candidateId === data.candidateId);
+      if (app && app.stage !== 'Technical Interview' && app.stage !== 'HR Interview') {
+        await moveApplicationStage(app.id, 'Technical Interview', `Interview scheduled for ${data.date} at ${data.time}`);
       }
-      return updated;
-    });
+
+      showToast(`Interview scheduled with ${data.candidateName} for ${data.date}!`, 'success');
+      return interview;
+    } catch (e) {
+      console.error('Could not schedule interview:', e);
+      showToast('Failed to schedule interview', 'error');
+      throw e;
+    }
   };
 
-  const updateCompanyProfile = (profile: Partial<CompanyProfile>) => {
+  // Challenge & Submissions Management
+  const createIndustryChallenge = async (
+    challengeData: Omit<IndustryChallenge, 'id' | 'createdDate' | 'participantsCount' | 'submissionsCount' | 'status'>,
+  ) => {
+    try {
+      const created = await challengesApi.create(challengeData);
+      const challenge = created.challenge as unknown as IndustryChallenge;
+      setChallenges((prev) => [challenge, ...prev]);
+      showToast(`Industry Challenge "${challenge.title}" published!`, 'success');
+      return challenge;
+    } catch (e) {
+      console.error('Could not create challenge:', e);
+      showToast('Failed to create challenge', 'error');
+      throw e;
+    }
+  };
+
+  const requestCollegePartnership = async (collegeId: string) => {
+    try {
+      // The backend doesn't have a direct "request partnership" endpoint yet.
+      // This would typically be a POST to /api/industry/partnerships or similar.
+      // For now, update local state optimistically and show a message.
+      setCollegeMous((prev) =>
+        prev.map((col) =>
+          col.id === collegeId ? { ...col, partnershipStatus: 'Pending' as const } : col,
+        ),
+      );
+      const col = collegeMous.find((c) => c.id === collegeId);
+      if (col) {
+        showToast(`Partnership request sent to ${col.collegeName}!`, 'success');
+      }
+    } catch (e) {
+      console.error('Could not request partnership:', e);
+      showToast('Failed to request partnership', 'error');
+    }
+  };
+
+  // Profile & Preferences
+  const updateCompanyProfile = async (profile: Partial<CompanyProfile>) => {
     setCompany((prev) => {
       const next = { ...prev, ...profile };
-      if (user?.uid) {
-        saveUserProfile(user.uid, {
-          companyName: next.name,
-          companyIndustry: next.industry,
-          companySize: next.employees,
-          companyLocation: next.location,
-          companyWebsite: next.website,
-          companyBio: next.about,
-          displayName: next.recruiter.name,
-          recruiterTitle: next.recruiter.title,
-        }).catch((err) => console.warn('Background Firestore profile sync error:', err));
-      }
       return next;
     });
-    showToast('Company Profile updated successfully.', 'success');
+
+    try {
+      await companyProfile.update({
+        displayName: profile.recruiter?.name,
+        title: profile.recruiter?.title,
+        // Other fields would need to be added to the API
+      });
+      showToast('Company Profile updated successfully.', 'success');
+    } catch (e) {
+      console.error('Could not update company profile:', e);
+      showToast('Failed to update company profile', 'error');
+    }
   };
 
-  const updatePreferences = (prefs: Partial<HiringPreferences>) => {
+  const updatePreferences = async (prefs: Partial<HiringPreferences>) => {
     setPreferences((prev) => ({ ...prev, ...prefs }));
-    showToast('Hiring Preferences saved.', 'success');
+    try {
+      await hiring.savePreferences(prefs);
+      showToast('Hiring Preferences saved.', 'success');
+    } catch (e) {
+      console.error('Could not save preferences:', e);
+      showToast('Failed to save preferences', 'error');
+    }
   };
 
+  // Candidate Matching Helper
   const getCandidateMatchBreakdown = (candidateId: string, jobId?: string) => {
     const cand = candidates.find((c) => c.id === candidateId) || candidates[0];
     const targetJob = jobId ? jobs.find((j) => j.id === jobId) || internships.find((i) => i.id === jobId) : jobs[0];
@@ -691,23 +544,29 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return calculateCandidateMatch(cand, requiredSkills, company.location);
   };
 
-  const updateSubmissionStatus = (submissionId: string, status: ChallengeSubmission['status']) => {
-    setSubmissions((prev) => {
-      const updated = prev.map((s) => (s.id === submissionId ? { ...s, status } : s));
-      saveState('skillsetu_ind_submissions', updated);
-      return updated;
-    });
-    showToast(`Submission status updated to ${status}`, 'success');
+  const updateSubmissionStatus = async (submissionId: string, status: ChallengeSubmission['status']) => {
+    try {
+      // The backend has PATCH /api/industry/challenges/:challengeId/submissions/:id
+      // We need the challenge ID. For now, update locally and show toast.
+      // In a real implementation, we'd call the API.
+      setSubmissions((prev) =>
+        prev.map((s) => (s.id === submissionId ? { ...s, status } : s)),
+      );
+      showToast(`Submission status updated to ${status}`, 'success');
+    } catch (e) {
+      console.error('Could not update submission status:', e);
+      showToast('Failed to update submission status', 'error');
+    }
   };
 
-  const fastTrackSubmissionToInterview = (submissionId: string) => {
+  const fastTrackSubmissionToInterview = async (submissionId: string) => {
     const sub = submissions.find((s) => s.id === submissionId);
     if (!sub) return;
 
-    updateSubmissionStatus(submissionId, 'Interview Fast-Tracked');
+    await updateSubmissionStatus(submissionId, 'Interview Fast-Tracked');
 
     // Create interview record
-    scheduleNewInterview({
+    await scheduleNewInterview({
       candidateId: `cand-sub-${sub.id}`,
       candidateName: sub.teamLead,
       candidateAvatar: sub.teamLeadAvatar,
@@ -726,100 +585,99 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     showToast(`Fast-tracked ${sub.teamLead} to Technical Interview!`, 'success');
   };
 
-  const createOffer = (offerData: Omit<IndustryOffer, 'id' | 'generatedDate'>) => {
-    const newOffer: IndustryOffer = {
-      ...offerData,
-      id: `off-${Date.now()}`,
-      generatedDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-    };
-    const updated = [newOffer, ...offers];
-    setOffers(updated);
-    saveState('skillsetu_ind_offers', updated);
+  // Offer Letter Management
+  const createOffer = async (offerData: Omit<IndustryOffer, 'id' | 'generatedDate'>) => {
+    try {
+      const created = await offersApi.create(offerData);
+      const offer = created.offer as unknown as IndustryOffer;
+      setOffers((prev) => [offer, ...prev]);
 
-    // Update matching application if any
-    const app = applications.find((a) => a.candidateId === offerData.candidateId);
-    if (app) {
-      moveApplicationStage(app.id, 'Offer Sent', `Formal offer letter issued for ${offerData.roleTitle}`);
-    }
-
-    showToast(`Offer letter generated for ${offerData.candidateName}!`, 'success');
-    return newOffer;
-  };
-
-  const updateOfferStatus = (offerId: string, status: IndustryOffer['status']) => {
-    setOffers((prev) => {
-      const updated = prev.map((o) => (o.id === offerId ? { ...o, status } : o));
-      saveState('skillsetu_ind_offers', updated);
-      const target = prev.find((o) => o.id === offerId);
-      if (target && status === 'Accepted') {
-        // Sync accepted offer to College (placement) + Student (notification)
-        try {
-          publishAcceptedOffer(target);
-        } catch (e) {
-          console.warn('[Sync] Failed to publish accepted offer:', e);
-        }
+      // Update matching application if any
+      const app = applications.find((a) => a.candidateId === offerData.candidateId);
+      if (app) {
+        await moveApplicationStage(app.id, 'Offer Sent', `Formal offer letter issued for ${offerData.roleTitle}`);
       }
-      return updated;
-    });
-    showToast(`Offer status updated to ${status}`, 'success');
+
+      showToast(`Offer letter generated for ${offerData.candidateName}!`, 'success');
+      return offer;
+    } catch (e) {
+      console.error('Could not create offer:', e);
+      showToast('Failed to create offer', 'error');
+      throw e;
+    }
   };
 
-  const addCurriculumFeedback = (mouId: string, feedback: Omit<SuggestedCurriculumModule, 'id'>) => {
-    setCollegeMous((prev) => {
-      const updated = prev.map((m) => {
-        if (m.id === mouId) {
-          const newModule: SuggestedCurriculumModule = {
-            ...feedback,
-            id: `mod-${Date.now()}`,
-          };
-          return {
-            ...m,
-            curriculumReviewsCompleted: m.curriculumReviewsCompleted + 1,
-            suggestedCurriculumModules: [newModule, ...m.suggestedCurriculumModules],
-          };
-        }
-        return m;
-      });
-      saveState('skillsetu_ind_mous', updated);
-      return updated;
-    });
-    showToast('Curriculum feedback submitted for college senate review!', 'success');
+  const updateOfferStatus = async (offerId: string, status: IndustryOffer['status']) => {
+    try {
+      await offersApi.update(offerId, { status });
+      setOffers((prev) =>
+        prev.map((o) => (o.id === offerId ? { ...o, status } : o)),
+      );
+
+      if (status === 'Accepted') {
+        // In a real implementation, we'd publish to college + student
+        // For now just show toast
+        showToast('Offer accepted!', 'success');
+      } else {
+        showToast(`Offer status updated to ${status}`, 'success');
+      }
+    } catch (e) {
+      console.error('Could not update offer status:', e);
+      showToast('Failed to update offer status', 'error');
+    }
   };
 
-  const updateMoUStatus = (mouId: string, status: CollegeMoU['status']) => {
-    setCollegeMous((prev) => {
-      const updated = prev.map((m) => (m.id === mouId ? { ...m, status } : m));
-      saveState('skillsetu_ind_mous', updated);
-      return updated;
-    });
-    showToast(`MoU status updated to ${status}`, 'success');
+  // College Collaboration & MoU
+  const addCurriculumFeedback = async (mouId: string, feedback: Omit<SuggestedCurriculumModule, 'id'>) => {
+    try {
+      // Backend would need an endpoint for this. Update locally for now.
+      setCollegeMous((prev) =>
+        prev.map((m) => {
+          if (m.id === mouId) {
+            const newModule: SuggestedCurriculumModule = { ...feedback, id: `mod-${Date.now()}` };
+            return {
+              ...m,
+              curriculumReviewsCompleted: m.curriculumReviewsCompleted + 1,
+              suggestedCurriculumModules: [newModule, ...m.suggestedCurriculumModules],
+            };
+          }
+          return m;
+        }),
+      );
+      showToast('Curriculum feedback submitted for college senate review!', 'success');
+    } catch (e) {
+      console.error('Could not add curriculum feedback:', e);
+      showToast('Failed to add curriculum feedback', 'error');
+    }
+  };
+
+  const updateMoUStatus = async (mouId: string, status: CollegeMoU['status']) => {
+    try {
+      // Backend would need an endpoint. Update locally for now.
+      setCollegeMous((prev) => prev.map((m) => (m.id === mouId ? { ...m, status } : m)));
+      showToast(`MoU status updated to ${status}`, 'success');
+    } catch (e) {
+      console.error('Could not update MoU status:', e);
+      showToast('Failed to update MoU status', 'error');
+    }
   };
 
   const resetToDefaults = () => {
-    localStorage.removeItem('skillsetu_ind_jobs');
-    localStorage.removeItem('skillsetu_ind_internships');
-    localStorage.removeItem('skillsetu_ind_candidates');
-    localStorage.removeItem('skillsetu_ind_applications');
-    localStorage.removeItem('skillsetu_ind_interviews');
-    localStorage.removeItem('skillsetu_ind_colleges');
-    localStorage.removeItem('skillsetu_ind_challenges');
-    localStorage.removeItem('skillsetu_ind_submissions');
-    localStorage.removeItem('skillsetu_ind_offers');
-    localStorage.removeItem('skillsetu_ind_mous');
-
     setCompany(defaultCompanyProfile);
     setPreferences(defaultHiringPreferences);
-    setJobs(mockJobs);
-    setInternships(mockInternships);
-    setCandidates(mockCandidates);
-    setApplications(mockApplications);
-    setInterviews(mockInterviews);
-    setColleges(mockColleges);
-    setChallenges(mockChallenges);
-    setSubmissions(mockSubmissions);
-    setOffers(mockOffers);
-    setCollegeMous(mockCollegeMous);
-    showToast('Reset Industry Portal demo data to defaults.', 'info');
+    setJobs([]);
+    setInternships([]);
+    setCandidates([]);
+    setApplications([]);
+    setInterviews([]);
+    setColleges([]);
+    setChallenges([]);
+    setSubmissions([]);
+    setOffers([]);
+    setCollegeMous([]);
+    showToast('Reset Industry Portal to defaults.', 'info');
+    // Re-hydrate from server
+    refresh();
   };
 
   return (
@@ -844,6 +702,7 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         showToast,
         removeToast,
         markNotificationsAsRead,
+        refresh,
         toggleSaveCandidate,
         shortlistCandidateForJob,
         moveApplicationStage,

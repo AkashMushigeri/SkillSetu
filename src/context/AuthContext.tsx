@@ -1,5 +1,29 @@
 'use client';
 
+/**
+ * Application identity and profile state, resolved from Neon PostgreSQL.
+ *
+ * The authority change in this file is the point of the exercise. Role used to
+ * be read from two places that could disagree:
+ *
+ *   - `getUserRole(authUser)`, which read the `skillsetu_user_role` localStorage
+ *     entry written at sign-up, and
+ *   - `userProfile.role` from the Firestore `users/{uid}` document.
+ *
+ * Routing, page guards and every portal shell read the localStorage/Firestore
+ * copy, while the Express backend authorized on the PostgreSQL `users` row. So
+ * clearing a browser, or a stale value surviving a role change, produced a UI
+ * that showed a portal the API would then reject. Role now comes only from
+ * `/api/auth/me`, which resolves the Firebase UID to a `users` row on every
+ * request, so the UI cannot render a role the API has not agreed to.
+ *
+ * What is intentionally still legacy: `userProfile` is assembled from the
+ * Firestore-compatible helpers, because the three portal contexts have not been
+ * migrated yet. `userProfile.role` is no longer consulted anywhere in this file —
+ * the `role` value exposed on the context comes from PostgreSQL. Once the portal
+ * contexts move to `domainApi`, `userProfile` disappears from this provider.
+ */
+
 import React, {
   createContext,
   useContext,
@@ -14,26 +38,32 @@ import {
   signInWithEmail,
   signUpWithEmail,
   signOutFirebase,
-  getUserRole,
   onAuthChange,
-  saveUserRole,
-  clearUserRole,
   checkGoogleRedirect,
-  saveUserProfile,
-  getUserProfile,
-  isNetworkError,
   UserRole,
   ExtendedUser,
-  UserProfileData,
   sendPasswordReset as sendPasswordResetFirebase,
 } from '@/lib/firebase';
 import { registerWithBackend } from '@/lib/backendApi';
+import { api, ApiError } from '@/lib/apiClient';
+import {
+  identity as identityApi,
+  studentProfile as studentProfileApi,
+  collegeProfile as collegeProfileApi,
+  companyProfile as companyProfileApi,
+  type Identity,
+} from '@/lib/domainApi';
+import { resolveSession, toUserRole, type SessionState } from '@/lib/session';
 
 interface AuthContextType {
   user: ExtendedUser | null;
+  /** From the PostgreSQL `users` row. `null` until the backend confirms it. */
   role: UserRole | null;
-  userProfile: UserProfileData | null;
   loading: boolean;
+  /** Full backend identity, or `null`. Prefer this over assembling role facts. */
+  identity: Identity | null;
+  /** Where the sign-in stands: unregistered, awaiting approval, suspended, ready. */
+  session: SessionState;
   signInWithGoogle: () => Promise<void>;
   signInWithEmailPassword: (email: string, password: string) => Promise<void>;
   signUpWithEmailPassword: (
@@ -53,8 +83,8 @@ interface AuthContextType {
     organizationCode?: string
   ) => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
-  completeOnboarding: (details: Partial<UserProfileData>) => Promise<void>;
-  refreshUserProfile: () => Promise<UserProfileData | null>;
+  completeOnboarding: (details: Record<string, unknown>) => Promise<void>;
+  refreshUserProfile: () => Promise<Record<string, unknown> | null>;
   signOut: () => Promise<void>;
 }
 
@@ -73,41 +103,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<ExtendedUser | null>(null);
-  const [role, setRole] = useState<UserRole | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
+  const [identity, setIdentity] = useState<Identity | null>(null);
   const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<SessionState>({
+    phase: 'signed-out',
+  });
 
-  // Load and sync user profile from Firebase Firestore
-  const syncProfile = useCallback(
-    async (authUser: ExtendedUser, preferredRole?: UserRole) => {
-      try {
-        let profile = await getUserProfile(authUser.uid);
-        const effectiveRole = preferredRole || profile?.role || getUserRole(authUser) || 'STUDENT';
+  const role = identity ? toUserRole(identity.role) : null;
 
-        if (!profile) {
-          // Initialize pending user profile in Firebase database
-          profile = await saveUserProfile(authUser.uid, {
-            uid: authUser.uid,
-            email: authUser.email || '',
-            displayName: authUser.displayName || 'New User',
-            role: effectiveRole,
-            phone: authUser.phoneNumber || '',
-            photoURL: authUser.photoURL || '',
-            onboardingCompleted: false,
-          });
-        }
-
-        setUserProfile(profile);
-        setRole(profile.role || effectiveRole);
-        saveUserRole(profile.role || effectiveRole);
-
-        return profile;
-      } catch (err) {
-        console.error('Error syncing user profile from Firestore:', err);
+  /**
+   * Ask the backend who this Firebase user is.
+   *
+   * A 403 `registration_required` is not an error state — it is the normal
+   * window between `signUpWithEmail` returning and the fire-and-forget
+   * `POST /api/auth/register` landing, so it resolves to `unregistered` instead
+   * of being thrown. Anything else propagates, because silently degrading to a
+   * default role here is exactly the failure this file exists to prevent.
+   */
+  const loadIdentity = useCallback(async (u: ExtendedUser) => {
+    api.setUser(u);
+    try {
+      return await identityApi.me();
+    } catch (err) {
+      if (err instanceof ApiError && err.isRegistrationRequired) {
         return null;
       }
+      throw err;
+    }
+  }, []);
+
+/**
+   * Ask the backend who this Firebase user is.
+   *
+   * A 403 `registration_required` is not an error state — it is the normal
+   * window between `signUpWithEmail` returning and the fire-and-forget
+   * `POST /api/auth/register` landing, so it resolves to `unregistered` instead
+   * of being thrown. Anything else propagates, because silently degrading to a
+   * default role here is exactly the failure this file exists to prevent.
+   */
+  const syncSession = useCallback(
+    async (authUser: ExtendedUser) => {
+      const resolved = await loadIdentity(authUser);
+
+      setIdentity(resolved);
+      setSession(resolveSession(authUser.uid, resolved));
+
+      return { identity: resolved };
     },
-    []
+    [loadIdentity]
   );
 
   useEffect(() => {
@@ -120,13 +163,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         if (!isMounted) return;
         if (redirectUser && redirectUser.uid) {
           setUser(redirectUser);
-          const profile = await syncProfile(redirectUser);
+          const { identity: resolved } = await syncSession(redirectUser);
           if (isMounted) {
             setLoading(false);
-            if (!profile?.onboardingCompleted) {
+            if (!resolved?.onboardingCompleted) {
               router.push('/onboarding');
             } else {
-              router.push(getDashboardRoute(profile.role));
+              router.push(getDashboardRoute(toUserRole(resolved?.role ?? 'student')));
             }
           }
         }
@@ -140,7 +183,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       isMounted = false;
     };
-  }, [router, syncProfile]);
+  }, [router, syncSession]);
 
   useEffect(() => {
     if (!auth) {
@@ -150,42 +193,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const unsubscribe = onAuthChange(async (u) => {
       setUser(u);
       if (u) {
-        const profile = await syncProfile(u);
-        if (profile) {
-          setUserProfile(profile);
-          setRole(profile.role);
-        }
+        await syncSession(u);
       } else {
-        setUserProfile(null);
-        setRole(null);
+        // Drop the API's token source before anything can issue a request as
+        // the previous user.
+        api.setUser(null);
+        setIdentity(null);
+        setSession({ phase: 'signed-out' });
       }
       setLoading(false);
     });
     return () => unsubscribe?.();
-  }, [syncProfile]);
+  }, [syncSession]);
 
   const refreshUserProfile = useCallback(async () => {
     if (!user) return null;
-    const profile = await getUserProfile(user.uid);
-    if (profile) {
-      setUserProfile(profile);
-      setRole(profile.role);
+
+    // Re-read identity so a profile edited on another device shows up here too.
+    try {
+      const resolved = await loadIdentity(user);
+      setIdentity(resolved);
+      setSession(resolveSession(user.uid, resolved));
+    } catch (err) {
+      console.error('Error refreshing identity:', err);
     }
-    return profile;
-  }, [user]);
+
+    // Fetch role-specific profile from backend
+    const role = identity?.role || 'student';
+    let profileData: Record<string, unknown> | null = null;
+
+    if (role === 'student') {
+      try {
+        const res = await studentProfileApi.get();
+        profileData = res.profile ?? null;
+      } catch (e) {
+        console.warn('Could not refresh student profile:', e);
+      }
+    } else if (role === 'industry') {
+      try {
+        const res = await companyProfileApi.get();
+        profileData = res.company ?? null;
+      } catch (e) {
+        console.warn('Could not refresh company profile:', e);
+      }
+    } else if (role === 'college') {
+      try {
+        const res = await collegeProfileApi.get();
+        profileData = res.college ?? null;
+      } catch (e) {
+        console.warn('Could not refresh college profile:', e);
+      }
+    }
+
+    return profileData;
+  }, [user, loadIdentity]);
 
   const signInWithGoogleFn = useCallback(async () => {
     const u = await signInWithGoogle();
     if (u && u.uid) {
       setUser(u);
-      const profile = await syncProfile(u);
-      if (!profile || !profile.onboardingCompleted) {
+      const { identity: resolved } = await syncSession(u);
+      if (!resolved?.onboardingCompleted) {
         router.push('/onboarding');
       } else {
-        router.push(getDashboardRoute(profile.role));
+        router.push(getDashboardRoute(toUserRole(resolved?.role ?? 'student')));
       }
     }
-  }, [router, syncProfile]);
+  }, [router, syncSession]);
 
   const signUpWithGoogle = useCallback(
     async (
@@ -198,28 +272,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const u = await signInWithGoogle();
       if (u && u.uid) {
         setUser(u);
-        const profile = await saveUserProfile(u.uid, {
-          uid: u.uid,
-          email: u.email || '',
-          displayName: displayName || u.displayName || 'New User',
-          role: selectedRole,
-          phone: phone || '',
-          college: college || '',
-          onboardingCompleted: false,
-        });
-        setUserProfile(profile);
-        setRole(selectedRole);
-        saveUserRole(selectedRole);
+        // Fire-and-forget registration: the Firebase account exists the moment
+        // `signInWithGoogle` resolves, and blocking on the backend would leave
+        // the user stranded on a spinner if Neon is slow or unreachable. The
+        // onboarding screen reads through `/api/auth/me`, which reports
+        // `registration_required` until the row lands.
         void registerWithBackend(u, {
           role: selectedRole,
           displayName: displayName || u.displayName || undefined,
           phone,
           organization: { name: college, code: organizationCode },
         });
+
+        // `registerWithBackend` is async, so re-read the identity after a short
+        // wait rather than assuming the row exists yet.
+        await syncSession(u);
         router.push('/onboarding');
       }
     },
-    [router]
+    [router, syncSession]
   );
 
   const signInWithEmailPassword = useCallback(
@@ -229,14 +300,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // privileged-looking role that the backend knew nothing about.
       const u = await signInWithEmail(email, password);
       setUser(u);
-      const profile = await syncProfile(u);
-      if (!profile || !profile.onboardingCompleted) {
+      const { identity: resolved } = await syncSession(u);
+      if (!resolved?.onboardingCompleted) {
         router.push('/onboarding');
       } else {
-        router.push(getDashboardRoute(profile.role));
+        router.push(getDashboardRoute(toUserRole(resolved?.role ?? 'student')));
       }
     },
-    [router, syncProfile]
+    [router, syncSession]
   );
 
   const signUpWithEmailPassword = useCallback(
@@ -254,18 +325,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // could not reach the network.
       const u = await signUpWithEmail(email, password, displayName);
       setUser(u);
-      const profile = await saveUserProfile(u.uid, {
-        uid: u.uid,
-        email,
-        displayName,
-        role: selectedRole,
-        phone: phone || '',
-        college: college || '',
-        onboardingCompleted: false,
-      });
-      setUserProfile(profile);
-      setRole(selectedRole);
-      saveUserRole(selectedRole);
       // Deliberately not awaited: this writes the PostgreSQL `users` row that
       // authorization depends on, but a Firebase account must still be created
       // when the backend is slow or down.
@@ -275,41 +334,99 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         phone,
         organization: { name: college, code: organizationCode },
       });
+
+      await syncSession(u);
       router.push('/onboarding');
     },
-    [router]
+    [router, syncSession]
   );
 
   const completeOnboarding = useCallback(
-    async (details: Partial<UserProfileData>) => {
+    async (details: Record<string, unknown>) => {
       if (!user) throw new Error('No user is currently signed in');
-      const updated = await saveUserProfile(user.uid, {
-        ...details,
-        onboardingCompleted: true,
-      });
-      setUserProfile(updated);
-      setRole(updated.role);
-      saveUserRole(updated.role);
 
-      // Route to destination dashboard
-      router.push(getDashboardRoute(updated.role));
+      const role = identity?.role || 'student';
+
+      // Account-owned fields go to the `users` table.
+      const accountPatch: Parameters<typeof identityApi.update>[0] = {};
+      if (details.phone !== undefined) accountPatch.phone = (details.phone as string) || null;
+      if (details.displayName !== undefined) {
+        accountPatch.displayName = (details.displayName as string) || null;
+      }
+      if (details.recruiterTitle !== undefined) {
+        accountPatch.title = (details.recruiterTitle as string) || null;
+      } else if (details.designation !== undefined) {
+        accountPatch.title = (details.designation as string) || null;
+      }
+      accountPatch.onboardingCompleted = true;
+
+      // Write role-specific profile data to the appropriate backend.
+      const profilePromises: Promise<unknown>[] = [];
+
+      if (role === 'student') {
+        profilePromises.push(
+          studentProfileApi.update({
+            displayName: details.displayName as string | null,
+            phone: details.phone as string | null,
+            usn: details.usn as string | null,
+            degree: details.degree as string | null,
+            department: details.department as string | null,
+            academicYear: details.year as string | null,
+            cgpa: details.gpa ? parseFloat(details.gpa as string) : null,
+            careerGoal: details.careerGoal as string | null,
+            bio: details.bio as string | null,
+            githubUrl: details.github as string | null,
+            linkedinUrl: details.linkedin as string | null,
+            location: details.location as string | null,
+            city: (details.locationDetails as Record<string, unknown> | undefined)?.city as string | null,
+            state: (details.locationDetails as Record<string, unknown> | undefined)?.state as string | null,
+            country: (details.locationDetails as Record<string, unknown> | undefined)?.country as string | null,
+            latitude: (details.locationDetails as Record<string, unknown> | undefined)?.latitude as number | null,
+            longitude: (details.locationDetails as Record<string, unknown> | undefined)?.longitude as number | null,
+          }),
+        );
+      } else if (role === 'industry') {
+        profilePromises.push(
+          companyProfileApi.update({
+            displayName: details.recruiterTitle as string | null,
+            title: details.recruiterTitle as string | null,
+            // Full company profile update would need additional endpoint
+          }),
+        );
+      } else if (role === 'college') {
+        profilePromises.push(
+          collegeProfileApi.update({
+            institutionName: details.institutionName as string | null,
+            collegeCode: details.collegeCode as string | null,
+            designation: details.designation as string | null,
+            institutionLocation: details.institutionLocation as string | null,
+            institutionWebsite: details.institutionWebsite as string | null,
+            departments: details.departments as string[] | null,
+            totalStudents: details.totalStudents ? parseInt(details.totalStudents as string, 10) : null,
+            naacGrade: details.naacGrade as string | null,
+          }),
+        );
+      }
+
+      const [updatedIdentity] = await Promise.all([
+        identityApi.update(accountPatch),
+        ...profilePromises,
+      ]);
+
+      setIdentity(updatedIdentity);
+      setSession(resolveSession(user.uid, updatedIdentity));
+
+      router.push(getDashboardRoute(toUserRole(updatedIdentity.role)));
     },
-    [user, router]
+    [user, router, identity],
   );
 
   const signOut = useCallback(async () => {
     await signOutFirebase();
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('skillsetu_student_profile');
-      localStorage.removeItem('skillsetu_student_skills');
-      localStorage.removeItem('skillsetu_applications');
-      localStorage.removeItem('skillsetu_saved_opps');
-      localStorage.removeItem('skillsetu_notifications');
-    }
+    api.setUser(null);
     setUser(null);
-    setRole(null);
-    setUserProfile(null);
-    clearUserRole();
+    setIdentity(null);
+    setSession({ phase: 'signed-out' });
     router.push('/login');
   }, [router]);
 
@@ -322,8 +439,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       value={{
         user,
         role,
-        userProfile,
         loading,
+        identity,
+        session,
         signInWithGoogle: signInWithGoogleFn,
         signInWithEmailPassword,
         signUpWithEmailPassword,
@@ -346,4 +464,3 @@ export const useAuth = () => {
   }
   return context;
 };
-

@@ -23,6 +23,8 @@ export type TrustedUser = {
   email: string | null;
   displayName: string | null;
   photoUrl: string | null;
+  phone: string | null;
+  title: string | null;
   role: ApplicationRole;
   status: UserStatus;
   companyId: string | null;
@@ -57,6 +59,9 @@ export type UserRow = {
   email: string | null;
   display_name: string | null;
   photo_url: string | null;
+  phone: string | null;
+  /** Recruiter title or college officer designation. Added by migration 0013. */
+  title: string | null;
   role: ApplicationRole;
   status: UserStatus;
   company_id: string | null;
@@ -64,8 +69,8 @@ export type UserRow = {
   onboarding_completed: boolean;
 };
 
-const USER_COLUMNS = `
-  id, firebase_uid, email, display_name, photo_url,
+export const USER_COLUMNS = `
+  id, firebase_uid, email, display_name, photo_url, phone, title,
   role, status, company_id, college_id, onboarding_completed
 `;
 
@@ -82,6 +87,8 @@ function toTrustedUser(row: UserRow): TrustedUser {
     email: row.email,
     displayName: row.display_name,
     photoUrl: row.photo_url,
+    phone: row.phone,
+    title: row.title,
     role: row.role,
     status: row.status,
     companyId: row.company_id,
@@ -97,6 +104,8 @@ export function toUserRow(user: TrustedUser): UserRow {
     email: user.email,
     display_name: user.displayName,
     photo_url: user.photoUrl,
+    phone: user.phone,
+    title: user.title,
     role: user.role,
     status: user.status,
     company_id: user.companyId,

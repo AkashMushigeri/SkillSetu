@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import { useCollege } from '@/context/CollegeContext';
@@ -82,7 +82,7 @@ export default function InternshipsPage() {
                   <strong className="text-emerald-300">{st.eligibleStudentsCount}</strong> eligible 3rd-year students
                 </span>
                 <button
-                  onClick={() => recommendInternship(st.id)}
+                  onClick={() => void recommendInternship(st.id)}
                   className="px-3 py-1.5 bg-gradient-to-r from-brand-emerald to-emerald-500 hover:from-emerald-600 hover:to-emerald-500 text-white font-bold rounded-xl text-xs shadow-md flex items-center gap-1 transition-all"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
@@ -180,7 +180,7 @@ export default function InternshipsPage() {
                 <Share2 className="w-3.5 h-3.5" /> Share
               </button>
               <button
-                onClick={() => recommendInternship(intern.id)}
+                onClick={() => void recommendInternship(intern.id)}
                 className="px-3.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl border border-emerald-200 transition-colors"
               >
                 Recommend

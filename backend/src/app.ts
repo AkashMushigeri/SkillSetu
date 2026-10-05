@@ -19,6 +19,7 @@ import { createNotificationRouter } from './routes/notifications';
 import { createIndustrySettingsRouter } from './routes/industrySettings';
 import { createChallengeRouter, createLearningRouter } from './routes/learning';
 import { createInterviewRouter } from './routes/interviews';
+import { createCollegeRouter } from './routes/college';
 
 const JSON_BODY_LIMIT = '1mb';
 const SAFE_REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{1,64}$/;
@@ -137,6 +138,7 @@ export function createApp({ pool, firebaseState, resolveAuth, allowedOrigins }: 
     app.use(createLearningRouter({ pool, authMiddleware }));
     app.use(createChallengeRouter({ pool, authMiddleware }));
     app.use(createInterviewRouter({ pool, authMiddleware }));
+    app.use(createCollegeRouter({ pool, authMiddleware }));
   } else {
     logger.warn('auth routes are not mounted: no Firebase Auth resolver was provided');
   }

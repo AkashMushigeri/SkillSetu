@@ -5,8 +5,9 @@ import { AppError } from '../lib/errors';
 import { logger } from '../lib/logger';
 import { withTransaction } from '../db/transaction';
 import { mirrorRoleClaims, toUserRow, type AuthMiddleware, type UserRow } from '../middleware/auth';
+import { USER_COLUMNS } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
-import { registerSchema, type RegisterBody } from '../middleware/schemas';
+import { registerSchema, updateAccountSchema, type RegisterBody, type UpdateAccountBody } from '../middleware/schemas';
 import { validateSnapshot, type RequestableRole } from '../services/organization';
 
 export type AuthRouterDependencies = {
@@ -27,6 +28,8 @@ export function identityPayload(user: UserRow) {
     email: user.email,
     displayName: user.display_name,
     photoUrl: user.photo_url,
+    phone: user.phone,
+    title: user.title,
     role: user.role,
     status: user.status,
     companyId: user.company_id,
@@ -68,6 +71,69 @@ export function createIdentityRouter({ pool, auth, authMiddleware }: AuthRouterD
   });
 
   /**
+   * PATCH /api/auth/me
+   *
+   * The account fields a person owns: display name, phone, job title, avatar, and
+   * the onboarding flag. This replaces the Firestore `users/{uid}` blob that
+   * `saveUserProfile` wrote on every profile edit and that `getUserProfile` read
+   * back — the copy of the account which routing decisions were made from while
+   * authorization was decided from PostgreSQL.
+   *
+   * An absent key leaves a column alone; an explicit null clears it. The
+   * distinction is why this is built from the keys the caller sent rather than
+   * blanket-writing every field.
+   *
+   * `role`, `status`, `companyId` and `collegeId` are absent from the schema on
+   * purpose. Those are decided by registration and admin approval, and a person
+   * editing their own profile must not be able to reach them.
+   */
+  router.patch('/api/auth/me', requireAuth, validateBody(updateAccountSchema), (req, res, next) => {
+    void (async () => {
+      const userId = req.user!.userId;
+      const body = req.body as UpdateAccountBody;
+
+      const columns: Record<string, string> = {
+        displayName: 'display_name',
+        phone: 'phone',
+        title: 'title',
+        avatarUrl: 'photo_url',
+        onboardingCompleted: 'onboarding_completed',
+      };
+
+      const sets: string[] = [];
+      const values: unknown[] = [];
+
+      for (const [key, column] of Object.entries(columns)) {
+        if (!(key in body)) {
+          continue;
+        }
+        values.push(body[key as keyof typeof body] ?? null);
+        sets.push(`${column} = $${values.length}`);
+      }
+
+      if (sets.length === 0) {
+        const unchanged = await pool.query<UserRow>(
+          `SELECT ${USER_COLUMNS} FROM users WHERE id = $1`,
+          [userId],
+        );
+        res.status(200).json({ ...identityPayload(unchanged.rows[0]!), requestId: requestId(res) });
+        return;
+      }
+
+      values.push(userId);
+
+      const updated = await pool.query<UserRow>(
+        `UPDATE users SET ${sets.join(', ')} WHERE id = $${values.length} RETURNING ${USER_COLUMNS}`,
+        values,
+      );
+
+      logger.info({ userId, fields: Object.keys(body).length }, 'account updated');
+
+      res.status(200).json({ ...identityPayload(updated.rows[0]!), requestId: requestId(res) });
+    })().catch(next);
+  });
+
+  /**
    * Flow A registration.
    *
    * Idempotent on firebase_uid: a repeat call returns the existing application
@@ -82,9 +148,7 @@ export function createIdentityRouter({ pool, auth, authMiddleware }: AuthRouterD
 
       const outcome = await withTransaction(pool, async (client) => {
         const existing = await client.query<UserRow>(
-          `SELECT id, firebase_uid, email, display_name, photo_url, role, status,
-                  company_id, college_id, onboarding_completed
-           FROM users WHERE firebase_uid = $1 FOR UPDATE`,
+          `SELECT ${USER_COLUMNS} FROM users WHERE firebase_uid = $1 FOR UPDATE`,
           [identity.uid],
         );
 
@@ -120,8 +184,7 @@ export function createIdentityRouter({ pool, auth, authMiddleware }: AuthRouterD
         const inserted = await client.query<UserRow>(
           `INSERT INTO users (firebase_uid, email, display_name, photo_url, phone, role, status)
            VALUES ($1,$2,$3,$4,$5,$6,$7)
-           RETURNING id, firebase_uid, email, display_name, photo_url, role, status,
-                     company_id, college_id, onboarding_completed`,
+           RETURNING ${USER_COLUMNS}`,
           [
             identity.uid,
             identity.email,
