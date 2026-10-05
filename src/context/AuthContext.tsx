@@ -32,6 +32,7 @@ import React, {
   useCallback,
 } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { flushSync } from 'react-dom';
 import {
   auth,
   signInWithGoogle,
@@ -145,8 +146,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     async (authUser: ExtendedUser) => {
       const resolved = await loadIdentity(authUser);
 
-      setIdentity(resolved);
-      setSession(resolveSession(authUser.uid, resolved));
+      flushSync(() => {
+        setIdentity(resolved);
+        setSession(resolveSession(authUser.uid, resolved));
+      });
 
       return { identity: resolved };
     },
@@ -413,8 +416,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         ...profilePromises,
       ]);
 
-      setIdentity(updatedIdentity);
-      setSession(resolveSession(user.uid, updatedIdentity));
+      flushSync(() => {
+        setIdentity(updatedIdentity);
+        setSession(resolveSession(user.uid, updatedIdentity));
+      });
 
       router.push(getDashboardRoute(toUserRole(updatedIdentity.role)));
     },
