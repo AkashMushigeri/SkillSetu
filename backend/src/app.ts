@@ -10,6 +10,15 @@ import { createCorsMiddleware } from './middleware/cors';
 import { createIdentityRouter } from './routes/auth';
 import { createRoleRequestRouter } from './routes/roleRequests';
 import { createHealthRouter, type FirebaseState } from './routes/health';
+import { createStudentRouter } from './routes/studentProfile';
+import { createSkillRouter } from './routes/skills';
+import { createOpportunityRouter } from './routes/opportunities';
+import { createApplicationRouter } from './routes/applications';
+import { createOrganizationRouter } from './routes/organizations';
+import { createNotificationRouter } from './routes/notifications';
+import { createIndustrySettingsRouter } from './routes/industrySettings';
+import { createChallengeRouter, createLearningRouter } from './routes/learning';
+import { createInterviewRouter } from './routes/interviews';
 
 const JSON_BODY_LIMIT = '1mb';
 const SAFE_REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{1,64}$/;
@@ -110,8 +119,24 @@ export function createApp({ pool, firebaseState, resolveAuth, allowedOrigins }: 
   // working even when Firebase configuration is absent.
   if (resolveAuth) {
     const authMiddleware = createAuthMiddleware({ pool, resolveAuth });
-    app.use(createIdentityRouter({ pool, auth: resolveAuth(), authMiddleware }));
-    app.use(createRoleRequestRouter({ pool, auth: resolveAuth(), authMiddleware }));
+    const auth = resolveAuth();
+
+    app.use(createIdentityRouter({ pool, auth, authMiddleware }));
+    app.use(createRoleRequestRouter({ pool, auth, authMiddleware }));
+
+    // Domain routers. Each one reads the caller's role and organization from the
+    // PostgreSQL users row the middleware resolved; none accepts either from the
+    // request body.
+    app.use(createStudentRouter({ pool, authMiddleware }));
+    app.use(createSkillRouter({ pool, authMiddleware }));
+    app.use(createOpportunityRouter({ pool, authMiddleware }));
+    app.use(createApplicationRouter({ pool, authMiddleware }));
+    app.use(createOrganizationRouter({ pool, authMiddleware }));
+    app.use(createNotificationRouter({ pool, authMiddleware }));
+    app.use(createIndustrySettingsRouter({ pool, authMiddleware }));
+    app.use(createLearningRouter({ pool, authMiddleware }));
+    app.use(createChallengeRouter({ pool, authMiddleware }));
+    app.use(createInterviewRouter({ pool, authMiddleware }));
   } else {
     logger.warn('auth routes are not mounted: no Firebase Auth resolver was provided');
   }

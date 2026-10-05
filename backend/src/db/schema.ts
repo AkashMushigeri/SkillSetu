@@ -1092,6 +1092,52 @@ export const notifications = pgTable(
   ],
 );
 
+export const hiringPreferences = pgTable(
+  'hiring_preferences',
+  {
+    userId: uuid('user_id')
+      .primaryKey()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    companyId: uuid('company_id')
+      .notNull()
+      .references(() => companies.id, { onDelete: 'cascade' }),
+    preferredDepartments: text('preferred_departments').array().notNull().default(sql`'{}'::text[]`),
+    preferredDegrees: text('preferred_degrees').array().notNull().default(sql`'{}'::text[]`),
+    preferredGraduationYears: text('preferred_graduation_years').array().notNull().default(sql`'{}'::text[]`),
+    preferredLocations: text('preferred_locations').array().notNull().default(sql`'{}'::text[]`),
+    workModes: workModeEnum('work_modes').array().notNull().default(sql`'{}'::work_mode[]`),
+    minimumCgpa: numeric('minimum_cgpa', { precision: 3, scale: 2 }),
+    prioritizeVerifiedSkills: boolean('prioritize_verified_skills').notNull().default(false),
+    prioritizeStartupExperience: boolean('prioritize_startup_experience').notNull().default(false),
+    searchRadiusKm: integer('search_radius_km').notNull().default(25),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [index('hiring_preferences_company_idx').on(table.companyId)],
+);
+
+export const companyCandidateLists = pgTable(
+  'company_candidate_lists',
+  {
+    companyId: uuid('company_id')
+      .notNull()
+      .references(() => companies.id, { onDelete: 'cascade' }),
+    candidateUserId: uuid('candidate_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    category: text('category').notNull(),
+    note: text('note'),
+    shortlistedAt: timestamp('shortlisted_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    primaryKey({ columns: [table.companyId, table.candidateUserId] }),
+    index('company_candidate_lists_candidate_idx').on(table.candidateUserId),
+    index('company_candidate_lists_company_category_idx').on(table.companyId, table.category),
+  ],
+);
+
 export const usersRelations = relations(users, ({ one, many }) => ({
   college: one(colleges, { fields: [users.collegeId], references: [colleges.id] }),
   company: one(companies, { fields: [users.companyId], references: [companies.id] }),
