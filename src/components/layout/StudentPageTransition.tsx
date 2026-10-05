@@ -21,18 +21,11 @@ export const StudentPageTransition: React.FC<StudentPageTransitionProps> = ({ ch
     }
   }, [pathname]);
 
-  const handleAnimationEnd = (e: React.AnimationEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      e.currentTarget.style.willChange = 'auto';
-    }
-  };
-
+  // The layer hint is dropped from CSS rather than cleared here on
+  // `animationend`: on a hard load the 180ms animation finishes before React
+  // hydrates, so that event is missed and the hint would persist all session.
   return (
-    <div
-      key={pathname}
-      onAnimationEnd={handleAnimationEnd}
-      className="student-page-transition w-full flex-1 min-w-0"
-    >
+    <div key={pathname} className="student-page-transition w-full flex-1 min-w-0">
       {children}
     </div>
   );

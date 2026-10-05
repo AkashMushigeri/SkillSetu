@@ -171,7 +171,12 @@ textarea {
 
 .student-page-transition {
   animation: studentPageEnter 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  will-change: opacity, transform;
+  /* Only `opacity` is promoted. `transform` must stay out of `will-change`:
+     it would make this wrapper the containing block for every
+     `position: fixed` descendant, so modals inside it (ApplyModal and ~14
+     others) would size their `inset-0` overlay against the whole page instead
+     of the viewport and centre their card far below the fold. */
+  will-change: opacity;
 }
 
 @media (prefers-reduced-motion: reduce) {
