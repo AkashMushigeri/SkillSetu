@@ -171,12 +171,12 @@ textarea {
 
 .student-page-transition {
   animation: studentPageEnter 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  /* Only `opacity` is promoted. `transform` must stay out of `will-change`:
-     it would make this wrapper the containing block for every
-     `position: fixed` descendant, so modals inside it (ApplyModal and ~14
-     others) would size their `inset-0` overlay against the whole page instead
-     of the viewport and centre their card far below the fold. */
-  will-change: opacity;
+  /* No `will-change` here. It is an 180ms animation, so a persistent layer
+     hint buys nothing, and any value on this property makes the wrapper a
+     containing block for `position: fixed` descendants (`transform`) and/or a
+     stacking context (any value). That trapped in-place `fixed z-50` modals
+     below the z-40 header and bottom nav. Modals now portal to <body>; this
+     stays off so the other in-place overlays are not re-trapped either. */
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -184,6 +184,5 @@ textarea {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
-    will-change: auto !important;
   }
 }

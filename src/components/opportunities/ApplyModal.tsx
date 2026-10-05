@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { Opportunity } from '@/types/student';
 import { useStudent } from '@/context/StudentContext';
@@ -28,8 +29,12 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ opportunity, onClose }) 
   const [coverNote, setCoverNote] = useState(
     'I am excited to apply for this role. My verified skillset, engineering background, and hands-on projects match your requirements.'
   );
+  const [isMounted, setIsMounted] = useState(false);
 
-  if (!opportunity) return null;
+  // Portals need a real DOM node, which does not exist during SSR.
+  useEffect(() => setIsMounted(true), []);
+
+  if (!opportunity || !isMounted) return null;
 
   const verifiedSkills = skills.filter((s) => s.isVerified);
 
@@ -39,9 +44,14 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ opportunity, onClose }) 
     setIsSubmitted(true);
   };
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-lg w-full overflow-hidden">
+  // Rendered into <body> rather than in place: the page is wrapped in
+  // .student-page-transition, which creates a stacking context, so an in-place
+  // `fixed z-50` overlay painted below the z-40 header and bottom nav instead of
+  // over them. `my-auto` on the card keeps it centred while `items-start` on the
+  // overlay lets the top of a tall card still be reached by scrolling.
+  return createPortal(
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-xs flex items-start justify-center p-3 sm:p-6 animate-in fade-in duration-200">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-lg w-full my-auto overflow-hidden">
         {/* Header */}
         <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between bg-slate-50/50 dark:bg-slate-950/40">
           <div>
@@ -217,6 +227,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ opportunity, onClose }) 
           </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
