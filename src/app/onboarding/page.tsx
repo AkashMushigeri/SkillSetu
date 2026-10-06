@@ -218,7 +218,7 @@ function getPhoneValidationError(digits: string, country: CountryOption): string
   return null;
 }
 
-export default function OnboardingPage() {
+function OnboardingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, identity, loading, completeOnboarding, signOut } = useAuth();
@@ -1803,5 +1803,28 @@ export default function OnboardingPage() {
         <span>Secure Cloud Database &bull; All rights reserved</span>
       </footer>
     </div>
+  );
+}
+
+/**
+ * `useSearchParams()` (the `?role=` hint) opts the content out of
+ * static prerendering, so it must sit behind a Suspense boundary
+ * or the build fails with `missing-suspense-with-csr-bailout`.
+ * Same pattern as `/industry/candidates`.
+ */
+export default function OnboardingPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center text-slate-500 shadow-card space-y-3">
+            <div className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-sm">Preparing your onboarding...</p>
+          </div>
+        </div>
+      }
+    >
+      <OnboardingContent />
+    </React.Suspense>
   );
 }
