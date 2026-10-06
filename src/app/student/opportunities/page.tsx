@@ -48,7 +48,7 @@ export default function OpportunitiesExplorePage() {
   // Available skills in opportunities for filter dropdown
   const availableSkills = useMemo(() => {
     const set = new Set<string>();
-    opportunities.forEach((o) => o.requiredSkills.forEach((s) => set.add(s)));
+    (opportunities || []).forEach((o) => (o.requiredSkills || []).forEach((s) => set.add(s)));
     return Array.from(set).sort();
   }, [opportunities]);
 
@@ -75,7 +75,7 @@ export default function OpportunitiesExplorePage() {
 
   // Filter logic: Radius + Type + Search + Work Mode + Skill
   const filteredOpportunities = useMemo(() => {
-    return opportunities.filter((opp) => {
+    return (opportunities || []).filter((opp) => {
       // 1. Radius filter: opp distance must be <= searchRadius (or remote if work mode is remote)
       const matchesRadius =
         opp.workMode === 'Remote' || (opp.distanceKm !== undefined && opp.distanceKm <= searchRadius);
@@ -94,7 +94,7 @@ export default function OpportunitiesExplorePage() {
       // 4. Skill filter
       if (
         selectedSkillFilter !== 'All' &&
-        !opp.requiredSkills.some((s) => s.toLowerCase() === selectedSkillFilter.toLowerCase())
+        !(opp.requiredSkills || []).some((s) => s.toLowerCase() === selectedSkillFilter.toLowerCase())
       ) {
         return false;
       }
@@ -104,7 +104,7 @@ export default function OpportunitiesExplorePage() {
         const query = searchQuery.toLowerCase();
         const inTitle = opp.title.toLowerCase().includes(query);
         const inCompany = opp.company.toLowerCase().includes(query);
-        const inSkills = opp.requiredSkills.some((s) => s.toLowerCase().includes(query));
+        const inSkills = (opp.requiredSkills || []).some((s) => s.toLowerCase().includes(query));
         const inLocation = opp.location.toLowerCase().includes(query);
         if (!inTitle && !inCompany && !inSkills && !inLocation) {
           return false;

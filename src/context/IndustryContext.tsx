@@ -153,6 +153,96 @@ const defaultNotifications: IndustryNotification[] = [
 
 const IndustryContext = createContext<IndustryContextType | undefined>(undefined);
 
+/* ------------------------------------------------------------- mapping */
+
+/**
+ * The backend returns the raw `companies` row in snake_case
+ * (`website_url`, `tech_stack`, `logo_url`, …) while the UI's
+ * CompanyProfile is camelCase with a nested `coordinates` object and a
+ * `recruiter` sub-object that lives on the `users` table. Casting the
+ * row straight to CompanyProfile silences TypeScript without moving any
+ * data, so every one of these fields renders empty and
+ * `company.recruiter` is undefined at runtime — the dashboard calls
+ * `company.recruiter.name.split(' ')[0]` and crashes. Map the wire row
+ * once, here, so no page has to know the storage format.
+ */
+type CompanyRow = {
+  name: string | null;
+  type: string | null;
+  industry: string | null;
+  location: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  employees: string | null;
+  founded: number | null;
+  website_url: string | null;
+  tagline: string | null;
+  about: string | null;
+  mission: string | null;
+  tech_stack: string[] | null;
+  departments: string[] | null;
+  hiring_domains: string[] | null;
+  benefits: string[] | null;
+  culture: string[] | null;
+  logo_url: string | null;
+  cover_image_url: string | null;
+};
+
+/**
+ * Recruiter rows come from `users`. The endpoint selects display_name,
+ * email and photo_url; it does not select title, so the title stays
+ * empty rather than inventing one.
+ */
+type RecruiterRow = {
+  display_name: string | null;
+  title?: string | null;
+  email: string | null;
+  photo_url?: string | null;
+};
+
+/** Postgres jsonb columns arrive as arrays or null; keep only strings. */
+const stringArray = (value: string[] | null | undefined): string[] =>
+  Array.isArray(value) ? value.filter((entry) => typeof entry === 'string') : [];
+
+export function mapCompanyRow(row: CompanyRow, recruiters: RecruiterRow[] = []): CompanyProfile {
+  const lead = recruiters[0];
+
+  return {
+    name: row.name ?? '',
+    type: row.type ?? '',
+    industry: row.industry ?? '',
+    location: row.location ?? '',
+    coordinates: {
+      lat: row.latitude ?? 0,
+      lng: row.longitude ?? 0,
+    },
+    employees: row.employees ?? '',
+    founded: row.founded ?? 0,
+    // The company endpoint does not return these counts; 0 is the
+    // honest value until the API exposes them.
+    activeJobsCount: 0,
+    activeInternshipsCount: 0,
+    collegePartnersCount: 0,
+    website: row.website_url ?? '',
+    tagline: row.tagline ?? '',
+    about: row.about ?? '',
+    mission: row.mission ?? '',
+    techStack: stringArray(row.tech_stack),
+    departments: stringArray(row.departments),
+    hiringDomains: stringArray(row.hiring_domains),
+    benefits: stringArray(row.benefits),
+    culture: stringArray(row.culture),
+    logo: row.logo_url ?? '',
+    coverImage: row.cover_image_url ?? '',
+    recruiter: {
+      name: lead?.display_name ?? '',
+      title: lead?.title ?? '',
+      email: lead?.email ?? '',
+      avatar: lead?.photo_url ?? '',
+    },
+  };
+}
+
 export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, identity } = useAuth();
   const [company, setCompany] = useState<CompanyProfile>(defaultCompanyProfile);
@@ -247,7 +337,17 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           }));
         setColleges(mappedColleges as unknown as CollegePartner[]);
       }
-      if (companyRes.status === 'fulfilled' && companyRes.value.company) setCompany(companyRes.value.company as unknown as CompanyProfile);
+      if (companyRes.status === 'fulfilled' && companyRes.value.company) {
+        // The wire format is the snake_case `companies` row plus the
+        // recruiter rows from `users`; map them to the camelCase
+        // CompanyProfile the UI renders.
+        setCompany(
+          mapCompanyRow(
+            companyRes.value.company as unknown as CompanyRow,
+            companyRes.value.recruiters as unknown as RecruiterRow[],
+          ),
+        );
+      }
       if (preferencesRes.status === 'fulfilled') setPreferences(preferencesRes.value.preferences as unknown as HiringPreferences);
     } catch (e) {
       console.warn('[Industry] Hydration failed:', e);
@@ -502,17 +602,20 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Profile & Preferences
   const updateCompanyProfile = async (profile: Partial<CompanyProfile>) => {
-    setCompany((prev) => {
-      const next = { ...prev, ...profile };
-      return next;
-    });
+    setCompany((prev) => ({ ...prev, ...profile }));
 
     try {
-      await companyProfile.update({
-        displayName: profile.recruiter?.name,
-        title: profile.recruiter?.title,
-        // Other fields would need to be added to the API
-      });
+      // The backend schema is strict and uses `websiteUrl` (not `website`).
+      // Recruiter name/title live on the `users` table and have no company
+      // profile endpoint, so they are intentionally not sent here. Only the
+      // company-level fields the profile editor actually edits are persisted.
+      const payload: Record<string, unknown> = {};
+      if (profile.tagline !== undefined) payload.tagline = profile.tagline;
+      if (profile.about !== undefined) payload.about = profile.about;
+      if (profile.mission !== undefined) payload.mission = profile.mission;
+      if (profile.website !== undefined) payload.websiteUrl = profile.website;
+
+      await companyProfile.update(payload);
       showToast('Company Profile updated successfully.', 'success');
     } catch (e) {
       console.error('Could not update company profile:', e);

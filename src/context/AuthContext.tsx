@@ -364,6 +364,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       accountPatch.onboardingCompleted = true;
 
       // Write role-specific profile data to the appropriate backend.
+      //
+      // Industry and college deliberately have no organization write here.
+      // Their company/college row is created when an admin approves the
+      // role request (resolveOrganization) and is edited afterwards in the
+      // industry dashboard and college profile page. A recruiter's title
+      // and a college officer's designation are account-owned and already
+      // travel in `accountPatch` as `title`. An onboarding-time write to
+      // the organization endpoints could only fail: their schemas are
+      // strict, and `requireOrganization`/`requireActive` reject an
+      // account that is still pending approval.
       const profilePromises: Promise<unknown>[] = [];
 
       if (role === 'student') {
@@ -378,35 +388,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             cgpa: details.gpa ? parseFloat(details.gpa as string) : null,
             careerGoal: details.careerGoal as string | null,
             bio: details.bio as string | null,
-            githubUrl: details.github as string | null,
-            linkedinUrl: details.linkedin as string | null,
+            githubUrl: (details.github as string | null) || null,
+            linkedinUrl: (details.linkedin as string | null) || null,
             location: details.location as string | null,
             city: (details.locationDetails as Record<string, unknown> | undefined)?.city as string | null,
             state: (details.locationDetails as Record<string, unknown> | undefined)?.state as string | null,
             country: (details.locationDetails as Record<string, unknown> | undefined)?.country as string | null,
             latitude: (details.locationDetails as Record<string, unknown> | undefined)?.latitude as number | null,
             longitude: (details.locationDetails as Record<string, unknown> | undefined)?.longitude as number | null,
-          }),
-        );
-      } else if (role === 'industry') {
-        profilePromises.push(
-          companyProfileApi.update({
-            displayName: details.recruiterTitle as string | null,
-            title: details.recruiterTitle as string | null,
-            // Full company profile update would need additional endpoint
-          }),
-        );
-      } else if (role === 'college') {
-        profilePromises.push(
-          collegeProfileApi.update({
-            institutionName: details.institutionName as string | null,
-            collegeCode: details.collegeCode as string | null,
-            designation: details.designation as string | null,
-            institutionLocation: details.institutionLocation as string | null,
-            institutionWebsite: details.institutionWebsite as string | null,
-            departments: details.departments as string[] | null,
-            totalStudents: details.totalStudents ? parseInt(details.totalStudents as string, 10) : null,
-            naacGrade: details.naacGrade as string | null,
           }),
         );
       }

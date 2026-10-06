@@ -37,6 +37,26 @@ export default function SkillDetailPage() {
 
   const skill = getSkillById(skillId);
 
+  if (!skill) {
+    return (
+      <div className="w-full max-w-[1820px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-12 text-center space-y-4 shadow-card">
+          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">Skill not found</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            The skill you are looking for does not exist or may have been removed.
+          </p>
+          <Link
+            href="/student/skills"
+            className="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-brand-teal hover:bg-brand-dark text-white font-bold text-xs shadow-sm transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Skills Hub
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   // Assessment state
   const [selectedDifficulty, setSelectedDifficulty] = useState<'EASY' | 'MEDIUM' | 'HARD'>('MEDIUM');
   const [isTakingAssessment, setIsTakingAssessment] = useState(false);

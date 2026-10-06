@@ -535,7 +535,7 @@ export default function StudentDashboardPage() {
 
               <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <div className="flex flex-wrap gap-1">
-                  {opp.requiredSkills.slice(0, 2).map((sk) => (
+                  {(opp.requiredSkills || []).slice(0, 2).map((sk) => (
                     <span key={sk} className="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded">
                       {sk}
                     </span>

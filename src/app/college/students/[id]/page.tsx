@@ -30,6 +30,26 @@ export default function StudentDetailPage() {
   const studentId = params?.id as string;
   const student = students.find((s) => s.id === studentId) || students[0];
 
+  if (!student) {
+    return (
+      <div className="space-y-6 animate-in fade-in text-slate-900">
+        <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center space-y-4 shadow-card">
+          <h1 className="text-2xl font-extrabold text-slate-900">No student data available</h1>
+          <p className="text-sm text-slate-500">
+            There are no students in the roster yet, or the requested student was not found.
+          </p>
+          <Link
+            href="/college/students"
+            className="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-brand-teal hover:bg-brand-dark text-white font-bold text-xs shadow-sm transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Student Management
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-in fade-in text-slate-900">
       {/* Back button & Breadcrumb */}
