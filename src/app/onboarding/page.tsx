@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth, getDashboardRoute } from '@/context/AuthContext';
 import {
   Sparkles,
@@ -220,6 +220,7 @@ function getPhoneValidationError(digits: string, country: CountryOption): string
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, identity, loading, completeOnboarding, signOut } = useAuth();
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -227,8 +228,22 @@ export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null);
   const [customSkillInput, setCustomSkillInput] = useState('');
 
-  // Role from PostgreSQL identity
-  const role = (identity?.role?.toUpperCase() as 'STUDENT' | 'INDUSTRY' | 'COLLEGE') || 'STUDENT';
+  // Role from the PostgreSQL identity; the `?role=` hint (written by
+  // signup) covers the window where `/api/auth/me` cannot confirm a
+  // role yet because the backend row is still being written or the
+  // backend is unreachable. `admin` has no onboarding form of its own
+  // and shares the student one.
+  const roleHint = searchParams.get('role');
+  const role: 'STUDENT' | 'INDUSTRY' | 'COLLEGE' =
+    identity?.role === 'industry'
+      ? 'INDUSTRY'
+      : identity?.role === 'college'
+        ? 'COLLEGE'
+        : roleHint === 'industry'
+          ? 'INDUSTRY'
+          : roleHint === 'college'
+            ? 'COLLEGE'
+            : 'STUDENT';
 
   // Common Fields
   const [displayName, setDisplayName] = useState('');
@@ -850,6 +865,29 @@ export default function OnboardingPage() {
         };
       }
 
+      // Save to Firebase database & complete onboarding (with safety timeout)
+      let saveFailed = false;
+      try {
+        await Promise.race([
+          completeOnboarding(finalPayload as unknown as Record<string, unknown>, role),
+          new Promise((resolve) => setTimeout(resolve, 2500)),
+        ]);
+      } catch (saveErr) {
+        console.warn('Onboarding sync note:', saveErr);
+        saveFailed = true;
+      }
+
+      if (saveFailed) {
+        // Routing on would land the user on a portal the API rejects
+        // for an account whose profile never saved — keep them on the
+        // form with the error visible.
+        setIsSubmitting(false);
+        setError(
+          'Could not save your profile. Check your connection and try again.'
+        );
+        return;
+      }
+
       // Celebrate with confetti!
       try {
         confetti({
@@ -859,16 +897,6 @@ export default function OnboardingPage() {
         });
       } catch {
         // ignore
-      }
-
-      // Save to Firebase database & complete onboarding (with safety timeout)
-      try {
-        await Promise.race([
-          completeOnboarding(finalPayload as unknown as Record<string, unknown>),
-          new Promise((resolve) => setTimeout(resolve, 2500)),
-        ]);
-      } catch (saveErr) {
-        console.warn('Onboarding sync note:', saveErr);
       }
 
       router.push(getDashboardRoute(role));

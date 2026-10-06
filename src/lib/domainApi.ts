@@ -831,3 +831,83 @@ export const collegeInternships = {
       {},
     ),
 };
+
+/* ------------------------------------------------------- role requests */
+
+/** One row from `/api/role-requests`. `organizationSnapshot` is the org facts the applicant supplied. */
+export type RoleRequest = {
+  id: string;
+  userId: string;
+  requestedRole: 'industry' | 'college';
+  status: 'pending' | 'approved' | 'rejected' | 'withdrawn';
+  organizationSnapshot: Record<string, unknown>;
+  reason: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  decisionNote: string | null;
+  createdAt: string;
+  applicant: { firebaseUid: string; email: string | null };
+};
+
+export const roleRequests = {
+  /**
+   * Admin-only review queue, oldest first. Approval and rejection are
+   * transactional on the backend: the role change, the organization
+   * link and the decision either all commit or none do.
+   */
+  list: (status: RoleRequest['status'] = 'pending', limit = 50) =>
+    api.get<{ requests: RoleRequest[] }>('/api/role-requests', {
+      query: { status, limit },
+    }),
+
+  /**
+   * Flow B — an active student asks for an industry/college upgrade.
+   * The `users` row is left untouched, so a rejection never costs the
+   * applicant the account they already had.
+   */
+  create: (input: {
+    requestedRole: 'industry' | 'college';
+    organization: { name: string; code?: string };
+    reason?: string;
+  }) =>
+    api.post<{
+      id: string;
+      requestedRole: string;
+      status: 'pending';
+      currentRole: string;
+      currentStatus: string;
+    }>('/api/role-requests', {
+      requested_role: input.requestedRole,
+      organization: input.organization,
+      ...(input.reason ? { reason: input.reason } : {}),
+    }),
+
+  /**
+   * Approve. `companyId`/`collegeId` pin an existing organization
+   * instead of resolving a new one from the snapshot.
+   */
+  approve: (
+    id: string,
+    opts: { companyId?: string; collegeId?: string; decisionNote?: string } = {}
+  ) =>
+    api.post<{
+      id: string;
+      status: 'approved';
+      requestedRole: string;
+      organizationStrategy: string;
+      companyId: string | null;
+      collegeId: string | null;
+    }>(`/api/role-requests/${id}/approve`, opts),
+
+  /**
+   * Reject. Marks the request rejected; a not-yet-active applicant
+   * falls back to a working student account.
+   */
+  reject: (id: string, opts: { decisionNote?: string } = {}) =>
+    api.post<{
+      id: string;
+      status: 'rejected';
+      fellBackToStudent: boolean;
+      role: string;
+    }>(`/api/role-requests/${id}/reject`, opts),
+};

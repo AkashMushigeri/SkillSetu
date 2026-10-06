@@ -45,7 +45,10 @@ import {
   ExtendedUser,
   sendPasswordReset as sendPasswordResetFirebase,
 } from '@/lib/firebase';
-import { registerWithBackend } from '@/lib/backendApi';
+import {
+  registerWithBackend,
+  type RegistrationOutcome,
+} from '@/lib/backendApi';
 import { api, ApiError } from '@/lib/apiClient';
 import {
   identity as identityApi,
@@ -84,7 +87,7 @@ interface AuthContextType {
     organizationCode?: string
   ) => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
-  completeOnboarding: (details: Record<string, unknown>) => Promise<void>;
+  completeOnboarding: (details: Record<string, unknown>, roleHint?: UserRole) => Promise<void>;
   refreshUserProfile: () => Promise<Record<string, unknown> | null>;
   signOut: () => Promise<void>;
 }
@@ -97,6 +100,17 @@ export const getDashboardRoute = (userRole: UserRole | null) => {
   if (userRole === 'COLLEGE') return '/college/dashboard';
   return '/login';
 };
+
+const delay = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/** How long a signup waits for the backend row before continuing unregistered. */
+const REGISTRATION_RESOLVE_MS = 5_000;
+/** Bounded poll after a confirmed registration: the row exists, `/api/auth/me` may briefly lag. */
+const REGISTRATION_RESOLVE_ATTEMPTS = 6;
+const REGISTRATION_RESOLVE_DELAY_MS = 500;
+/** Ceiling for the sign-in self-heal write. */
+const SELF_HEAL_RESOLVE_MS = 8_000;
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -156,6 +170,93 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     [loadIdentity]
   );
 
+  /**
+   * Best-effort registration bounded by a timeout.
+   *
+   * `registerWithBackend` never rejects — it resolves with a
+   * `failed`/`skipped` outcome — so racing it against a timer cannot
+   * leak an unhandled rejection. Callers must not treat the outcome
+   * as authoritative: a `null` result means "unconfirmed", not
+   * "absent".
+   */
+  const ensureRegistered = useCallback(
+    async (authUser: ExtendedUser): Promise<RegistrationOutcome | null> =>
+      Promise.race([
+        registerWithBackend(authUser, {
+          role: 'STUDENT',
+          displayName: authUser.displayName || undefined,
+        }),
+        delay(SELF_HEAL_RESOLVE_MS).then(() => null),
+      ]),
+    []
+  );
+
+  /**
+   * `syncSession`, plus the recovery path for an account whose backend
+   * row is missing — e.g. signup whose fire-and-forget registration
+   * never landed, leaving every later API call stuck on 403
+   * `registration_required`.
+   *
+   * `loadIdentity` turns that specific 403 into `null` rather than
+   * throwing, so a `null` identity here means either "row still being
+   * written" or "row never written". The register call is idempotent
+   * on `firebase_uid`, so it is safe in both cases, and re-reading
+   * afterwards picks up whichever outcome actually happened. Only the
+   * student role self-registers: industry and college need an
+   * organization, which only an admin approval can supply.
+   */
+  const syncSessionWithRecovery = useCallback(
+    async (authUser: ExtendedUser) => {
+      let resolved = await loadIdentity(authUser);
+      if (resolved === null) {
+        await ensureRegistered(authUser);
+        resolved = await loadIdentity(authUser);
+      }
+
+      flushSync(() => {
+        setIdentity(resolved);
+        setSession(resolveSession(authUser.uid, resolved));
+      });
+
+      return { identity: resolved };
+    },
+    [loadIdentity, ensureRegistered]
+  );
+
+  /**
+   * Wait for a just-submitted registration and resolve the identity it
+   * produced, bounded. Returns `null` when no row could be confirmed —
+   * timed out, failed, skipped, or the identity read kept coming back
+   * empty — so callers fall back to the unregistered flow.
+   */
+  const resolveAfterRegistration = useCallback(
+    async (
+      authUser: ExtendedUser,
+      registration: Promise<RegistrationOutcome>
+    ): Promise<Identity | null> => {
+      const outcome = await Promise.race([
+        registration,
+        delay(REGISTRATION_RESOLVE_MS).then(() => null),
+      ]);
+      if (
+        !outcome ||
+        (outcome.status !== 'created' && outcome.status !== 'already-registered')
+      ) {
+        return null;
+      }
+
+      // The row exists, but `/api/auth/me` may still briefly 403 while
+      // the write commits, so poll a bounded number of times.
+      for (let attempt = 0; attempt < REGISTRATION_RESOLVE_ATTEMPTS; attempt++) {
+        const resolved = await loadIdentity(authUser);
+        if (resolved) return resolved;
+        await delay(REGISTRATION_RESOLVE_DELAY_MS);
+      }
+      return null;
+    },
+    [loadIdentity]
+  );
+
   useEffect(() => {
     let isMounted = true;
 
@@ -166,7 +267,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         if (!isMounted) return;
         if (redirectUser && redirectUser.uid) {
           setUser(redirectUser);
-          const { identity: resolved } = await syncSession(redirectUser);
+          const { identity: resolved } = await syncSessionWithRecovery(redirectUser);
           if (isMounted) {
             setLoading(false);
             if (!resolved?.onboardingCompleted) {
@@ -186,7 +287,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       isMounted = false;
     };
-  }, [router, syncSession]);
+  }, [router, syncSessionWithRecovery]);
 
   useEffect(() => {
     if (!auth) {
@@ -196,7 +297,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const unsubscribe = onAuthChange(async (u) => {
       setUser(u);
       if (u) {
-        await syncSession(u);
+        await syncSessionWithRecovery(u);
       } else {
         // Drop the API's token source before anything can issue a request as
         // the previous user.
@@ -207,7 +308,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setLoading(false);
     });
     return () => unsubscribe?.();
-  }, [syncSession]);
+  }, [syncSessionWithRecovery]);
 
   const refreshUserProfile = useCallback(async () => {
     if (!user) return null;
@@ -255,14 +356,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const u = await signInWithGoogle();
     if (u && u.uid) {
       setUser(u);
-      const { identity: resolved } = await syncSession(u);
+      const { identity: resolved } = await syncSessionWithRecovery(u);
       if (!resolved?.onboardingCompleted) {
         router.push('/onboarding');
       } else {
         router.push(getDashboardRoute(toUserRole(resolved?.role ?? 'student')));
       }
     }
-  }, [router, syncSession]);
+  }, [router, syncSessionWithRecovery]);
 
   const signUpWithGoogle = useCallback(
     async (
@@ -275,25 +376,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const u = await signInWithGoogle();
       if (u && u.uid) {
         setUser(u);
-        // Fire-and-forget registration: the Firebase account exists the moment
-        // `signInWithGoogle` resolves, and blocking on the backend would leave
-        // the user stranded on a spinner if Neon is slow or unreachable. The
-        // onboarding screen reads through `/api/auth/me`, which reports
-        // `registration_required` until the row lands.
-        void registerWithBackend(u, {
-          role: selectedRole,
-          displayName: displayName || u.displayName || undefined,
-          phone,
-          organization: { name: college, code: organizationCode },
+        const resolved = await resolveAfterRegistration(
+          u,
+          registerWithBackend(u, {
+            role: selectedRole,
+            displayName: displayName || u.displayName || undefined,
+            phone,
+            organization: { name: college, code: organizationCode },
+          })
+        );
+
+        flushSync(() => {
+          setIdentity(resolved);
+          setSession(resolveSession(u.uid, resolved));
         });
 
-        // `registerWithBackend` is async, so re-read the identity after a short
-        // wait rather than assuming the row exists yet.
-        await syncSession(u);
-        router.push('/onboarding');
+        if (resolved?.onboardingCompleted) {
+          router.push(getDashboardRoute(toUserRole(resolved.role)));
+        } else {
+          // The hint keeps the onboarding form on the role that was
+          // signed up for while `/api/auth/me` catches up with the
+          // backend row.
+          router.push(`/onboarding?role=${selectedRole.toLowerCase()}`);
+        }
       }
     },
-    [router, syncSession]
+    [router, resolveAfterRegistration]
   );
 
   const signInWithEmailPassword = useCallback(
@@ -303,14 +411,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // privileged-looking role that the backend knew nothing about.
       const u = await signInWithEmail(email, password);
       setUser(u);
-      const { identity: resolved } = await syncSession(u);
+      const { identity: resolved } = await syncSessionWithRecovery(u);
       if (!resolved?.onboardingCompleted) {
         router.push('/onboarding');
       } else {
         router.push(getDashboardRoute(toUserRole(resolved?.role ?? 'student')));
       }
     },
-    [router, syncSession]
+    [router, syncSessionWithRecovery]
   );
 
   const signUpWithEmailPassword = useCallback(
@@ -328,27 +436,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // could not reach the network.
       const u = await signUpWithEmail(email, password, displayName);
       setUser(u);
-      // Deliberately not awaited: this writes the PostgreSQL `users` row that
-      // authorization depends on, but a Firebase account must still be created
-      // when the backend is slow or down.
-      void registerWithBackend(u, {
-        role: selectedRole,
-        displayName,
-        phone,
-        organization: { name: college, code: organizationCode },
+      const resolved = await resolveAfterRegistration(
+        u,
+        registerWithBackend(u, {
+          role: selectedRole,
+          displayName,
+          phone,
+          organization: { name: college, code: organizationCode },
+        })
+      );
+
+      flushSync(() => {
+        setIdentity(resolved);
+        setSession(resolveSession(u.uid, resolved));
       });
 
-      await syncSession(u);
-      router.push('/onboarding');
+      if (resolved?.onboardingCompleted) {
+        router.push(getDashboardRoute(toUserRole(resolved.role)));
+      } else {
+        // Same hint contract as `signUpWithGoogle`: the onboarding form
+        // reads it when `/api/auth/me` cannot confirm a role yet.
+        router.push(`/onboarding?role=${selectedRole.toLowerCase()}`);
+      }
     },
-    [router, syncSession]
+    [router, resolveAfterRegistration]
   );
 
   const completeOnboarding = useCallback(
-    async (details: Record<string, unknown>) => {
+    async (details: Record<string, unknown>, roleHint?: UserRole) => {
       if (!user) throw new Error('No user is currently signed in');
 
-      const role = identity?.role || 'student';
+      // A null identity here means the user reached onboarding through
+      // the `?role=` hint while `/api/auth/me` could not confirm a row
+      // — signup raced a slow or unreachable backend. Self-heal the
+      // missing row first so the profile writes below are not rejected
+      // with 403 `registration_required`.
+      let resolvedIdentity = identity;
+      if (!resolvedIdentity) {
+        await ensureRegistered(user);
+        resolvedIdentity = await loadIdentity(user);
+        flushSync(() => {
+          setIdentity(resolvedIdentity);
+          setSession(resolveSession(user.uid, resolvedIdentity));
+        });
+      }
+
+      // The backend role is authoritative once known; the hint only
+      // covers the window where it is not.
+      const role =
+        resolvedIdentity?.role || (roleHint ? roleHint.toLowerCase() : 'student');
 
       // Account-owned fields go to the `users` table.
       const accountPatch: Parameters<typeof identityApi.update>[0] = {};
@@ -412,7 +548,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       router.push(getDashboardRoute(toUserRole(updatedIdentity.role)));
     },
-    [user, router, identity],
+    [user, router, identity, ensureRegistered, loadIdentity]
   );
 
   const signOut = useCallback(async () => {
