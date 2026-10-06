@@ -30,6 +30,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { flushSync } from 'react-dom';
@@ -47,6 +48,7 @@ import {
 } from '@/lib/firebase';
 import {
   registerWithBackend,
+  type RegistrationInput,
   type RegistrationOutcome,
 } from '@/lib/backendApi';
 import { api, ApiError } from '@/lib/apiClient';
@@ -124,6 +126,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     phase: 'signed-out',
   });
 
+  /**
+   * The in-flight registration from a signup function, keyed by
+   * Firebase UID. Firebase fires `onAuthStateChanged` the moment a
+   * user is created, and the listener's recovery path would
+   * otherwise race that signup with its own STUDENT registration —
+   * the register route upserts on `firebase_uid`, so whichever
+   * registration lands first wins the role. Awaiting the stored
+   * promise keeps the signup's intended role.
+   */
+  const pendingRegistration = useRef<{
+    uid: string;
+    registration: Promise<RegistrationOutcome>;
+  } | null>(null);
+
   const role = identity ? toUserRole(identity.role) : null;
 
   /**
@@ -180,12 +196,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
    * "absent".
    */
   const ensureRegistered = useCallback(
-    async (authUser: ExtendedUser): Promise<RegistrationOutcome | null> =>
+    async (
+      authUser: ExtendedUser,
+      input: RegistrationInput = {
+        role: 'STUDENT',
+        displayName: authUser.displayName || undefined,
+      }
+    ): Promise<RegistrationOutcome | null> =>
       Promise.race([
-        registerWithBackend(authUser, {
-          role: 'STUDENT',
-          displayName: authUser.displayName || undefined,
-        }),
+        registerWithBackend(authUser, input),
         delay(SELF_HEAL_RESOLVE_MS).then(() => null),
       ]),
     []
@@ -201,15 +220,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
    * throwing, so a `null` identity here means either "row still being
    * written" or "row never written". The register call is idempotent
    * on `firebase_uid`, so it is safe in both cases, and re-reading
-   * afterwards picks up whichever outcome actually happened. Only the
-   * student role self-registers: industry and college need an
-   * organization, which only an admin approval can supply.
+   * afterwards picks up whichever outcome actually happened. When a
+   * signup's own registration is still in flight it is awaited
+   * first — only the student role self-registers, because industry
+   * and college need an organization, which the signup supplies and
+   * an admin must approve.
    */
   const syncSessionWithRecovery = useCallback(
     async (authUser: ExtendedUser) => {
       let resolved = await loadIdentity(authUser);
       if (resolved === null) {
-        await ensureRegistered(authUser);
+        // A signup's intended-role registration may still be in
+        // flight: the auth-state listener fires as soon as Firebase
+        // creates the user, before that registration can land.
+        // Await it instead of racing it with a STUDENT self-heal —
+        // the register route is an idempotent upsert on
+        // `firebase_uid`, so a competing STUDENT write that lands
+        // first would silently downgrade an industry/college signup.
+        const pending =
+          pendingRegistration.current?.uid === authUser.uid
+            ? pendingRegistration.current.registration
+            : null;
+        if (pending) {
+          await Promise.race([pending, delay(SELF_HEAL_RESOLVE_MS)]);
+        } else {
+          await ensureRegistered(authUser);
+        }
         resolved = await loadIdentity(authUser);
       }
 
@@ -248,9 +284,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // The row exists, but `/api/auth/me` may still briefly 403 while
       // the write commits, so poll a bounded number of times.
       for (let attempt = 0; attempt < REGISTRATION_RESOLVE_ATTEMPTS; attempt++) {
+        if (attempt > 0) {
+          await delay(REGISTRATION_RESOLVE_DELAY_MS);
+        }
         const resolved = await loadIdentity(authUser);
         if (resolved) return resolved;
-        await delay(REGISTRATION_RESOLVE_DELAY_MS);
       }
       return null;
     },
@@ -376,15 +414,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const u = await signInWithGoogle();
       if (u && u.uid) {
         setUser(u);
-        const resolved = await resolveAfterRegistration(
-          u,
-          registerWithBackend(u, {
-            role: selectedRole,
-            displayName: displayName || u.displayName || undefined,
-            phone,
-            organization: { name: college, code: organizationCode },
+        const registration = registerWithBackend(u, {
+          role: selectedRole,
+          displayName: displayName || u.displayName || undefined,
+          phone,
+          organization: { name: college, code: organizationCode },
+        });
+        // Publish the in-flight registration so the auth-state
+        // listener's recovery path awaits it (see
+        // `pendingRegistration`) instead of racing it with a
+        // STUDENT write. The slot clears when the request
+        // settles — not when `resolveAfterRegistration` gives
+        // up — so a slow registration cannot be raced by a
+        // later self-heal.
+        pendingRegistration.current = { uid: u.uid, registration };
+        void registration
+          .finally(() => {
+            if (pendingRegistration.current?.registration === registration) {
+              pendingRegistration.current = null;
+            }
           })
-        );
+          .catch(() => {
+            // `registerWithBackend` never rejects; guard
+            // anyway so this cleanup can never surface as an
+            // unhandled rejection.
+          });
+
+        const resolved = await resolveAfterRegistration(u, registration);
 
         flushSync(() => {
           setIdentity(resolved);
@@ -436,15 +492,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // could not reach the network.
       const u = await signUpWithEmail(email, password, displayName);
       setUser(u);
-      const resolved = await resolveAfterRegistration(
-        u,
-        registerWithBackend(u, {
-          role: selectedRole,
-          displayName,
-          phone,
-          organization: { name: college, code: organizationCode },
+      const registration = registerWithBackend(u, {
+        role: selectedRole,
+        displayName,
+        phone,
+        organization: { name: college, code: organizationCode },
+      });
+      // Same hand-off as `signUpWithGoogle`: the auth-state
+      // listener must await this registration, not race it
+      // with a STUDENT write.
+      pendingRegistration.current = { uid: u.uid, registration };
+      void registration
+        .finally(() => {
+          if (pendingRegistration.current?.registration === registration) {
+            pendingRegistration.current = null;
+          }
         })
-      );
+        .catch(() => {
+          // `registerWithBackend` never rejects; guard
+          // anyway so this cleanup can never surface as an
+          // unhandled rejection.
+        });
+
+      const resolved = await resolveAfterRegistration(u, registration);
 
       flushSync(() => {
         setIdentity(resolved);
@@ -473,8 +543,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // with 403 `registration_required`.
       let resolvedIdentity = identity;
       if (!resolvedIdentity) {
-        await ensureRegistered(user);
+        // The signup's own registration may still be in
+        // flight — it carries the intended role, so await it
+        // before attempting any self-heal write.
+        const pending =
+          pendingRegistration.current?.uid === user.uid
+            ? pendingRegistration.current.registration
+            : null;
+        if (pending) {
+          await Promise.race([pending, delay(SELF_HEAL_RESOLVE_MS)]);
+        }
         resolvedIdentity = await loadIdentity(user);
+
+        if (!resolvedIdentity) {
+          // Self-heal with the hinted role rather than
+          // unconditionally as a student: the register
+          // route is an idempotent upsert on `firebase_uid`,
+          // so a STUDENT write would silently downgrade an
+          // industry/college signup whose registration never
+          // landed. Industry and college registrations carry
+          // the organization collected on this form; if it
+          // is incomplete the backend rejects the write, the
+          // identity stays null, and the PATCH below fails
+          // loudly instead of downgrading the account.
+          const hintRole: UserRole =
+            roleHint === 'INDUSTRY' || roleHint === 'COLLEGE'
+              ? roleHint
+              : 'STUDENT';
+          await ensureRegistered(user, {
+            role: hintRole,
+            displayName: user.displayName || undefined,
+            phone:
+              typeof details.phone === 'string' && details.phone.trim()
+                ? details.phone
+                : undefined,
+            organization:
+              hintRole === 'INDUSTRY'
+                ? { name: (details.companyName as string | undefined) ?? '' }
+                : hintRole === 'COLLEGE'
+                  ? {
+                      name: (details.institutionName as string | undefined) ?? '',
+                      code: (details.collegeCode as string | undefined) ?? '',
+                    }
+                  : undefined,
+          });
+          resolvedIdentity = await loadIdentity(user);
+        }
+
         flushSync(() => {
           setIdentity(resolvedIdentity);
           setSession(resolveSession(user.uid, resolvedIdentity));
