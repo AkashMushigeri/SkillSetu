@@ -17,12 +17,14 @@ import {
   Filter,
   CheckCircle2,
   Building2,
-  Briefcase
+  Briefcase,
+  Loader2
 } from 'lucide-react';
 
 export default function OpportunitiesExplorePage() {
   const {
     opportunities,
+    liveApiLoading,
     userCoords,
     isUsingGeolocation,
     requestUserLocation,
@@ -334,14 +336,28 @@ export default function OpportunitiesExplorePage() {
             <span className="text-xs text-slate-500 dark:text-slate-400">Sorted by proximity &amp; skill match</span>
           </div>
 
-          {filteredOpportunities.length === 0 ? (
+          {liveApiLoading && opportunities.length === 0 ? (
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-12 text-center space-y-3 shadow-card">
+              <div className="w-12 h-12 rounded-full bg-brand-teal/10 text-brand-teal flex items-center justify-center mx-auto">
+                <Loader2 className="w-6 h-6 animate-spin" />
+              </div>
+              <h4 className="font-bold text-slate-900 dark:text-white text-base">
+                Fetching Verified Openings...
+              </h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                Connecting to official career boards (Greenhouse, Ashby, TrustJob) to load real, currently active openings.
+              </p>
+            </div>
+          ) : filteredOpportunities.length === 0 ? (
             <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-10 text-center space-y-3 shadow-card">
               <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center mx-auto">
                 <Filter className="w-6 h-6" />
               </div>
-              <h4 className="font-bold text-slate-900 dark:text-white text-base">No opportunities found</h4>
+              <h4 className="font-bold text-slate-900 dark:text-white text-base">
+                No verified openings found right now.
+              </h4>
               <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                No opportunities match your current filters within {searchRadius} km. Try expanding your radius or clearing selected filters.
+                No opportunities match your current filters within {searchRadius} km. Try changing your location, role, skills, or expanding your radius. We only display real, verified openings from legitimate sources.
               </p>
               <button
                 type="button"

@@ -4,7 +4,10 @@ export type OpportunityType =
   | 'Same-Day Task'
   | 'Part-Time Job'
   | 'Full-Time Job'
-  | 'Industry Challenge';
+  | 'Industry Challenge'
+  | 'Contract'
+  | 'Apprenticeship'
+  | 'Graduate';
 
 export type SkillTier = 'Basic' | 'Intermediate' | 'Advanced';
 
@@ -349,6 +352,16 @@ export interface Opportunity {
   matchExplanation?: string;
   companyId?: string;
   industryId?: string;
+  // Normalized Schema Fields
+  source?: string;
+  sourceUrl?: string;
+  applicationUrl?: string;
+  verified?: boolean;
+  lastVerified?: string;
+  tags?: string[];
+  salary?: string;
+  applicationDeadline?: string;
+  skills?: string[];
 }
 
 export interface Application {

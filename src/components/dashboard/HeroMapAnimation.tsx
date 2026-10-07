@@ -2,9 +2,15 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { MapPin, Navigation, Sparkles, Crosshair, Building2, Zap } from 'lucide-react';
+import { MapPin, Navigation, Sparkles, Crosshair, Building2, Zap, ShieldCheck } from 'lucide-react';
+import { useStudent } from '@/context/StudentContext';
 
 export const HeroMapAnimation: React.FC = () => {
+  const { opportunities, selectedCity } = useStudent();
+  const pin1 = opportunities[0];
+  const pin2 = opportunities[1];
+  const pin3 = opportunities[2];
+
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
       {/* 1. Base 2D Google Maps Style Vector Grid */}
@@ -139,51 +145,57 @@ export const HeroMapAnimation: React.FC = () => {
             </span>
           </div>
           <div className="bg-slate-900/80 backdrop-blur-md border border-emerald-400/40 px-2.5 py-1 rounded-xl shadow-lg text-[11px] text-emerald-300 font-bold whitespace-nowrap animate-pulse">
-            📍 You are here &bull; Bengaluru
+            📍 You are here &bull; {selectedCity?.name || 'Bengaluru'}
           </div>
         </div>
 
-        {/* Pin 1: Google India (Internship - Green) */}
-        <div
-          className="absolute hidden lg:flex flex-col items-center group cursor-pointer transition-transform hover:scale-110"
-          style={{ right: '14%', top: '22%' }}
-        >
-          <div className="bg-slate-900/85 backdrop-blur-md border border-emerald-400 px-2 py-0.5 rounded-lg shadow-xl text-[10px] text-white font-bold mb-1 flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-            Google &bull; 87% Match
+        {/* Pin 1: Real Top Verified Opportunity */}
+        {pin1 && (
+          <div
+            className="absolute hidden lg:flex flex-col items-center group cursor-pointer transition-transform hover:scale-110"
+            style={{ right: '14%', top: '22%' }}
+          >
+            <div className="bg-slate-900/85 backdrop-blur-md border border-emerald-400 px-2 py-0.5 rounded-lg shadow-xl text-[10px] text-white font-bold mb-1 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              {pin1.company} &bull; {pin1.matchScore}% Match
+            </div>
+            <div className="w-7 h-7 rounded-full bg-emerald-500 border-2 border-white shadow-lg flex items-center justify-center text-white text-xs font-black">
+              {pin1.company.charAt(0)}
+            </div>
           </div>
-          <div className="w-7 h-7 rounded-full bg-emerald-500 border-2 border-white shadow-lg flex items-center justify-center text-white text-xs font-black">
-            G
-          </div>
-        </div>
+        )}
 
-        {/* Pin 2: Swiggy (Business Analyst - Orange) */}
-        <div
-          className="absolute hidden md:flex flex-col items-center group cursor-pointer transition-transform hover:scale-110"
-          style={{ right: '28%', top: '44%' }}
-        >
-          <div className="bg-slate-900/85 backdrop-blur-md border border-orange-400 px-2 py-0.5 rounded-lg shadow-xl text-[10px] text-white font-bold mb-1 flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-orange-400"></span>
-            Swiggy &bull; 3.9 km
+        {/* Pin 2 */}
+        {pin2 && (
+          <div
+            className="absolute hidden md:flex flex-col items-center group cursor-pointer transition-transform hover:scale-110"
+            style={{ right: '28%', top: '44%' }}
+          >
+            <div className="bg-slate-900/85 backdrop-blur-md border border-orange-400 px-2 py-0.5 rounded-lg shadow-xl text-[10px] text-white font-bold mb-1 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-orange-400"></span>
+              {pin2.company} &bull; {pin2.city}
+            </div>
+            <div className="w-7 h-7 rounded-full bg-orange-500 border-2 border-white shadow-lg flex items-center justify-center text-white text-xs font-black">
+              {pin2.company.charAt(0)}
+            </div>
           </div>
-          <div className="w-7 h-7 rounded-full bg-orange-500 border-2 border-white shadow-lg flex items-center justify-center text-white text-xs font-black">
-            S
-          </div>
-        </div>
+        )}
 
-        {/* Pin 3: AyurBridge Startup Sprint (Micro-Internship - Blue) */}
-        <div
-          className="absolute hidden lg:flex flex-col items-center group cursor-pointer transition-transform hover:scale-110"
-          style={{ right: '40%', top: '28%' }}
-        >
-          <div className="bg-slate-900/85 backdrop-blur-md border border-blue-400 px-2 py-0.5 rounded-lg shadow-xl text-[10px] text-white font-bold mb-1 flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-blue-400"></span>
-            AyurBridge &bull; 2.4 km
+        {/* Pin 3 */}
+        {pin3 && (
+          <div
+            className="absolute hidden lg:flex flex-col items-center group cursor-pointer transition-transform hover:scale-110"
+            style={{ right: '40%', top: '28%' }}
+          >
+            <div className="bg-slate-900/85 backdrop-blur-md border border-blue-400 px-2 py-0.5 rounded-lg shadow-xl text-[10px] text-white font-bold mb-1 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+              {pin3.company} &bull; {pin3.workMode}
+            </div>
+            <div className="w-7 h-7 rounded-full bg-blue-500 border-2 border-white shadow-lg flex items-center justify-center text-white text-xs font-black">
+              {pin3.company.charAt(0)}
+            </div>
           </div>
-          <div className="w-7 h-7 rounded-full bg-blue-500 border-2 border-white shadow-lg flex items-center justify-center text-white text-xs font-black">
-            <Zap className="w-3.5 h-3.5" />
-          </div>
-        </div>
+        )}
 
         {/* Floating Mini Radar HUD Card on Right Side */}
         <div
@@ -203,15 +215,15 @@ export const HeroMapAnimation: React.FC = () => {
           <div className="space-y-1 text-[11px]">
             <div className="flex justify-between text-slate-300">
               <span>Nearby Radius:</span>
-              <strong className="text-white font-mono">10 km</strong>
+              <strong className="text-white font-mono">25 km</strong>
             </div>
             <div className="flex justify-between text-slate-300">
               <span>Matching Roles:</span>
-              <strong className="text-emerald-400 font-mono">19 Live</strong>
+              <strong className="text-emerald-400 font-mono">{opportunities.length} Verified</strong>
             </div>
             <div className="flex justify-between text-slate-300">
-              <span>Top Skill Demanded:</span>
-              <strong className="text-amber-300">Python &bull; SQL</strong>
+              <span>Verified Source:</span>
+              <strong className="text-amber-300 truncate max-w-[110px]">{opportunities[0]?.source || 'Career Boards'}</strong>
             </div>
           </div>
 

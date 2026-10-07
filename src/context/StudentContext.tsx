@@ -37,7 +37,7 @@ import {
   publishStudentApplication,
   industryStageToStudentStatus,
 } from '@/lib/syncConverters';
-import { fetchVerifiedJobsNearCity } from '@/lib/jobsApi';
+import { fetchVerifiedJobsNearCity, fetchVerifiedOpportunitiesFromApi } from '@/lib/jobsApi';
 import { useAuth } from '@/context/AuthContext';
 import { saveUserProfile } from '@/lib/firebase';
 import {
@@ -201,7 +201,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (isDemo) {
       setProfile(INITIAL_STUDENT_PROFILE);
       setSkills(INITIAL_SKILLS);
-      setSavedOpportunityIds(['opp-1', 'opp-4']);
+      setSavedOpportunityIds([]);
       setApplications(INITIAL_APPLICATIONS);
       setProjects(INITIAL_PROJECTS);
       setCertifications([]);
@@ -418,20 +418,29 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
     const loadLiveJobs = async () => {
       setLiveApiLoading(true);
       try {
-        const city = CITIES_LIST[0].name;
-        const jobs = await fetchVerifiedJobsNearCity(city, 20);
-        setLiveApiJobs(jobs);
+        const jobs = await fetchVerifiedOpportunitiesFromApi({ limit: 100 });
+        if (isMounted) {
+          setLiveApiJobs(jobs);
+        }
       } catch (e) {
         console.warn('[API] Failed to load verified jobs:', e);
-        setLiveApiJobs([]);
+        if (isMounted) {
+          setLiveApiJobs([]);
+        }
       } finally {
-        setLiveApiLoading(false);
+        if (isMounted) {
+          setLiveApiLoading(false);
+        }
       }
     };
     loadLiveJobs();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // 7. Geolocation & City
@@ -960,8 +969,9 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const submitApplication = useCallback(
     (oppId: string): boolean => {
       const opp =
-        INITIAL_OPPORTUNITIES.find((o) => o.id === oppId) ||
-        syncedOpportunities.find((o) => o.id === oppId);
+        liveApiJobs.find((o) => o.id === oppId) ||
+        syncedOpportunities.find((o) => o.id === oppId) ||
+        dataConnectOpportunities.find((o) => o.id === oppId);
       if (!opp) return false;
 
       // Check if already applied (across both local & synced ids)
@@ -1024,7 +1034,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       return true;
     },
-    [applications, skills, syncedOpportunities]
+    [applications, skills, syncedOpportunities, liveApiJobs, dataConnectOpportunities, profile]
   );
 
   // Notifications helpers
@@ -1171,7 +1181,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
     setProfile(INITIAL_STUDENT_PROFILE);
     setSkills(INITIAL_SKILLS);
-    setSavedOpportunityIds(['opp-1', 'opp-4']);
+    setSavedOpportunityIds([]);
     setApplications(INITIAL_APPLICATIONS);
     setProjects(INITIAL_PROJECTS);
     setCertifications([]);

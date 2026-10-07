@@ -13,7 +13,8 @@ import {
   GraduationCap,
   ArrowRight,
   Sparkles,
-  Paperclip
+  Paperclip,
+  ExternalLink
 } from 'lucide-react';
 
 interface ApplyModalProps {
@@ -37,6 +38,9 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ opportunity, onClose }) 
     e.preventDefault();
     submitApplication(opportunity.id);
     setIsSubmitted(true);
+    if (opportunity.applicationUrl) {
+      window.open(opportunity.applicationUrl, '_blank', 'noopener,noreferrer');
+    }
   };
 
   return (
@@ -51,10 +55,23 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ opportunity, onClose }) 
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
               {opportunity.title}
             </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1 mt-0.5">
-              <Building2 className="w-3.5 h-3.5 text-slate-400" />
-              {opportunity.company} &bull; {opportunity.stipend}
-            </p>
+            <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 mt-1">
+              <span className="flex items-center gap-1">
+                <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                {opportunity.company}
+              </span>
+              <span>&bull;</span>
+              <span>{opportunity.stipend}</span>
+              {opportunity.source && (
+                <>
+                  <span>&bull;</span>
+                  <span className="text-brand-teal dark:text-teal-400 font-bold bg-teal-50 dark:bg-teal-950/60 px-2 py-0.5 rounded-md text-[10px] border border-teal-200 dark:border-teal-850 flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                    Source: {opportunity.source}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
           <button
             type="button"
@@ -97,19 +114,30 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ opportunity, onClose }) 
             </div>
 
             <div className="pt-3 flex flex-col sm:flex-row gap-2 justify-center">
+              {opportunity.applicationUrl && (
+                <a
+                  href={opportunity.applicationUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-2.5 rounded-xl bg-brand-teal hover:bg-brand-dark text-white text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-1.5"
+                >
+                  <span>Open Official Job Posting</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              )}
               <Link
                 href="/student/applications"
                 onClick={onClose}
-                className="px-5 py-2.5 rounded-xl bg-brand-teal hover:bg-brand-dark text-white text-xs font-bold shadow-sm transition-all"
+                className="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors flex items-center justify-center"
               >
                 Track in Applications
               </Link>
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors"
+                className="px-4 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 text-xs font-semibold transition-colors"
               >
-                Back to Opportunities
+                Close
               </button>
             </div>
           </div>
@@ -210,8 +238,8 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ opportunity, onClose }) 
                 type="submit"
                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-brand-emerald to-brand-teal hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
               >
-                <span>Submit Application</span>
-                <ArrowRight className="w-4 h-4" />
+                <span>Apply on Official Portal &amp; Track</span>
+                <ExternalLink className="w-4 h-4" />
               </button>
             </div>
           </form>

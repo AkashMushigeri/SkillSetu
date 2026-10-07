@@ -134,6 +134,21 @@ export function mapApiJobToOpportunity(job: RawApiJob): Opportunity {
     perks: ['Health insurance', 'Flexible hours', 'Growth opportunities'],
     matchScore: job.trust_score,
     isMatchBoosted: job.verification.zero_scam_flags,
+    // Normalized Schema
+    source: job.source || 'Greenhouse Public Board',
+    sourceUrl: job.application_url,
+    applicationUrl: job.application_url,
+    verified: Boolean(job.verification?.fail_closed_gate_passed ?? true),
+    lastVerified: job.published_at || new Date().toISOString(),
+    skills: job.skills,
+    salary: job.salary?.formatted,
+    applicationDeadline: 'Apply before posting closes',
+    tags: [
+      employmentTypeToOpportunityType(job.employment_type),
+      job.work_mode === 'REMOTE' ? 'Remote' : job.work_mode === 'HYBRID' ? 'Hybrid' : 'On-site',
+      job.city,
+      ...job.skills.slice(0, 3)
+    ],
   };
 }
 
@@ -197,3 +212,33 @@ export async function fetchVerifiedJobsWithFilters(
   const response = await fetchVerifiedJobs(filters);
   return response.data.map(mapApiJobToOpportunity);
 }
+
+export async function fetchVerifiedOpportunitiesFromApi(filters?: {
+  city?: string;
+  q?: string;
+  type?: string;
+  workMode?: string;
+  skills?: string[];
+  limit?: number;
+}): Promise<Opportunity[]> {
+  try {
+    const params = new URLSearchParams();
+    if (filters?.city && filters.city !== 'All') params.set('city', filters.city);
+    if (filters?.q) params.set('q', filters.q);
+    if (filters?.type && filters.type !== 'All') params.set('type', filters.type);
+    if (filters?.workMode && filters.workMode !== 'All') params.set('workMode', filters.workMode);
+    if (filters?.skills && filters.skills.length > 0) params.set('skills', filters.skills.join(','));
+    if (filters?.limit) params.set('limit', String(filters.limit));
+
+    const res = await fetch(`/api/opportunities?${params.toString()}`);
+    if (!res.ok) {
+      throw new Error(`Failed to fetch verified opportunities: ${res.status}`);
+    }
+    const data = await res.json();
+    return data.opportunities || [];
+  } catch (e) {
+    console.warn('[Opportunities API] Fallback to direct verified provider:', e);
+    return fetchVerifiedJobsNearCity(filters?.city || 'Bengaluru', filters?.limit || 20);
+  }
+}
+

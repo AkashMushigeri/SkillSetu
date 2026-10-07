@@ -17,7 +17,8 @@ import {
   ShieldCheck,
   Building2,
   Award,
-  CircleAlert
+  CircleAlert,
+  ExternalLink
 } from 'lucide-react';
 
 interface OpportunityDetailModalProps {
@@ -67,9 +68,20 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight">
               {opportunity.title}
             </h2>
-            <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <Building2 className="w-4 h-4 text-brand-teal" />
-              {opportunity.company}
+            <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+              <span className="flex items-center gap-1.5">
+                <Building2 className="w-4 h-4 text-brand-teal" />
+                {opportunity.company}
+              </span>
+              {opportunity.source && (
+                <>
+                  <span className="text-slate-300 dark:text-slate-700">&bull;</span>
+                  <span className="text-[11px] text-brand-teal dark:text-teal-400 font-bold bg-teal-50 dark:bg-teal-950/60 px-2.5 py-0.5 rounded-md border border-teal-200 dark:border-teal-800 flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                    Source: {opportunity.source}
+                  </span>
+                </>
+              )}
             </div>
           </div>
 
@@ -273,8 +285,8 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
               }}
               className="px-5 py-2.5 rounded-xl bg-brand-teal hover:bg-brand-dark text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
             >
-              <span>Apply Now</span>
-              <ArrowRight className="w-4 h-4" />
+              <span>Apply</span>
+              <ExternalLink className="w-4 h-4" />
             </button>
           </div>
         </div>

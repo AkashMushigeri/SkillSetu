@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { analyzeSkillGaps } from '@/server/ai/skillGapService';
 import { Opportunity, Skill, Project, StudentProfile } from '@/types/student';
-import { INITIAL_OPPORTUNITIES, INITIAL_SKILLS, INITIAL_PROJECTS, INITIAL_STUDENT_PROFILE } from '@/data/mockStudentData';
+import { INITIAL_SKILLS, INITIAL_PROJECTS, INITIAL_STUDENT_PROFILE } from '@/data/mockStudentData';
+import { getOpportunityById } from '@/lib/jobProviders';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,7 @@ export async function POST(req: NextRequest) {
 
     // 1. If opportunityId was passed without full object, retrieve from authoritative source
     if (!opportunity && opportunityId) {
-      opportunity = INITIAL_OPPORTUNITIES.find((o) => o.id === opportunityId);
+      opportunity = await getOpportunityById(opportunityId);
     }
 
     if (!opportunity) {
@@ -60,7 +61,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const opportunity = INITIAL_OPPORTUNITIES.find((o) => o.id === opportunityId);
+    const opportunity = await getOpportunityById(opportunityId);
     if (!opportunity) {
       return NextResponse.json(
         { error: `Opportunity with id "${opportunityId}" not found` },
