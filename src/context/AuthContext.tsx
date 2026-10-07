@@ -49,6 +49,7 @@ import {
 import {
   registerWithBackend,
   type RegistrationInput,
+  type RegistrationOrganization,
   type RegistrationOutcome,
 } from '@/lib/backendApi';
 import { api, ApiError } from '@/lib/apiClient';
@@ -103,6 +104,53 @@ export const getDashboardRoute = (userRole: UserRole | null) => {
   return '/login';
 };
 
+/**
+ * The signup intent for a Firebase UID, persisted for the current tab.
+ *
+ * `registerWithBackend` is fire-and-forget and can fail or time out:
+ * Render's free tier sleeps, so a cold start routinely exceeds both the
+ * 5s resolution cap and the 30s HTTP timeout. When no `users` row
+ * exists, the recovery path in `syncSessionWithRecovery` used to
+ * re-register with a hardcoded STUDENT role — silently downgrading an
+ * industry/college signup into a student row. Persisting the intent
+ * lets the self-heal retry with the role the user actually chose.
+ * Cleared as soon as the backend confirms the row.
+ */
+const SIGNUP_INTENT_PREFIX = 'skillsetu:signup-intent:';
+
+interface StoredSignupIntent {
+  role: UserRole;
+  displayName?: string;
+  phone?: string;
+  organization?: RegistrationOrganization;
+}
+
+function storeSignupIntent(uid: string, intent: StoredSignupIntent): void {
+  try {
+    sessionStorage.setItem(`${SIGNUP_INTENT_PREFIX}${uid}`, JSON.stringify(intent));
+  } catch {
+    // sessionStorage unavailable (private mode): the self-heal falls
+    // back to the student default, as before.
+  }
+}
+
+function readSignupIntent(uid: string): StoredSignupIntent | null {
+  try {
+    const raw = sessionStorage.getItem(`${SIGNUP_INTENT_PREFIX}${uid}`);
+    return raw ? (JSON.parse(raw) as StoredSignupIntent) : null;
+  } catch {
+    return null;
+  }
+}
+
+function clearSignupIntent(uid: string): void {
+  try {
+    sessionStorage.removeItem(`${SIGNUP_INTENT_PREFIX}${uid}`);
+  } catch {
+    // ignore
+  }
+}
+
 const delay = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -138,6 +186,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const pendingRegistration = useRef<{
     uid: string;
     registration: Promise<RegistrationOutcome>;
+  } | null>(null);
+
+  /**
+   * The intent of the signup currently in progress. Set BEFORE the
+   * Firebase call: `onAuthStateChanged` fires the moment Firebase
+   * creates the user, which is before this function's continuation
+   * can assign `pendingRegistration` or the sessionStorage copy. The
+   * recovery path in `syncSessionWithRecovery` reads it from here
+   * first, so that first listener cannot race the signup with a
+   * STUDENT write. Cleared when the registration settles.
+   */
+  const signupIntent = useRef<{
+    email?: string;
+    intent: StoredSignupIntent;
   } | null>(null);
 
   const role = identity ? toUserRole(identity.role) : null;
@@ -222,9 +284,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
    * on `firebase_uid`, so it is safe in both cases, and re-reading
    * afterwards picks up whichever outcome actually happened. When a
    * signup's own registration is still in flight it is awaited
-   * first — only the student role self-registers, because industry
-   * and college need an organization, which the signup supplies and
-   * an admin must approve.
+   * first; otherwise the signup's persisted intent — the role and
+   * organization the user chose — drives the retry, so a registration
+   * lost to a timeout is retried as industry/college (pending admin
+   * approval) rather than silently downgraded to a student row.
    */
   const syncSessionWithRecovery = useCallback(
     async (authUser: ExtendedUser) => {
@@ -244,9 +307,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         if (pending) {
           await Promise.race([pending, delay(SELF_HEAL_RESOLVE_MS)]);
         } else {
-          await ensureRegistered(authUser);
+          // No signup of ours is in flight: either a signup
+          // whose registration was lost to a timeout, or a
+          // returning session in a fresh tab. Retry with the
+          // signup intent — a hardcoded STUDENT write would
+          // silently downgrade an industry/college signup.
+          // The in-progress ref (matched by email when
+          // known) covers the first auth-state event, which
+          // fires before the signup function can publish
+          // anything; the sessionStorage copy covers
+          // reloads.
+          const active = signupIntent.current;
+          const intent =
+            active &&
+            (active.email === undefined || active.email === authUser.email)
+              ? active.intent
+              : readSignupIntent(authUser.uid);
+          await ensureRegistered(
+            authUser,
+            intent
+              ? {
+                  role: intent.role,
+                  displayName:
+                    intent.displayName ?? authUser.displayName ?? undefined,
+                  phone: intent.phone,
+                  organization: intent.organization,
+                }
+              : undefined
+          );
         }
         resolved = await loadIdentity(authUser);
+
+        // A confirmed row means the registration landed — the
+        // persisted intent is spent.
+        if (resolved) clearSignupIntent(authUser.uid);
       }
 
       flushSync(() => {
@@ -280,6 +374,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       ) {
         return null;
       }
+
+      // The backend confirmed the row — the signup intent is spent.
+      clearSignupIntent(authUser.uid);
 
       // The row exists, but `/api/auth/me` may still briefly 403 while
       // the write commits, so poll a bounded number of times.
@@ -411,9 +508,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       college?: string,
       organizationCode?: string
     ) => {
+      const intent: StoredSignupIntent = {
+        role: selectedRole,
+        displayName,
+        phone,
+        organization: { name: college, code: organizationCode },
+      };
+      // Set before the Firebase call so the auth-state
+      // listener — which fires the moment the user is
+      // created — sees the intent before this function's
+      // continuation can publish `pendingRegistration`.
+      signupIntent.current = { intent };
       const u = await signInWithGoogle();
       if (u && u.uid) {
         setUser(u);
+        // Persist for the reload case: the ref does not
+        // survive a fresh page load, sessionStorage does.
+        storeSignupIntent(u.uid, intent);
         const registration = registerWithBackend(u, {
           role: selectedRole,
           displayName: displayName || u.displayName || undefined,
@@ -432,6 +543,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           .finally(() => {
             if (pendingRegistration.current?.registration === registration) {
               pendingRegistration.current = null;
+            }
+            if (signupIntent.current?.intent === intent) {
+              signupIntent.current = null;
             }
           })
           .catch(() => {
@@ -490,8 +604,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // A network failure is surfaced as a failure. The previous behaviour minted an
       // `offline_*` session with a client-chosen role whenever the signup request
       // could not reach the network.
+      const intent: StoredSignupIntent = {
+        role: selectedRole,
+        displayName: displayName || undefined,
+        phone,
+        organization: { name: college, code: organizationCode },
+      };
+      // Set before the Firebase call so the auth-state
+      // listener — which fires the moment the user is
+      // created — sees the intent (matched by email)
+      // before this function's continuation can publish
+      // `pendingRegistration`.
+      signupIntent.current = { email, intent };
       const u = await signUpWithEmail(email, password, displayName);
       setUser(u);
+      // Persist for the reload case: the ref does not
+      // survive a fresh page load, sessionStorage does.
+      storeSignupIntent(u.uid, intent);
       const registration = registerWithBackend(u, {
         role: selectedRole,
         displayName,
@@ -506,6 +635,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         .finally(() => {
           if (pendingRegistration.current?.registration === registration) {
             pendingRegistration.current = null;
+          }
+          if (signupIntent.current?.intent === intent) {
+            signupIntent.current = null;
           }
         })
         .catch(() => {
@@ -656,6 +788,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         ...profilePromises,
       ]);
 
+      // Onboarding finished: the signup intent (if any) is spent.
+      clearSignupIntent(user.uid);
+
       flushSync(() => {
         setIdentity(updatedIdentity);
         setSession(resolveSession(user.uid, updatedIdentity));
@@ -669,6 +804,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const signOut = useCallback(async () => {
     await signOutFirebase();
     api.setUser(null);
+    // Drop the in-progress signup intent: it is matched to
+    // this tab's signup. The sessionStorage copy is keyed by
+    // UID and deliberately kept — it represents an
+    // unfinished signup, and signing back in should still
+    // retry with the originally chosen role.
+    signupIntent.current = null;
     setUser(null);
     setIdentity(null);
     setSession({ phase: 'signed-out' });
