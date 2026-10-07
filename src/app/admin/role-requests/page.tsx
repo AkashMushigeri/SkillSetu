@@ -68,10 +68,31 @@ export default function AdminRoleRequestsPage() {
 
   const load = useCallback(async () => {
     setError(null);
+    // DEBUG: trace every queue fetch — visible in browser devtools console.
+    console.log('[role-requests] load → GET /api/role-requests', { status });
     try {
       const res = await roleRequests.list(status);
+      // DEBUG: confirm what the backend actually returned (empty array vs error).
+      console.log('[role-requests] load ← 200 OK', {
+        status,
+        count: res.requests?.length ?? 0,
+        requests: res.requests,
+      });
       setRequests(res.requests);
     } catch (err) {
+      // DEBUG: full error shape — status/code/requestId distinguish
+      // 401 (token), 403 (role not admin) and 5xx (backend) failures.
+      if (err instanceof ApiError) {
+        console.error('[role-requests] load ← ApiError', {
+          status,
+          httpStatus: err.status,
+          code: err.code,
+          message: err.message,
+          requestId: err.requestId,
+        });
+      } else {
+        console.error('[role-requests] load ← unexpected error', { status, err });
+      }
       setRequests([]);
       setError(
         err instanceof ApiError
@@ -82,8 +103,17 @@ export default function AdminRoleRequestsPage() {
   }, [status]);
 
   useEffect(() => {
+    // DEBUG: why the queue did or did not load for this session.
+    console.log('[role-requests] identity check', {
+      role: identity?.role,
+      userId: identity?.userId,
+      email: identity?.email,
+      status: identity?.status,
+    });
     if (identity?.role === 'admin') {
       void load();
+    } else {
+      console.warn('[role-requests] fetch skipped: identity.role is not admin');
     }
   }, [identity?.role, load]);
 
@@ -94,9 +124,15 @@ export default function AdminRoleRequestsPage() {
   ) => {
     setActingId(req.id);
     setError(null);
+    // DEBUG: trace the approve/reject call and its outcome.
+    console.log(`[role-requests] ${verb} → POST /api/role-requests/${req.id}/${verb.toLowerCase()}`, {
+      requestId: req.id,
+      note: notes[req.id]?.trim() || undefined,
+    });
     try {
       const note = notes[req.id]?.trim();
-      await fn(req.id, { ...(note ? { decisionNote: note } : {}) });
+      const result = await fn(req.id, { ...(note ? { decisionNote: note } : {}) });
+      console.log(`[role-requests] ${verb} ← success`, { requestId: req.id, result });
       setRequests((prev) =>
         prev ? prev.filter((r) => r.id !== req.id) : prev
       );
@@ -106,6 +142,19 @@ export default function AdminRoleRequestsPage() {
         return next;
       });
     } catch (err) {
+      if (err instanceof ApiError) {
+        console.error(`[role-requests] ${verb} ← ApiError`, {
+          requestId: req.id,
+          httpStatus: err.status,
+          code: err.code,
+          message: err.message,
+        });
+      } else {
+        console.error(`[role-requests] ${verb} ← unexpected error`, {
+          requestId: req.id,
+          err,
+        });
+      }
       setError(
         err instanceof ApiError
           ? err.message
