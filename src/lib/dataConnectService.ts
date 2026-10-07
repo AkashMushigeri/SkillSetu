@@ -91,6 +91,12 @@ export async function fetchRemoteJobs(): Promise<{
       description: (j as any).description || `Engineering opportunity at ${j.company?.name || 'TechNova Labs'}`,
       responsibilities: ((j as any).responsibilities as string[]) || ['Contribute to core services'],
       perks: ['Health insurance', 'Flexible hours', 'Mentorship'],
+      source: 'SkillSetu Data Connect',
+      sourceUrl: `/industry/jobs/${j.id}`,
+      applicationUrl: `/industry/jobs/${j.id}`,
+      verified: true,
+      lastVerified: 'Recently',
+      tags: ['Verified Employer', 'Data Connect', (j.workMode as string) || 'Hybrid'],
     }));
 
     return { industryJobs, opportunities };
@@ -164,6 +170,12 @@ export async function fetchRemoteInternships(): Promise<{
       description: (i as any).description || `Internship program at ${i.company?.name || 'TechNova Labs'}`,
       responsibilities: ((i as any).learningOutcomes as string[]) || ['Hands-on engineering projects'],
       perks: i.eligibleForConversion ? ['PPO Conversion Track'] : [],
+      source: 'SkillSetu Data Connect',
+      sourceUrl: `/industry/internships/${i.id}`,
+      applicationUrl: `/industry/internships/${i.id}`,
+      verified: true,
+      lastVerified: 'Recently',
+      tags: ['Verified Partner', 'Data Connect', (i.workMode as string) || 'Hybrid'],
     }));
 
     return { industryInternships, opportunities };

@@ -88,6 +88,12 @@ export function industryInternshipToOpportunity(internship: IndustryInternship):
     description: internship.description || '',
     responsibilities: internship.learningOutcomes || [],
     perks: internship.eligibleForConversion ? ['Internship-to-Full-Time (PPO) conversion track'] : [],
+    source: 'SkillSetu Industry Portal',
+    sourceUrl: `/industry/internships/${internship.id}`,
+    applicationUrl: `/industry/internships/${internship.id}`,
+    verified: true,
+    lastVerified: 'Recently',
+    tags: ['Industry Sync', 'Verified Partner', internship.workMode || 'Hybrid'],
   };
 }
 
@@ -116,6 +122,12 @@ export function industryJobToOpportunity(job: IndustryJob): Opportunity {
     description: job.description || '',
     responsibilities: job.responsibilities || [],
     perks: [],
+    source: 'SkillSetu Industry Portal',
+    sourceUrl: `/industry/jobs/${job.id}`,
+    applicationUrl: `/industry/jobs/${job.id}`,
+    verified: true,
+    lastVerified: 'Recently',
+    tags: ['Industry Sync', 'Verified Employer', job.workMode || 'Hybrid'],
   };
 }
 
@@ -146,6 +158,12 @@ export function industryChallengeToOpportunity(challenge: IndustryChallenge): Op
       `Open to: ${challenge.collegeParticipation || 'Partner colleges'}`,
     ],
     perks: [challenge.prize || 'Winner recognition'],
+    source: 'SkillSetu Challenge Portal',
+    sourceUrl: `/industry/challenges/${challenge.id}`,
+    applicationUrl: `/industry/challenges/${challenge.id}`,
+    verified: true,
+    lastVerified: 'Recently',
+    tags: ['Challenge', 'Prize Track', 'Remote'],
   };
 }
 
