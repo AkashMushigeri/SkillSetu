@@ -22,15 +22,12 @@ import {
   SkillItem,
   CAREER_ROLE_MAPPINGS,
 } from '@/data/skillsData';
-import { BasicSkillCard } from '@/components/skills/BasicSkillCard';
-import { BasicSkillTheoryModal } from '@/components/skills/BasicSkillTheoryModal';
 
 export default function SkillsHubPage() {
   const { skills } = useStudent();
   const [activeLevel, setActiveLevel] = useState<SkillLevelKey>('basic');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [selectedTheorySkill, setSelectedTheorySkill] = useState<SkillItem | null>(null);
 
   const verifiedCount = skills.filter((s) => s.isVerified).length;
 
@@ -228,24 +225,14 @@ export default function SkillsHubPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 xl:gap-5">
             {filteredSkills.map((skill) => {
-              if (activeLevel === 'basic') {
-                return (
-                  <BasicSkillCard
-                    key={skill.id}
-                    skill={skill}
-                    onReadTheory={(s) => setSelectedTheorySkill(s)}
-                  />
-                );
-              }
+            const { isVerified, progress, status } = getSkillLiveState(skill);
 
-              const { isVerified, progress, status } = getSkillLiveState(skill);
-
-              return (
-                <Link
-                  key={skill.id}
-                  href={`/student/skills/${skill.id}`}
-                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-card hover:shadow-cardHover hover:border-brand-teal/40 dark:hover:border-teal-500/40 transition-all flex flex-col justify-between group h-full"
-                >
+            return (
+              <Link
+                key={skill.id}
+                href={`/student/skills/${skill.id}`}
+                className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-card hover:shadow-cardHover hover:border-brand-teal/40 dark:hover:border-teal-500/40 transition-all flex flex-col justify-between group h-full"
+              >
                 <div className="flex-1 flex flex-col">
                   {/* Top Header: Icon, Title, Level, and Status Badge */}
                   <div className="flex items-start justify-between gap-2.5 mb-3">
@@ -425,13 +412,6 @@ export default function SkillsHubPage() {
           })}
         </div>
       </div>
-
-      {/* Basic Skill Theory Notes Modal */}
-      <BasicSkillTheoryModal
-        skill={selectedTheorySkill}
-        isOpen={Boolean(selectedTheorySkill)}
-        onClose={() => setSelectedTheorySkill(null)}
-      />
     </div>
   );
 }
